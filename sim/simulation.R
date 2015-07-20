@@ -310,66 +310,101 @@ replicate.simulation = function(num.rep = 100, simulate){
 # PLOTS #
 #########
 
-# plot genetic gain in terms of number of standard deviations of genetic value in founder population
+# plot genetic gain, with one of these scales:
+# 1) in terms of number of standard deviations of genetic value in founder population
+# 2) normalized wrt maximal genotypic value possible, as in the paper by Jannink
 #  --> input:   list of replicates (each replicate is a list of simulated seasons)
 #  --> plotted: average genetic gain with confidence intervals (by default 95%)
 #               calculated from normal distribution
-plot.genetic.gain = function(replicates, ci=0.95, add=FALSE, pch=23, bg="black", lty=2){
+plot.genetic.gain <- function(replicates, scale = c("jannink", "sd"), ci=0.95, add=FALSE, pch=23, bg="black", lty=2){
+  # get selected scale option
+  scale <- match.arg(scale)
   # infer number of replicates and (maximum) number of seasons
-  num.rep = length(replicates)
-  num.seasons = max(sapply(replicates, length))-1
+  num.rep <- length(replicates)
+  num.seasons <- max(sapply(replicates, length))-1
   # initialize matrix (rep x seasons) to store gains
-  gains = matrix(NA, num.rep, num.seasons+1)
+  gains <- matrix(NA, num.rep, num.seasons+1)
   # go through replicates and fill gains matrix
   for(i in 1:num.rep){
-    seasons = replicates[[i]]
-    # get mean genetic value and standard deviation in founder population
-    gains[i,1] = mean(seasons[[1]]$cross.inbreed$pop.in$geneticValues)
-    founder.sd = sd(seasons[[1]]$cross.inbreed$pop.in$geneticValues)
+    
+    # extract seasons of current replicate
+    seasons <- replicates[[i]]
+    # extract founders
+    founders <- seasons[[1]]$cross.inbreed$pop.in
+    
+    # get mean genetic value in founder population
+    gains[i,1] <- mean(founders$geneticValues)
     # get mean genetic value from selected populations during simulation
     for(s in 1:num.seasons){
-      season = seasons[[s+1]]
+      season <- seasons[[s+1]]
       # get selected population for further crossings (or final selection)
-      selected.pop = NULL
+      selected.pop <- NULL
       if(!is.null(season$cross.inbreed)){
-        selected.pop = season$cross.inbreed$pop.in
+        selected.pop <- season$cross.inbreed$pop.in
       } else if (!is.null(season$final.selection)){
-        selected.pop = season$final.selection$pop
+        selected.pop <- season$final.selection$pop
       }
       # compute mean genetic value in selected population
       if(!is.null(selected.pop)){
-        gains[i,s+1] = mean(selected.pop$geneticValue)
+        gains[i,s+1] <- mean(selected.pop$geneticValue)
       }
     }
-    # subtract values from initial value and divide by intial sd
-    gains[i,] = gains[i,] - gains[i,1]
-    gains[i,] = gains[i,]/founder.sd
+    
+    if (scale == "sd"){
+      # subtract values from initial value and divide by intial sd
+      gains[i,] <- gains[i,] - gains[i,1]
+      founder.sd <- sd(founders$geneticValues)
+      gains[i,] <- gains[i,]/founder.sd
+    } else if (scale == "jannink") {
+      # compute minimum and maximum possible genetic value
+      effects <- founders$hypred$genome@add.and.dom.eff$add
+      min.gen.value <- 2 * sum(effects[effects < 0])
+      max.gen.value <- 2 * sum(effects[effects > 0])
+      # normalize genetic values to [-1,1]
+      gains[i,] <- -1 + 2 * (gains[i,] - min.gen.value) / (max.gen.value - min.gen.value)
+      # subtract values from initial value
+      gains[i,] <- gains[i,] - gains[i,1]
+    } else {
+      stop(sprintf("Unknown scale %s (should not happen)"))
+    }
+    
   }
   # compute averages and standard error + CI across replicates
-  gain.avg = colMeans(gains)
-  gain.std.err = apply(gains, 2, sd)/sqrt(num.rep)
-  gain.ci.halfwidth = qnorm(ci+(1-ci)/2)*gain.std.err
+  gain.avg <- colMeans(gains)
+  gain.std.err <- apply(gains, 2, sd)/sqrt(num.rep)
+  gain.ci.halfwidth <- qnorm(ci+(1-ci)/2)*gain.std.err
   # only plot CI when large enough to be visible ???
   # gain.ci.halfwidth[gain.ci.halfwidth < 0.15] = NA
-  gain.ci.top = gain.avg + gain.ci.halfwidth
-  gain.ci.bottom = gain.avg - gain.ci.halfwidth
+  gain.ci.top <- gain.avg + gain.ci.halfwidth
+  gain.ci.bottom <- gain.avg - gain.ci.halfwidth
   # retain only non NA values
-  non.na = !is.na(gain.avg)
-  gain.avg = gain.avg[non.na]
-  gain.ci.top = gain.ci.top[non.na]
-  gain.ci.bottom = gain.ci.bottom[non.na]
-  x = (0:num.seasons)[non.na]
+  non.na <- !is.na(gain.avg)
+  gain.avg <- gain.avg[non.na]
+  gain.ci.top <- gain.ci.top[non.na]
+  gain.ci.bottom <- gain.ci.bottom[non.na]
+  x <- (0:num.seasons)[non.na]
   # first plot CI bars (points and lines are plotted on top)
-  final.gain = ceil(gain.avg[length(gain.avg)])
+  final.gain <- ceil(gain.avg[length(gain.avg)])
   errbar(x, gain.avg, gain.ci.top, gain.ci.bottom, type="n",
          xlab="Season", ylab="Mean genetic gain from selection",
          xaxp=c(0,num.seasons,num.seasons/2),
-         yaxp=c(0,final.gain,final.gain),
          add=add)
   points(x, gain.avg, type="o", pch=pch, bg=bg, lty=lty)
 }
 
+################
+# LOAD RESULTS #
+################
 
+# create list containing simulated breeding cycles read from all RDS files found in the given directory
+load.simulation.results <- function(dir) {
+  # get file paths
+  files <- Sys.glob(sprintf("%s/*.RDS", dir))
+  # load list of simulated breeding cycles
+  breeding.cycles <- lapply(files, readRDS)
+  # return results
+  return(breeding.cycles)
+}
 
 
 
