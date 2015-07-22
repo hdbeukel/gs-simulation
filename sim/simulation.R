@@ -356,12 +356,8 @@ plot.genetic.gain <- function(replicates, scale = c("jannink", "sd"), ci=0.95, a
       founder.sd <- sd(founders$geneticValues)
       gains[i,] <- gains[i,]/founder.sd
     } else if (scale == "jannink") {
-      # compute minimum and maximum possible genetic value
-      effects <- founders$hypred$genome@add.and.dom.eff$add
-      min.gen.value <- 2 * sum(effects[effects < 0])
-      max.gen.value <- 2 * sum(effects[effects > 0])
-      # normalize genetic values to [-1,1]
-      gains[i,] <- -1 + 2 * (gains[i,] - min.gen.value) / (max.gen.value - min.gen.value)
+      # normalize genetic values to [-1,1] based on minimum and maximum possible value
+      gains[i,] <- get.normalized.genetic.values(gains[i,])
       # subtract values from initial value
       gains[i,] <- gains[i,] - gains[i,1]
     } else {
