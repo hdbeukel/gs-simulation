@@ -235,9 +235,10 @@ strip.dummies = function(data){
 #   to the chromosome length
 # - dummy QTLs with effect of 0 are added because hypred requires same number of
 #   QTL per chromosome
-# - real QTLs effects are scaled to the inverse of the standard deviation of the
-#   allelic states 0/1/2, with random sign
-assign.qtl = function(pop, num.qtl){
+# - real QTLs effects are sampled from a normal distribution, avoiding the tails
+#   (i.e. very large effects) by sampling only from a certain inner region of the
+#   distribution (based on parameter 'random.effect.coverage')
+assign.qtl = function(pop, num.qtl, random.effect.coverage = 0.9){
   # assert: dummies added
   if(!pop$hypred$dummiesAdded){
     stop("first add dummy markers using add.dummies(pop)")
@@ -294,9 +295,19 @@ assign.qtl = function(pop, num.qtl){
   # store real/dummy QTL indices in population object
   pop$hypred$realQTL = real.qtl.indices
   pop$hypred$dummyQTL = dummy.qtl.indices
-  # set real QTL effects (scaled to inverse of standard deviation of QTL allelic states 0/1/2, random sign)
-  real.qtl.effect.scales = 1 / apply(genotypes[,real.qtl.indices], 2, sd)
-  real.qtl.effects = sample(c(-1,1), length(real.qtl.effect.scales), replace = TRUE) * real.qtl.effect.scales
+  # generate random real QTL effects
+  real.qtl.effects = rep(NA, num.qtl)
+  i = 1
+  batch.size = 10
+  q <- abs(qnorm((1-random.effect.coverage)/2))
+  while(i <= num.qtl){
+    rand.effects <- rnorm(batch.size)
+    inner.rand.effects <- rand.effects[abs(rand.effects) <= q]
+    num.new.effects <- length(inner.rand.effects)
+    num.used.effects <- min(num.new.effects, num.qtl - i + 1)
+    real.qtl.effects[i:(i+num.used.effects-1)] <- inner.rand.effects[1:num.used.effects]
+    i <- i + num.used.effects
+  }
   # set dummy QTL effects to ZERO
   dummy.qtl.effects = rep(0, length(dummy.qtl.indices))
 
