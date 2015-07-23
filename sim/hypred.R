@@ -353,11 +353,11 @@ infer.genetic.values = function(pop){
 # and maximum possible genetic value (inferred from the QTL effects)
 get.normalized.genetic.values <- function(pop, min = -1, max = 1){
   # assert: genetic values set
-  if(is.null(founders$geneticValues)){
+  if(is.null(pop$geneticValues)){
     stop("please infer genetic values using infer.genetic.values(pop)")
   }
   # compute minimum and maximum possible genetic value
-  effects <- founders$hypred$genome@add.and.dom.eff$add
+  effects <- pop$hypred$genome@add.and.dom.eff$add
   min.gen.value <- 2 * sum(effects[effects < 0])
   max.gen.value <- 2 * sum(effects[effects > 0])
   # get population genetic values
