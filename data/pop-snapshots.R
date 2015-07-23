@@ -12,8 +12,9 @@ write.pop.data <- function(pops, file.prefix, names = 1:length(pops)){
     Z <- gp.design.matrix(pop)
     # write marker data
     write.table(Z, file = paste(file.name, "-markers.txt", sep=""))
-    # write genetic values
-    write.table(pop$geneticValues, file = paste(file.name, "-values.txt", sep=""), col.names = F)
+    # write genetic values, normalized to [0,1]
+    normalized.values <- get.normalized.genetic.values(pop, min = 0, max = 1)
+    write.table(normalized.values, file = paste(file.name, "-values.txt", sep=""), col.names = F)
   }
   
 }
@@ -27,8 +28,8 @@ num.qtl <- 100
 h2 <- 0.5
 pop.size <- 200
 num.select <- 20
-num.seasons <- 20
-num.simulations <- 2
+num.seasons <- 10
+num.simulations <- 3
 
 for(s in 1:num.simulations){
   # load processed data
