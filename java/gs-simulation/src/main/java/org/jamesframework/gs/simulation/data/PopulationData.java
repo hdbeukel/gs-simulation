@@ -77,16 +77,6 @@ public class PopulationData implements IntegerIdentifiedData {
         return dist;
     }
     
-    public void normalizeValues(){
-        // infer current minimum and maximum value
-        DoubleSummaryStatistics valueStats = Arrays.stream(values).summaryStatistics();
-        double min = valueStats.getMin();
-        double max = valueStats.getMax();
-        for(int i=0; i<values.length; i++){
-            values[i] = (values[i] - min) / (max - min);
-        }
-    }
-    
     public String getName(int id){
         return names[id];
     }
@@ -109,7 +99,6 @@ public class PopulationData implements IntegerIdentifiedData {
     
     @Override
     public String toString(){
-        DoubleSummaryStatistics valueStats = Arrays.stream(values).summaryStatistics();
         return String.format(Locale.US,
                              "Population with %d accessions and %d markers",
                              numAccessions(), numMarkers());

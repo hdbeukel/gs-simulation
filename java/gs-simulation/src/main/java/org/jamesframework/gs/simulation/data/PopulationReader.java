@@ -59,8 +59,6 @@ public class PopulationReader {
         
         // initialize data
         PopulationData data = new PopulationData(names, values, markers);
-        // normalize values to [0,1]
-        data.normalizeValues();
         
         return data;
         
