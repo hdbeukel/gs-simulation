@@ -25,7 +25,7 @@ public class API {
         Neighbourhood<SubsetSolution> neigh = new SingleSwapNeighbourhood();
         // create parallel tempering search
         double minTemp = 1e-8;
-        double maxTemp = 1e-3;
+        double maxTemp = 1e-4;
         int numReplicas = 10;
         Search<SubsetSolution> search = new ParallelTempering<>(problem, neigh,
                                                                 numReplicas,
