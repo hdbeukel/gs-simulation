@@ -316,7 +316,10 @@ replicate.simulation = function(num.rep = 100, simulate){
 #  --> input:   list of replicates (each replicate is a list of simulated seasons)
 #  --> plotted: average genetic gain with confidence intervals (by default 95%)
 #               calculated from normal distribution
-plot.genetic.gain <- function(replicates, scale = c("jannink", "sd"), ci=0.95, add=FALSE, pch=23, bg="black", lty=2){
+plot.genetic.gain <- function(replicates,
+                              scale = c("jannink", "sd"),
+                              ci=0.95, add=FALSE, pch=23,
+                              bg="black", lty=2){
   # get selected scale option
   scale <- match.arg(scale)
   # infer number of replicates and (maximum) number of seasons
@@ -362,7 +365,7 @@ plot.genetic.gain <- function(replicates, scale = c("jannink", "sd"), ci=0.95, a
       # subtract values from initial value
       gains[i,] <- gains[i,] - gains[i,1]
     } else {
-      stop(sprintf("Unknown scale %s (should not happen)"))
+      stop(sprintf("Unknown scale option %s (should not happen)", scale))
     }
     
   }
