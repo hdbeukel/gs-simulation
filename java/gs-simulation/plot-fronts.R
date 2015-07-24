@@ -17,7 +17,7 @@ plot.front <- function(data){
     
   }
   
-  plot(x = mean.divs, y = mean.values, xlab = "Diversity (HE)", ylab = "Median genetic value")
+  plot(x = mean.divs, y = mean.values, xlab = "Diversity", ylab = "Median genetic value")
   
   if(exists("mean.div.equal.weight")){
     points(x = mean.div.equal.weight, y = mean.value.equal.weight, pch = 21, bg = "red")

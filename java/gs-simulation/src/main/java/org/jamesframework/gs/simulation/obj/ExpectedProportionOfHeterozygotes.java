@@ -45,7 +45,7 @@ public class ExpectedProportionOfHeterozygotes implements Objective<SubsetSoluti
         for(int m=0; m<numMarkers; m++){
             he += avgMarkers[m] * (1.0 - avgMarkers[m]);
         }
-        he = 4.0/numMarkers * he;
+        he = 2.0/numMarkers * he;
         
         // wrap in simple evaluation
         return SimpleEvaluation.WITH_VALUE(he);
