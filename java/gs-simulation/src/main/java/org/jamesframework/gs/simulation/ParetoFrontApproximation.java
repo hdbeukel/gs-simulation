@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 
 package org.jamesframework.gs.simulation;
 
@@ -12,13 +8,11 @@ import java.util.concurrent.TimeUnit;
 import org.jamesframework.core.problems.objectives.Objective;
 import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
 import org.jamesframework.core.search.Search;
-import org.jamesframework.core.search.algo.ParallelTempering;
-import org.jamesframework.core.search.neigh.Neighbourhood;
 import org.jamesframework.core.search.stopcriteria.MaxRuntime;
 import org.jamesframework.core.subset.SubsetProblem;
 import org.jamesframework.core.subset.SubsetSolution;
-import org.jamesframework.core.subset.neigh.SingleSwapNeighbourhood;
 import org.jamesframework.ext.problems.objectives.WeightedIndex;
+import org.jamesframework.gs.simulation.api.API;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.data.PopulationReader;
 import org.jamesframework.gs.simulation.obj.EntryToNearestEntryDistance;
@@ -82,15 +76,8 @@ public class ParetoFrontApproximation {
 
             // repeatedly run optimization
             for(int r=0; r<repeats; r++){
-                // create single swap neighbourhod
-                Neighbourhood<SubsetSolution> neigh = new SingleSwapNeighbourhood();
-                // create parallel tempering search
-                double minTemp = 1e-8;
-                double maxTemp = 1e-3;
-                int numReplicas = 10;
-                Search<SubsetSolution> search = new ParallelTempering<>(problem, neigh,
-                                                                        numReplicas,
-                                                                        minTemp, maxTemp);
+                // create search
+                Search<SubsetSolution> search = API.get().createSearch(problem);
                 // set maximum runtime
                 search.addStopCriterion(new MaxRuntime(timeLimit, TimeUnit.SECONDS));
                 // run search
