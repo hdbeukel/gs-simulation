@@ -284,16 +284,6 @@ infer.weights = function(gp.trained.model, pop){
   return(weights)
 }
 
-# selection criterion that selects the n plants with the highest score (phenotype, estimated value, ...)
-select.highest.score = function(scores, n){
-  # check input
-  if(is.null(names(scores))){
-    stop("scores should be named by individual")
-  }
-  selected.names = names(head(sort(scores, decreasing = TRUE), n=n))
-  return(selected.names)
-}
-
 # replicate simulation of any selection strategy
 replicate.simulation = function(num.rep = 100, simulate){
   # initialize output list
