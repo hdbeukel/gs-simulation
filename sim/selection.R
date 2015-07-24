@@ -1,4 +1,3 @@
-library(Hmisc)
 
 ########################
 # SELECTION STRATEGIES #
@@ -19,7 +18,7 @@ select.highest.score <- function(scores, n){
 # WEIGHTED SELECTION PARETO FRONTS #
 ####################################
 
-plot.pareto.front <- function(file, title = "Pareto front", errbars = TRUE){
+plot.pareto.front <- function(file, title = "Pareto front"){
   
   # read file
   front <- read.csv(file)
@@ -53,17 +52,8 @@ plot.pareto.front <- function(file, title = "Pareto front", errbars = TRUE){
   }
   
   # plot front
-  if(errbars){
-    my.plot <- function(...){
-      errbar(..., add = TRUE, pch = 21, bg = "white",
-             yplus = val.mean + val.sd/2, yminus = val.mean - val.sd/2)
-    }
-  } else {
-    my.plot <- plot
-  }
-  
-  my.plot(x = div.mean, y = val.mean,
-          main = title, xlab = "Diversity", ylab = "Median genetic value")
+  plot(x = div.mean, y = val.mean,
+       main = title, xlab = "Diversity", ylab = "Median genetic value")
   
   # mark point at equal weights
   if(exists("mean.div.equal.weight")){
