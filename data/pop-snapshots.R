@@ -13,7 +13,9 @@ write.pop.data <- function(pops, file.prefix, names = 1:length(pops)){
     # write marker data
     write.table(Z, file = paste(file.name, "-markers.txt", sep=""))
     # write genetic values, normalized to [0,1]
-    normalized.values <- get.normalized.genetic.values(pop, min = 0, max = 1)
+    normalized.values <- normalize.genetic.values(pop$geneticValues,
+                                                  pop$hypred$genome@add.and.dom.eff$add,
+                                                  min = 0, max = 1)
     write.table(normalized.values, file = paste(file.name, "-values.txt", sep=""), col.names = F)
   }
   

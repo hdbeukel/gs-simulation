@@ -235,10 +235,17 @@ strip.dummies = function(data){
 #   to the chromosome length
 # - dummy QTLs with effect of 0 are added because hypred requires same number of
 #   QTL per chromosome
-# - real QTLs effects are sampled from a normal distribution, avoiding the tails
-#   (i.e. very large effects) by sampling only from a certain inner region of the
-#   distribution (based on parameter 'random.effect.coverage')
-assign.qtl = function(pop, num.qtl, random.effect.coverage = 0.9){
+# - real QTLs effects are determined using one of two provided methods:
+#   1) "normal":  effects are sampled from a normal distribution, avoiding the tails
+#                 (i.e. large effects) by sampling only from a certain inner region
+#                 of the distribution (based on parameter 'random.effect.coverage')
+#   2) "jannink": effects are scaled to the inverse of the standard deviation of the
+#                 allelic states 0/1/2, with random sign
+assign.qtl <- function(pop, num.qtl,
+                       method = c("normal", "jannink"),
+                       random.effect.coverage = 0.9){
+  # process arguments
+  method <- match.arg(method)
   # assert: dummies added
   if(!pop$hypred$dummiesAdded){
     stop("first add dummy markers using add.dummies(pop)")
@@ -252,77 +259,88 @@ assign.qtl = function(pop, num.qtl, random.effect.coverage = 0.9){
     stop("specify total number of QTL")
   }
   # compute num QTL per chrom
-  num.chroms = pop$numChroms
-  chrom.lengths = pop$chrLengths
-  total.length = sum(chrom.lengths)
-  chrom.lengths.rel = chrom.lengths/total.length
-  qtl.assignment = sample(1:num.chroms, replace=TRUE, size=num.qtl, prob=chrom.lengths.rel)
-  real.qtl.per.chrom.table = table(qtl.assignment)
-  real.qtl.per.chrom = rep(0, num.chroms)
-  real.qtl.per.chrom[as.numeric(names(real.qtl.per.chrom.table))] = real.qtl.per.chrom.table
-  hypred.qtl.per.chrom = max(real.qtl.per.chrom)
-  dummy.qtl.per.chrom = hypred.qtl.per.chrom - real.qtl.per.chrom
+  num.chroms <- pop$numChroms
+  chrom.lengths <- pop$chrLengths
+  total.length <- sum(chrom.lengths)
+  chrom.lengths.rel <- chrom.lengths/total.length
+  qtl.assignment <- sample(1:num.chroms, replace=TRUE, size=num.qtl, prob=chrom.lengths.rel)
+  real.qtl.per.chrom.table <- table(qtl.assignment)
+  real.qtl.per.chrom <- rep(0, num.chroms)
+  real.qtl.per.chrom[as.numeric(names(real.qtl.per.chrom.table))] <- real.qtl.per.chrom.table
+  hypred.qtl.per.chrom <- max(real.qtl.per.chrom)
+  dummy.qtl.per.chrom <- hypred.qtl.per.chrom - real.qtl.per.chrom
   # get ranges of non dummy markers
-  non.dummy.starts = pop$hypred$chromBounds[,1]
-  non.dummy.stops = pop$hypred$chromBounds[,2] - pop$hypred$chrNumDummies
-  non.dummy.ranges = cbind(non.dummy.starts, non.dummy.stops)
+  non.dummy.starts <- pop$hypred$chromBounds[,1]
+  non.dummy.stops <- pop$hypred$chromBounds[,2] - pop$hypred$chrNumDummies
+  non.dummy.ranges <- cbind(non.dummy.starts, non.dummy.stops)
   # get genotypes
   if(!is.null(pop$dh)){
-    genotypes = pop$dh * 2
+    genotypes <- pop$dh * 2
   } else {
-    genotypes = pop$geno
+    genotypes <- pop$geno
   }
   # pick real QTL indices per chromosome (NOT allowed to be dummy markers)
-  real.qtl.indices = sort(unlist(sapply(1:num.chroms, function(c){
+  real.qtl.indices <- sort(unlist(sapply(1:num.chroms, function(c){
     # QTL candidates on current chromosome
-    candidates = seq(non.dummy.ranges[c,1], non.dummy.ranges[c,2])
+    candidates <- seq(non.dummy.ranges[c,1], non.dummy.ranges[c,2])
     # retain candidiates with non-zero allelic state standard deviation only
-    qtl.sd = apply(genotypes[,candidates], 2, sd)
+    qtl.sd <- apply(genotypes[,candidates], 2, sd)
     candidates = candidates[qtl.sd > 0]
     # sample real QTL indices
     sample(candidates, real.qtl.per.chrom[c])
   })))
   # pick dummy QTL indices per chromosome (can be dummy markers, don't care)
-  full.chrom.ranges = pop$hypred$chromBounds
-  dummy.qtl.indices = sort(unlist(sapply(1:num.chroms, function(c){
+  full.chrom.ranges <- pop$hypred$chromBounds
+  dummy.qtl.indices <- sort(unlist(sapply(1:num.chroms, function(c){
     # get candidiates
-    candidates = seq(full.chrom.ranges[c,1], full.chrom.ranges[c,2])
+    candidates <- seq(full.chrom.ranges[c,1], full.chrom.ranges[c,2])
     # remove indices which are already picked as real QTL
-    candidates = setdiff(candidates, real.qtl.indices)
+    candidates <- setdiff(candidates, real.qtl.indices)
     # sample dummy QTL indices
     sample(candidates, dummy.qtl.per.chrom[c])
   })))
   # store real/dummy QTL indices in population object
-  pop$hypred$realQTL = real.qtl.indices
-  pop$hypred$dummyQTL = dummy.qtl.indices
-  # generate random real QTL effects
-  real.qtl.effects = rep(NA, num.qtl)
-  i = 1
-  batch.size = 10
-  q <- abs(qnorm((1-random.effect.coverage)/2))
-  while(i <= num.qtl){
-    rand.effects <- rnorm(batch.size)
-    inner.rand.effects <- rand.effects[abs(rand.effects) <= q]
-    num.new.effects <- length(inner.rand.effects)
-    num.used.effects <- min(num.new.effects, num.qtl - i + 1)
-    real.qtl.effects[i:(i+num.used.effects-1)] <- inner.rand.effects[1:num.used.effects]
-    i <- i + num.used.effects
+  pop$hypred$realQTL <- real.qtl.indices
+  pop$hypred$dummyQTL <- dummy.qtl.indices
+  
+  # generate real QTL effects
+  if(method == "normal"){
+    # random effects sampled from normal distribution (without tail)
+    real.qtl.effects <- rep(NA, num.qtl)
+    i <- 1
+    batch.size <- 10
+    q <- abs(qnorm((1-random.effect.coverage)/2))
+    while(i <= num.qtl){
+      rand.effects <- rnorm(batch.size)
+      inner.rand.effects <- rand.effects[abs(rand.effects) <= q]
+      num.new.effects <- length(inner.rand.effects)
+      num.used.effects <- min(num.new.effects, num.qtl - i + 1)
+      real.qtl.effects[i:(i+num.used.effects-1)] <- inner.rand.effects[1:num.used.effects]
+      i <- i + num.used.effects
+    }
+  } else if (method == "jannink"){
+    # effects scaled to inverse of standard deviation of QTL allelic states 0/1/2, random sign
+    real.qtl.effect.scales = 1 / apply(genotypes[,real.qtl.indices], 2, sd)
+    real.qtl.effects = sample(c(-1,1), length(real.qtl.effect.scales), replace = TRUE) * real.qtl.effect.scales
+  } else {
+    stop(sprintf("Unknown effect sampling method %s (should not happen)", method))
   }
+  
   # set dummy QTL effects to ZERO
-  dummy.qtl.effects = rep(0, length(dummy.qtl.indices))
+  dummy.qtl.effects <- rep(0, length(dummy.qtl.indices))
 
   # combine and sort real and dummy QTL IDs (sort effects accordingly)
-  real.and.dummy.qtl.indices = c(real.qtl.indices, dummy.qtl.indices)
-  real.and.dummy.qtl.effects = c(real.qtl.effects, dummy.qtl.effects)
-  sorted.index.order = order(real.and.dummy.qtl.indices)
-  real.and.dummy.qtl.indices = real.and.dummy.qtl.indices[sorted.index.order]
-  real.and.dummy.qtl.effects = real.and.dummy.qtl.effects[sorted.index.order]
+  real.and.dummy.qtl.indices <- c(real.qtl.indices, dummy.qtl.indices)
+  real.and.dummy.qtl.effects <- c(real.qtl.effects, dummy.qtl.effects)
+  sorted.index.order <- order(real.and.dummy.qtl.indices)
+  real.and.dummy.qtl.indices <- real.and.dummy.qtl.indices[sorted.index.order]
+  real.and.dummy.qtl.effects <- real.and.dummy.qtl.effects[sorted.index.order]
   
   # update hypred genome
-  genome.with.qtl = hypredNewQTL(pop$hypred$genome,
+  genome.with.qtl <- hypredNewQTL(pop$hypred$genome,
                                  new.id.add = real.and.dummy.qtl.indices,
                                  new.eff.add = real.and.dummy.qtl.effects)
-  pop$hypred$genome = genome.with.qtl
+  pop$hypred$genome <- genome.with.qtl
   
   return(pop)
 }
@@ -349,22 +367,15 @@ infer.genetic.values = function(pop){
   return(pop)
 }
 
-# get genetic values normalized to [min, max] based on the minimum
+# normalize genetic values to [min, max] based on the minimum
 # and maximum possible genetic value (inferred from the QTL effects)
-get.normalized.genetic.values <- function(pop, min = -1, max = 1){
-  # assert: genetic values set
-  if(is.null(pop$geneticValues)){
-    stop("please infer genetic values using infer.genetic.values(pop)")
-  }
+normalize.genetic.values <- function(values, effects, min = -1, max = 1){
   # compute minimum and maximum possible genetic value
-  effects <- pop$hypred$genome@add.and.dom.eff$add
   min.gen.value <- 2 * sum(effects[effects < 0])
   max.gen.value <- 2 * sum(effects[effects > 0])
-  # get population genetic values
-  genetic.values <- pop$geneticValues
   # normalize genetic values to [min, max]
-  genetic.values <- min + (max-min) * (genetic.values - min.gen.value)/(max.gen.value - min.gen.value)
-  return(genetic.values)
+  values <- min + (max-min) * (values - min.gen.value)/(max.gen.value - min.gen.value)
+  return(values)
 }
 
 ###########################
