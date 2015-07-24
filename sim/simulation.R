@@ -12,8 +12,8 @@ library(Hmisc)
 #  - even seasons >= 2: randomly mate selected individuals & inbreed (DH)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS = function(founders, heritability,
-              num.QTL=100, F1.size=200,
-              num.select=20, num.seasons=20,
+              num.QTL=100, QTL.effects = c("normal", "jannink"),
+              F1.size=200, num.select=20, num.seasons=24,
               selection.criterion=select.highest.score){
   
   # check input
@@ -38,7 +38,7 @@ PS = function(founders, heritability,
   
   # assign QTL (if not yet assigned)
   if(is.null(founders$hypred$realQTL)){
-    founders = assign.qtl(founders, num.QTL)
+    founders = assign.qtl(founders, num.QTL, method = QTL.effects)
   } else {
     message("QTL already assigned in founder population, using existing effects")
   }
@@ -108,16 +108,16 @@ PS = function(founders, heritability,
 #  - season >= 3: (1) evaluate previous offspring, update GP model
 #               + (2) cross, inbreed & select (on predicted values)
 WGS = function(founders, heritability,
-               num.QTL=100, F1.size=200, add.TP=0,
-               num.select=20, num.seasons=20,
+               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               F1.size=200, add.TP=0, num.select=20, num.seasons=24,
                selection.criterion=select.highest.score){
-  return(GS(founders, heritability, num.QTL, F1.size, add.TP,
-            num.select, num.seasons, selection.criterion,
+  return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion,
             weighted = TRUE))
 }
 GS = function(founders, heritability,
-              num.QTL=100, F1.size=200, add.TP=0,
-              num.select=20, num.seasons=20,
+              num.QTL=100, QTL.effects = c("normal", "jannink"),
+              F1.size=200, add.TP=0, num.select=20, num.seasons=24,
               selection.criterion=select.highest.score,
               weighted = FALSE){
   
@@ -146,7 +146,7 @@ GS = function(founders, heritability,
   
   # assign QTL (if not yet assigned)
   if(is.null(founders$hypred$realQTL)){
-    founders = assign.qtl(founders, num.QTL)
+    founders = assign.qtl(founders, num.QTL, method = QTL.effects)
   } else {
     message("QTL already assigned in founder population, using existing effects")
   }
