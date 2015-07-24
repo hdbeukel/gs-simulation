@@ -12,10 +12,9 @@ write.pop.data <- function(pops, file.prefix, names = 1:length(pops)){
     Z <- gp.design.matrix(pop)
     # write marker data
     write.table(Z, file = paste(file.name, "-markers.txt", sep=""))
-    # write genetic values, normalized to [0,1]
+    # write genetic values, normalized to [-1,1]
     normalized.values <- normalize.genetic.values(pop$geneticValues,
-                                                  pop$hypred$genome@add.and.dom.eff$add,
-                                                  min = 0, max = 1)
+                                                  pop$hypred$genome@add.and.dom.eff$add)
     write.table(normalized.values, file = paste(file.name, "-values.txt", sep=""), col.names = F)
   }
   
