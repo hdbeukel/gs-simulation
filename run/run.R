@@ -19,7 +19,7 @@ load("data/ProcessedData.RData")
 args <- commandArgs(trailingOnly = TRUE)
 sim.function.name <- args[1]
 sim.function = get(sim.function.name)
-num.seasons <- args[2]
+num.seasons <- as.numeric(args[2])
 heritability <- as.numeric(args[3])
 QTL.effects <- args[4]
 it <- as.numeric(args[5])
