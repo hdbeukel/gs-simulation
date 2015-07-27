@@ -52,6 +52,10 @@ gp.restrict.design.matrix = function(names, G){
   return(GDesign)
 }
 
+
+
+# FROM HERE: code using rrBLUP
+
 # ############################
 # # MARKER EFFECT ESTIMATION #
 # ############################
@@ -87,39 +91,6 @@ gp.restrict.design.matrix = function(names, G){
 #   class(trained) = append(class(trained), "rrBLUP")
 #   
 #   return(trained)
-# }
-# 
-# ###################
-# # PLOT ESTIMATION #
-# ###################
-# 
-# # visualize GP estimation by plotting estimated against real values
-# gp.plot.estimation = function(real.values, estimated.values){
-#   if(missing(real.values) || is.null(real.values)){
-#     stop("real values are required")
-#   }
-#   if(missing(estimated.values) || is.null(estimated.values)){
-#     stop("estimated values are required")
-#   }
-#   if(length(real.values) != length(estimated.values)){
-#     stop("number of real and estimated values does not correspond")
-#   }
-#   # increase margin
-#   old.mar = par()$mar
-#   par(mar=c(5,6,3,3))
-#   # plot estimated against real values
-#   x = real.values
-#   y = estimated.values
-#   plot(x=x, y=y, xlab = "real values", ylab = "estimated values")
-#   # draw identity line
-#   abline(0,1, col="red")
-#   # fit line
-#   abline(lm(y~x), col="blue")
-#   # add correlation
-#   r = cor(x, y)
-#   mtext(line=0.5, text = bquote(rho == .(round(r, 5))))
-#   # reset margin
-#   par(mar=old.mar)
 # }
 # 
 # ####################################
@@ -192,6 +163,7 @@ gp.restrict.design.matrix = function(names, G){
 #   return(freqs)
 # }
 
+# END OF: code using rrBLUP
 
 
 
@@ -201,8 +173,7 @@ gp.restrict.design.matrix = function(names, G){
 
 
 
-# !!! BELOW = old code using BGLR instead of rrBLUP for GP
-
+# FROM HERE: code using BGLR
 
 ####################
 # PREPARE GP MODEL #
@@ -387,11 +358,42 @@ get.favourable.allele.frequencies = function(trained.model, Z){
   return(freqs)
 }
 
+# END OF: code using BGLR
 
 
 
+###################
+# PLOT ESTIMATION #
+###################
 
-
+# visualize GP estimation by plotting estimated against real values
+gp.plot.estimation = function(real.values, estimated.values){
+  if(missing(real.values) || is.null(real.values)){
+    stop("real values are required")
+  }
+  if(missing(estimated.values) || is.null(estimated.values)){
+    stop("estimated values are required")
+  }
+  if(length(real.values) != length(estimated.values)){
+    stop("number of real and estimated values does not correspond")
+  }
+  # increase margin
+  old.mar = par()$mar
+  par(mar=c(5,6,3,3))
+  # plot estimated against real values
+  x = real.values
+  y = estimated.values
+  plot(x=x, y=y, xlab = "real values", ylab = "estimated values")
+  # draw identity line
+  abline(0,1, col="red")
+  # fit line
+  abline(lm(y~x), col="blue")
+  # add correlation
+  r = cor(x, y)
+  mtext(line=0.5, text = bquote(rho == .(round(r, 5))))
+  # reset margin
+  par(mar=old.mar)
+}
 
 
 
