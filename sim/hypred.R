@@ -345,6 +345,14 @@ assign.qtl <- function(pop, num.qtl,
   return(pop)
 }
 
+get.qtl.effects <- function(pop){
+  # assert: QTLs assigned
+  if(attr(pop$hypred$genome, 'num.add.qtl.chr') == 0){
+    stop("first assign QTL using assign.qtl(pop, ...)")
+  }
+  return(pop$hypred$genome@add.and.dom.eff$add)
+}
+
 infer.genetic.values = function(pop){
   # assert: QTLs assigned
   if(attr(pop$hypred$genome, 'num.add.qtl.chr') == 0){
