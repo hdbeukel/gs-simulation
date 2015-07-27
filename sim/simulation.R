@@ -96,8 +96,8 @@ PS = function(founders, heritability,
     message("|- ", time, " seconds elapsed")
   }
   
-  # return simulated seasons
-  return(seasons)
+  # return simulated seasons metadata
+  return(extract.metadata(seasons))
   
 }
 
@@ -271,8 +271,8 @@ GS = function(founders, heritability,
     message("|- ", time, " seconds elapsed")
   }
   
-  # return simulated seasons
-  return(seasons)
+  # return simulated seasons metadata
+  return(extract.metadata(seasons))
 }
 
 infer.weights = function(gp.trained.model, pop){
@@ -322,36 +322,28 @@ plot.genetic.gain <- function(replicates,
     
     # extract seasons of current replicate
     seasons <- replicates[[i]]
-    # extract founders
-    founders <- seasons[[1]]$cross.inbreed$pop.in
     
-    # get mean genetic value in founder population
-    gains[i,1] <- mean(founders$geneticValues)
-    # get mean genetic value from selected populations during simulation
+    # extract founder data
+    founders <- seasons[[1]]
+    
+    # extract mean genetic value of founder population
+    gains[i,1] <- founders$geneticValues$mean
+    # extract mean genetic value of selected populations during simulation
     for(s in 1:num.seasons){
       season <- seasons[[s+1]]
-      # get selected population for further crossings (or final selection)
-      selected.pop <- NULL
-      if(!is.null(season$cross.inbreed)){
-        selected.pop <- season$cross.inbreed$pop.in
-      } else if (!is.null(season$final.selection)){
-        selected.pop <- season$final.selection$pop
-      }
       # compute mean genetic value in selected population
-      if(!is.null(selected.pop)){
-        gains[i,s+1] <- mean(selected.pop$geneticValue)
+      if(!is.null(season$geneticValues)){
+        gains[i,s+1] <- season$geneticValues$mean
       }
     }
     
     if (scale == "sd"){
       # subtract values from initial value and divide by intial sd
       gains[i,] <- gains[i,] - gains[i,1]
-      founder.sd <- sd(founders$geneticValues)
-      gains[i,] <- gains[i,]/founder.sd
+      gains[i,] <- gains[i,] / founders$geneticValues$sd
     } else if (scale == "jannink") {
       # normalize genetic values to [-1,1] based on minimum and maximum possible value
-      gains[i,] <- normalize.genetic.values(gains[i,],
-                                            get.qtl.effects(founders))
+      gains[i,] <- normalize.genetic.values(gains[i,], founders$qtl.effects)
       # subtract values from initial value
       gains[i,] <- gains[i,] - gains[i,1]
     } else {
@@ -396,9 +388,71 @@ load.simulation.results <- function(dir) {
   return(breeding.cycles)
 }
 
+#####################################################
+# EXTRACT SIMULATION METADATA FROM FULL OUTPUT DATA #
+#####################################################
 
+extract.metadata <- function(seasons){
+  
+  # initialize result list
+  num.seasons <- length(seasons)-1
+  metadata <- lapply(1:(num.seasons+1), function(i) {list()} )
+  
+  # store mean/sd genetic value of founders and QTL effects
+  founders <- seasons[[1]]$cross.inbreed$pop.in
+  metadata[[1]]$qtl.effects <- get.qtl.effects(founders)
+  metadata[[1]]$geneticValues$mean <- mean(founders$geneticValues)
+  metadata[[1]]$geneticValues$sd <- sd(founders$geneticValues)
+  
+  # go through all seasons
+  for(s in 1:num.seasons){
+    
+    # get season
+    season <- seasons[[s+1]]
+    
+    # extract parents (if seasons includes crossing & inbreeding or is final season)
+    parents <- NULL
+    if(!is.null(season$cross.inbreed)){
+      parents <- season$cross.inbreed$pop.in
+    } else if(!is.null(season$final.selection)){
+      parents <- season$final.selection$pop
+    }
+    
+    # store mean/sd genetic value of parents (if applicable)
+    if(!is.null(parents)){
+      metadata[[s+1]]$geneticValues$mean <- mean(parents$geneticValues)
+      metadata[[s+1]]$geneticValues$sd <- sd(parents$geneticValues)
+    }
+    
+  }
+  
+  return(metadata)
+  
+}
 
+##################################################
+# CONVERT FULL OUTPUT DATA TO EXTRACTED METADATA #
+##################################################
 
+# converts all .RDS files in the given directory (overwrites original files)
+convert.to.metadata <- function(dir){
+  
+  # get file paths
+  files <- Sys.glob(sprintf("%s/*.RDS", dir))
+  
+  for(file in files){
+    message(sprintf("Converting file %s ...", file))
+    # read file
+    seasons <- readRDS(file)
+    # extract metadata
+    metadata <- extract.metadata(seasons)
+    # clear seasons
+    rm(seasons)
+    # overwrite file
+    saveRDS(metadata, file = file)
+  }
+  
+}
 
 
 
