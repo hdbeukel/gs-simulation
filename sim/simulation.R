@@ -12,8 +12,8 @@ library(Hmisc)
 #  - even seasons >= 2: randomly mate selected individuals & inbreed (DH)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS = function(founders, heritability,
-              num.QTL=100, F1.size=200,
-              num.select=20, num.seasons=20,
+              num.QTL=100, QTL.effects = c("normal", "jannink"),
+              F1.size=200, num.select=20, num.seasons=24,
               selection.criterion=select.highest.score){
   
   # check input
@@ -38,7 +38,7 @@ PS = function(founders, heritability,
   
   # assign QTL (if not yet assigned)
   if(is.null(founders$hypred$realQTL)){
-    founders = assign.qtl(founders, num.QTL)
+    founders = assign.qtl(founders, num.QTL, method = QTL.effects)
   } else {
     message("QTL already assigned in founder population, using existing effects")
   }
@@ -108,16 +108,16 @@ PS = function(founders, heritability,
 #  - season >= 3: (1) evaluate previous offspring, update GP model
 #               + (2) cross, inbreed & select (on predicted values)
 WGS = function(founders, heritability,
-               num.QTL=100, F1.size=200, add.TP=0,
-               num.select=20, num.seasons=20,
+               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               F1.size=200, add.TP=0, num.select=20, num.seasons=24,
                selection.criterion=select.highest.score){
-  return(GS(founders, heritability, num.QTL, F1.size, add.TP,
-            num.select, num.seasons, selection.criterion,
+  return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion,
             weighted = TRUE))
 }
 GS = function(founders, heritability,
-              num.QTL=100, F1.size=200, add.TP=0,
-              num.select=20, num.seasons=20,
+              num.QTL=100, QTL.effects = c("normal", "jannink"),
+              F1.size=200, add.TP=0, num.select=20, num.seasons=24,
               selection.criterion=select.highest.score,
               weighted = FALSE){
   
@@ -146,7 +146,7 @@ GS = function(founders, heritability,
   
   # assign QTL (if not yet assigned)
   if(is.null(founders$hypred$realQTL)){
-    founders = assign.qtl(founders, num.QTL)
+    founders = assign.qtl(founders, num.QTL, method = QTL.effects)
   } else {
     message("QTL already assigned in founder population, using existing effects")
   }
@@ -284,16 +284,6 @@ infer.weights = function(gp.trained.model, pop){
   return(weights)
 }
 
-# selection criterion that selects the n plants with the highest score (phenotype, estimated value, ...)
-select.highest.score = function(scores, n){
-  # check input
-  if(is.null(names(scores))){
-    stop("scores should be named by individual")
-  }
-  selected.names = names(head(sort(scores, decreasing = TRUE), n=n))
-  return(selected.names)
-}
-
 # replicate simulation of any selection strategy
 replicate.simulation = function(num.rep = 100, simulate){
   # initialize output list
@@ -316,7 +306,10 @@ replicate.simulation = function(num.rep = 100, simulate){
 #  --> input:   list of replicates (each replicate is a list of simulated seasons)
 #  --> plotted: average genetic gain with confidence intervals (by default 95%)
 #               calculated from normal distribution
-plot.genetic.gain <- function(replicates, scale = c("jannink", "sd"), ci=0.95, add=FALSE, pch=23, bg="black", lty=2){
+plot.genetic.gain <- function(replicates,
+                              scale = c("jannink", "sd"),
+                              ci=0.95, add=FALSE, pch=23,
+                              bg="black", lty=2){
   # get selected scale option
   scale <- match.arg(scale)
   # infer number of replicates and (maximum) number of seasons
@@ -356,16 +349,13 @@ plot.genetic.gain <- function(replicates, scale = c("jannink", "sd"), ci=0.95, a
       founder.sd <- sd(founders$geneticValues)
       gains[i,] <- gains[i,]/founder.sd
     } else if (scale == "jannink") {
-      # compute minimum and maximum possible genetic value
-      effects <- founders$hypred$genome@add.and.dom.eff$add
-      min.gen.value <- 2 * sum(effects[effects < 0])
-      max.gen.value <- 2 * sum(effects[effects > 0])
-      # normalize genetic values to [-1,1]
-      gains[i,] <- -1 + 2 * (gains[i,] - min.gen.value) / (max.gen.value - min.gen.value)
+      # normalize genetic values to [-1,1] based on minimum and maximum possible value
+      gains[i,] <- normalize.genetic.values(gains[i,],
+                                            founders$hypred$genome@add.and.dom.eff$add)
       # subtract values from initial value
       gains[i,] <- gains[i,] - gains[i,1]
     } else {
-      stop(sprintf("Unknown scale %s (should not happen)"))
+      stop(sprintf("Unknown scale option %s (should not happen)", scale))
     }
     
   }
