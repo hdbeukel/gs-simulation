@@ -14,7 +14,8 @@ library(Hmisc)
 PS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
               F1.size=200, num.select=20, num.seasons=24,
-              selection.criterion=select.highest.score){
+              selection.criterion=select.highest.score,
+              ...){
   
   # check input
   if(missing(founders)){
@@ -110,16 +111,17 @@ PS = function(founders, heritability,
 WGS = function(founders, heritability,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=24,
-               selection.criterion=select.highest.score){
+               selection.criterion=select.highest.score,
+               gp.method = c("RR", "BRR")){
   return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion,
-            weighted = TRUE))
+            gp.method, weighted = TRUE))
 }
 GS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
               F1.size=200, add.TP=0, num.select=20, num.seasons=24,
               selection.criterion=select.highest.score,
-              weighted = FALSE){
+              gp.method = c("RR", "BRR"), weighted = FALSE){
   
   # check input
   if(missing(founders)){
@@ -208,7 +210,7 @@ GS = function(founders, heritability,
   # cross & inbreed
   offspring = mate.dh(selected.pop, F1.size, "s2")
   # train GP
-  gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp))
+  gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
   # select based on estimated values
   if(weighted){
     # weighted GS
@@ -241,7 +243,7 @@ GS = function(founders, heritability,
       parents = seasons[[s]]$select$pop.out
       offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
       # update GP model
-      gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp))
+      gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
       # select from offspring based on estimated values using updated GP model
       if(weighted){
         # weighted GS

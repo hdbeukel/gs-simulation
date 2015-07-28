@@ -52,132 +52,97 @@ gp.restrict.design.matrix = function(names, G){
   return(GDesign)
 }
 
+##############################
+# Train GP model (RR or BRR) #
+##############################
 
+gp.train <- function(pheno, Z, method = c("RR", "BRR")){
+  
+  method <- match.arg(method)
+  if(method == "BRR"){
+    model <- gp.train.BRR(pheno, Z)
+  } else {
+    model <- gp.train.RR(pheno, Z)
+  }
+  
+  return(model)
+  
+}
 
-# FROM HERE: code using rrBLUP
+# train RR model by estimating marker effects
+gp.train.RR <- function(pheno, Z){
+  
+  # check input
+  
+  if(missing(pheno) || is.null(pheno)){
+    stop("no phenotypes supplied")
+  }
+  if(!is.vector(pheno)){
+    stop("pheno should be a vector of phenotypes (1 value per individual)")
+  }
+  
+  if(missing(Z) || is.null(Z)){
+    stop("no marker data supplied")
+  }
+  if(!is.matrix(Z)){
+    stop("marker data should be a matrix")
+  }
+  if(nrow(Z) != length(pheno)){
+    stop("length of phenotype vector should be equal to number of rows in marker matrix")
+  }
+  
+  # estimate marker effects
+  
+  trained <- mixed.solve(y = pheno, Z = Z)
+  
+  # append class name
+  
+  class(trained) <- append(class(trained), "rrBLUP")
+  
+  return(trained)
+}
 
-# ############################
-# # MARKER EFFECT ESTIMATION #
-# ############################
-# 
-# # train model by estimating marker effects (RR-BLUP method)
-# gp.train = function(pheno, Z){
-#   
-#   # check input
-#   
-#   if(missing(pheno) || is.null(pheno)){
-#     stop("no phenotypes supplied")
-#   }
-#   if(!is.vector(pheno)){
-#     stop("pheno should be a vector of phenotypes (1 value per individual)")
-#   }
-#   
-#   if(missing(Z) || is.null(Z)){
-#     stop("no marker data supplied")
-#   }
-#   if(!is.matrix(Z)){
-#     stop("marker data should be a matrix")
-#   }
-#   if(nrow(Z) != length(pheno)){
-#     stop("length of phenotype vector should be equal to number of rows in marker matrix")
-#   }
-#   
-#   # estimate marker effects
-#   
-#   trained = mixed.solve(y = pheno, Z = Z)
-#   
-#   # append class name
-#   
-#   class(trained) = append(class(trained), "rrBLUP")
-#   
-#   return(trained)
-# }
-# 
-# ####################################
-# # PREDICTION OF UNKNOWN PHENOTYPES #
-# ####################################
-# 
-# # predict value of new individuals using a trained GP model
-# # if desired, marker effects can be weighted
-# gp.predict = function(trained.model, Z, weights=NULL){
-#   if(!is(trained.model, "rrBLUP")){
-#     stop("trained model should be an rrBLUP object (call gp.train to train model)")
-#   }
-#   if(missing(Z) || is.null(Z) || !is.matrix(Z)){
-#     stop("Z should be a matrix")
-#   }
-#   marker.effects = trained.model$u
-#   if(length(marker.effects) != ncol(Z)){
-#     stop("number of columns of Z should correspond to number of markers in trained model")
-#   }
-#   if(is.null(weights)){
-#     weights = rep(1, length(marker.effects))
-#   }
-#   if(length(weights) != length(marker.effects)){
-#     stop("length of weight vector should correspond to number of markers")
-#   }
-#   values = trained.model$beta + as.vector(Z %*% marker.effects)
-#   names(values) = rownames(Z)
-#   return(values)
-# }
-# 
-# ################################################
-# # DETERMINE FAVOURABLE ALLELES AND FREQUENCIES #
-# ################################################
-# 
-# # get favourable allele at each marker (1 if positive effect, 0 if negative effect)
-# get.favourable.alleles = function(trained.model){
-#   if(!is(trained.model, "rrBLUP")){
-#     stop("input should be an rrBLUP object (call gp.train to train model)")
-#   }
-#   # get effects
-#   marker.effects = trained.model$u
-#   # initialize output
-#   desired.alleles = rep(0, length(marker.effects))
-#   # set to 1 for positive effects
-#   desired.alleles[marker.effects > 0] = 1
-#   
-#   return(desired.alleles)
-# }
-# 
-# # get favourable allele frequencies
-# get.favourable.allele.frequencies = function(trained.model, Z){
-#   if(!is(trained.model, "rrBLUP")){
-#     stop("input should be an rrBLUP object (call gp.train to train model)")
-#   }
-#   if(missing(Z) || is.null(Z) || !is.matrix(Z)){
-#     stop("Z should be a matrix")
-#   }
-#   if(length(trained.model$u) != ncol(Z)){
-#     stop("number of columns of Z should correspond to number of estimated marker effects")
-#   }
-#   # get favourable alleles
-#   fav.alleles = get.favourable.alleles(trained.model)
-#   # compute frequencies
-#   n = nrow(Z)
-#   m = ncol(Z)
-#   freqs = rep(NA, m)
-#   for(i in 1:m){
-#     freqs[i] = sum(Z[,i] == fav.alleles[i]) / n
-#   }
-#   return(freqs)
-# }
+# train BRR model by estimating marker effects
+gp.train.BRR <- function(pheno, Z){
+  return(gp.train.BGLR(modelGenetic="BRR", pheno = pheno, Z = Z))
+}
+gp.train.BGLR <- function(modelGenetic="BRR", pheno, Z=NULL,
+                         fixed=NULL, randomNuisance=NULL,
+                         pedigree=NULL, df0=NULL, shape0=NULL,
+                         R2=NULL, rate0=NULL, S0=NULL, probIn=NULL,
+                         countIn=NULL, nIter=1500, burnIn=500, thin=1){
+  
+  # check phenotypes
+  
+  if(missing(pheno) || is.null(pheno)){
+    stop("no phenotypes supplied")
+  }
+  if(!is.vector(pheno) || is.null(names(pheno))){
+    stop("pheno should be a named vector of phenotypes (1 value per individual)")
+  }
+  
+  # prepare model (checks other parameters)
+  model <- gp.model(modelGenetic, Z, fixed, randomNuisance,
+                   pedigree, df0, shape0, R2, rate0,
+                   S0, probIn, countIn)
+  
+  # estimate marker effects
+  
+  dir.create("BGLR-tmp", showWarnings = FALSE)
+  trained <- BGLR(
+    y=pheno,                               # phenotypes (response variable)
+    ETA=model,                             # use chosen model
+    nIter=nIter, burnIn=burnIn, thin=thin, # MCMC parameters
+    saveAt="BGLR-tmp/",
+    verbose=FALSE
+  )
+  
+  return(trained)
+}
 
-# END OF: code using rrBLUP
-
-
-
-
-
-
-
-
-
-# FROM HERE: code using BGLR
-
-####################
-# PREPARE GP MODEL #
-####################
+###################################
+# UTILITIES TO PREPARE BGLR MODEL #
+###################################
 
 gp.make.priors = function(modelGenetic, df0=NULL, shape0=NULL, R2=NULL,
                           rate0=NULL, S0=NULL, probIn=NULL, countIn=NULL) {
@@ -252,115 +217,100 @@ gp.model = function(modelGenetic, randomGenetic=NULL, fixed=NULL, randomNuisance
   return(ETA)
 }
 
+##############
+# S3 Methods #
+##############
 
-############################
-# MARKER EFFECT ESTIMATION #
-############################
-
-# train model by estimating marker effects
-# uses Bayesian Ridge Regression by default
-gp.train = function(modelGenetic="BRR", pheno, Z=NULL,
-                    fixed=NULL, randomNuisance=NULL,
-                    pedigree=NULL, df0=NULL, shape0=NULL,
-                    R2=NULL, rate0=NULL, S0=NULL, probIn=NULL,
-                    countIn=NULL, nIter=1500, burnIn=500, thin=1){
-  
-  # check phenotypes
-  
-  if(missing(pheno) || is.null(pheno)){
-    stop("no phenotypes supplied")
-  }
-  if(!is.vector(pheno) || is.null(names(pheno))){
-    stop("pheno should be a named vector of phenotypes (1 value per individual)")
-  }
-  
-  # prepare model (checks other parameters)
-  model = gp.model(modelGenetic, Z, fixed, randomNuisance,
-                   pedigree, df0, shape0, R2, rate0,
-                   S0, probIn, countIn)
-  
-  # estimate marker effects
-  
-  dir.create("BGLR-tmp", showWarnings = FALSE)
-  trained = BGLR(
-                  y=pheno,                               # phenotypes (response variable)
-                  ETA=model,                             # use chosen model
-                  nIter=nIter, burnIn=burnIn, thin=thin, # MCMC parameters
-                  saveAt="BGLR-tmp/",
-                  verbose=FALSE
-                )
-  
-  return(trained)
+gp.get.effects <- function(trained.model){
+  UseMethod("gp.get.effects")
 }
 
-####################################
-# PREDICTION OF UNKNOWN PHENOTYPES #
-####################################
+gp.get.mean.value <- function(trained.model){
+  UseMethod("gp.get.mean.value")
+}
+
+###################################
+# S3 Implementations for RR model #
+###################################
+
+# get marker effects from trained model
+gp.get.effects.rrBLUP <- function(trained.model){
+  return(trained.model$u)
+}
+
+# get mean value from trained model
+gp.get.mean.value.rrBLUP <- function(trained.model){
+  return(trained.model$beta)
+}
+
+######################################
+# S3 Implementations for BGLR models #
+######################################
+
+# get marker effects from trained model
+gp.get.effects.BGLR <- function(trained.model){
+  return(trained.model$ETA[[1]]$b)
+}
+
+# get mean value from trained model
+gp.get.mean.value.BGLR <- function(trained.model){
+  return(trained.model$mu)
+}
+
+###################
+# GENERIC METHODS #
+###################
 
 # predict value of new individuals using a trained GP model
-# the mean (mu) is ignored as shifting does not influence the outcome of the selection criteria
-# if desired, marker effects can be weighted
-gp.predict = function(trained.model, Z, weights=NULL){
-  if(class(trained.model) != "BGLR"){
-    stop("input should be a BGLR object (call gp.train to train model)")
-  }
+# (if desired, marker effects can be weighted)
+gp.predict <- function(trained.model, Z, weights=NULL){
   if(missing(Z) || is.null(Z) || !is.matrix(Z)){
     stop("Z should be a matrix")
   }
-  marker.effects = trained.model$ETA[[1]]$b
+  marker.effects <- gp.get.effects(trained.model)
+  if(length(marker.effects) != ncol(Z)){
+    stop("number of columns of Z should correspond to number of markers in trained model")
+  }
   if(is.null(weights)){
-    weights = rep(1, length(marker.effects))
+    weights <- rep(1, length(marker.effects))
   }
   if(length(weights) != length(marker.effects)){
     stop("length of weight vector should correspond to number of markers")
   }
-  values = apply(Z, 1, function(genotype){
-    sum(genotype * marker.effects * weights)
-  })
+  mu <- gp.get.mean.value(trained.model)
+  values <- mu + as.vector(Z %*% (marker.effects * weights))
+  names(values) <- rownames(Z)
   return(values)
 }
 
-################################################
-# DETERMINE FAVOURABLE ALLELES AND FREQUENCIES #
-################################################
-
 # get favourable allele at each marker (1 if positive effect, 0 if negative effect)
-get.favourable.alleles = function(trained.model){
-  if(class(trained.model) != "BGLR"){
-    stop("input should be a BGLR object (call gp.train to train model)")
-  }
+get.favourable.alleles <- function(trained.model){
   # get effects
-  marker.effects = trained.model$ETA[[1]]$b
+  marker.effects <- gp.get.effects(trained.model)
   # initialize output
-  desired.alleles = rep(0, length(marker.effects))
+  desired.alleles <- rep(0, length(marker.effects))
   # set to 1 for positive effects
-  desired.alleles[marker.effects > 0] = 1
+  desired.alleles[marker.effects > 0] <- 1
   
   return(desired.alleles)
 }
 
-get.favourable.allele.frequencies = function(trained.model, Z){
-  if(class(trained.model) != "BGLR"){
-    stop("input should be a BGLR object (call gp.train to train model)")
-  }
+# get favourable allele frequencies
+get.favourable.allele.frequencies <- function(trained.model, Z){
   if(missing(Z) || is.null(Z) || !is.matrix(Z)){
     stop("Z should be a matrix")
   }
   # get favourable alleles
-  fav.alleles = get.favourable.alleles(trained.model)
+  fav.alleles <- get.favourable.alleles(trained.model)
   # compute frequencies
-  n = nrow(Z)
-  m = ncol(Z)
-  freqs = rep(NA, m)
+  n <- nrow(Z)
+  m <- ncol(Z)
+  freqs <- rep(NA, m)
   for(i in 1:m){
-    freqs[i] = sum(Z[,i] == fav.alleles[i]) / n
+    freqs[i] <- sum(Z[,i] == fav.alleles[i]) / n
   }
   return(freqs)
 }
-
-# END OF: code using BGLR
-
-
 
 ###################
 # PLOT ESTIMATION #
