@@ -13,7 +13,7 @@ library(Hmisc)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, num.select=20, num.seasons=24,
+              F1.size=200, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
               ...){
   
@@ -110,7 +110,7 @@ PS = function(founders, heritability,
 #               + (2) cross, inbreed & select (on predicted values)
 WGS = function(founders, heritability,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=24,
+               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                selection.criterion=select.highest.score,
                gp.method = c("RR", "BRR")){
   return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
@@ -119,7 +119,7 @@ WGS = function(founders, heritability,
 }
 GS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, add.TP=0, num.select=20, num.seasons=24,
+              F1.size=200, add.TP=0, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
               gp.method = c("RR", "BRR"), weighted = FALSE){
   
