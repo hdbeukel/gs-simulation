@@ -18,7 +18,7 @@ select.highest.score <- function(scores, n){
 # WEIGHTED SELECTION PARETO FRONTS #
 ####################################
 
-plot.pareto.front <- function(file, title = "Pareto front"){
+plot.pareto.front <- function(file, title = "Pareto front", xlab = "Diversity"){
   
   # read file
   front <- read.csv(file)
@@ -53,11 +53,28 @@ plot.pareto.front <- function(file, title = "Pareto front"){
   
   # plot front
   plot(x = div.mean, y = val.mean,
-       main = title, xlab = "Diversity", ylab = "Median genetic value")
+       main = title, xlab = xlab, ylab = "Median genetic value")
   
   # mark point at equal weights
   if(exists("mean.div.equal.weight")){
     points(x = mean.div.equal.weight, y = mean.value.equal.weight, pch = 21, bg = "red")
+  }
+  
+}
+
+plot.pareto.fronts <- function(div.measure = c("ENE", "HE")){
+  
+  div.measure <- match.arg(div.measure)
+  dir <- sprintf("out/pareto-fronts/%s", div.measure)
+  
+  for(pop in 1:3){
+    for(snapshot in c("early", "medium", "late")){
+      file <- sprintf("snapshot-pop-%d-%s.csv", pop, snapshot)
+      full.path <- sprintf("%s/%s", dir, file)
+      xlab <- sprintf("Diversity (%s)", div.measure)
+      title <- sprintf("Population %d (%s)", pop, snapshot)
+      plot.pareto.front(full.path, xlab = xlab, title = title)
+    }
   }
   
 }
