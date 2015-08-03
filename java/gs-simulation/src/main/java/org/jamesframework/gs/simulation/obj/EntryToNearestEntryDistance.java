@@ -12,7 +12,7 @@ import org.jamesframework.core.search.neigh.Move;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.core.subset.neigh.moves.SwapMove;
 import org.jamesframework.gs.simulation.data.PopulationData;
-import org.jamesframework.gs.simulation.obj.eval.EntryToNearestEntryEvaluation;
+import org.jamesframework.gs.simulation.obj.eval.ENEEvaluation;
 
 /**
  * Evaluates selection by computing the average distance from each entry to the closest
@@ -28,7 +28,7 @@ public class EntryToNearestEntryDistance implements Objective<SubsetSolution, Po
         // extract distance matrix
         double[][] distMatrix = data.getDistanceMatrix();
         // initialize evaluation object
-        EntryToNearestEntryEvaluation eval = new EntryToNearestEntryEvaluation();
+        ENEEvaluation eval = new ENEEvaluation();
         // find closest neighbour of each item in the selection
         Set<Integer> selected = solution.getSelectedIDs();
         for(int sel : selected){
@@ -74,9 +74,9 @@ public class EntryToNearestEntryDistance implements Objective<SubsetSolution, Po
         double[][] dist = data.getDistanceMatrix();
         
         // cast evaluation (cannot fail as both evaluate methods return such evaluation object)
-        EntryToNearestEntryEvaluation eval = (EntryToNearestEntryEvaluation) curEvaluation;
+        ENEEvaluation eval = (ENEEvaluation) curEvaluation;
         // copy to initialize new evaluation
-        EntryToNearestEntryEvaluation newEval = new EntryToNearestEntryEvaluation(eval);
+        ENEEvaluation newEval = new ENEEvaluation(eval);
 
         // get added and deleted ID from move
         int add = swapMove.getAddedID();

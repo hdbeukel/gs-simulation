@@ -3,11 +3,14 @@
 package org.jamesframework.gs.simulation.obj;
 
 import java.util.Set;
+import org.jamesframework.core.exceptions.IncompatibleDeltaEvaluationException;
 import org.jamesframework.core.problems.objectives.Objective;
 import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
-import org.jamesframework.core.problems.objectives.evaluations.SimpleEvaluation;
+import org.jamesframework.core.search.neigh.Move;
 import org.jamesframework.core.subset.SubsetSolution;
+import org.jamesframework.core.subset.neigh.moves.SwapMove;
 import org.jamesframework.gs.simulation.data.PopulationData;
+import org.jamesframework.gs.simulation.obj.eval.HEEvaluation;
 
 /**
  * Evaluates selection by computing the expected proportion of heterozygotes.
@@ -40,15 +43,35 @@ public class ExpectedProportionOfHeterozygousLoci implements Objective<SubsetSol
             avgMarkers[m] = avgMarkers[m]/n;
         }
         
-        // compute expected proportion of heterozygotes
-        double he = 0.0;
-        for(int m=0; m<numMarkers; m++){
-            he += avgMarkers[m] * (1.0 - avgMarkers[m]);
-        }
-        he = 2.0/numMarkers * he;
+        // wrap in HE evaluation
+        return new HEEvaluation(n, avgMarkers);
         
-        // wrap in simple evaluation
-        return SimpleEvaluation.WITH_VALUE(he);
+    }
+    
+    @Override
+    public Evaluation evaluate(Move move, SubsetSolution curSolution, Evaluation curEvaluation, PopulationData data){
+        
+        // check move type
+        if(!(move instanceof SwapMove)){
+            throw new IncompatibleDeltaEvaluationException("Expected proportion of heterozygous loci objective should be used in "
+                                                         + "combination with neighbourhoods that generate swap moves.");
+        }
+        // cast move
+        SwapMove swapMove = (SwapMove) move;
+        
+        // cast current evaluation
+        HEEvaluation eval = (HEEvaluation) curEvaluation;
+        // initialize new evaluation
+        HEEvaluation newEval = new HEEvaluation(eval);
+        
+        // extract genome of added/deleted individual
+        int[] delGenome = data.getMarkers(swapMove.getDeletedID());
+        int[] addGenome = data.getMarkers(swapMove.getAddedID());
+        
+        // update evaluation
+        newEval.swap(delGenome, addGenome);
+        
+        return newEval;
         
     }
 

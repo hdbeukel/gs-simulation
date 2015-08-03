@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
 
-public class EntryToNearestEntryEvaluation implements Evaluation {
+public class ENEEvaluation implements Evaluation {
 
     // maps items to closest other items (IDs)
     private final Map<Integer, Integer> closestItemMap;
@@ -15,14 +15,14 @@ public class EntryToNearestEntryEvaluation implements Evaluation {
     // sum of distances from items to respective closest items
     private double minDistSum;
 
-    public EntryToNearestEntryEvaluation() {
+    public ENEEvaluation() {
         closestItemMap = new HashMap<>();
         minDistMap = new HashMap<>();
         minDistSum = 0.0;
     }
 
     // deep copy constructor
-    public EntryToNearestEntryEvaluation(EntryToNearestEntryEvaluation toCopy){
+    public ENEEvaluation(ENEEvaluation toCopy){
         closestItemMap = new HashMap<>(toCopy.closestItemMap);
         minDistMap = new HashMap<>(toCopy.minDistMap);
         minDistSum = toCopy.minDistSum;

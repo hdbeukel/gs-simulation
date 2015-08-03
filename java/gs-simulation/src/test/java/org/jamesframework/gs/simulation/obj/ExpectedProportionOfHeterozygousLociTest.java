@@ -11,7 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class EntryToNearestEntryDistanceTest {
+public class ExpectedProportionOfHeterozygousLociTest {
 
     private static final Random RG = new Random();
     
@@ -50,7 +50,7 @@ public class EntryToNearestEntryDistanceTest {
         System.out.println(" - test delta evaluation");
        
         // create objective
-        EntryToNearestEntryDistance obj = new EntryToNearestEntryDistance();
+        ExpectedProportionOfHeterozygousLoci obj = new ExpectedProportionOfHeterozygousLoci();
         
         // sample random subsets
         for (int i=0; i<1000; i++){
