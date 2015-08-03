@@ -311,27 +311,29 @@ plot.genetic.gain <- function(replicates,
     # extract seasons of current replicate
     seasons <- replicates[[i]]
     
-    # extract founder data
-    founders <- seasons[[1]]
+    # extract general variables
+    general <- seasons[[1]]$general
+    # extract base pop variables
+    base.pop <- seasons[[1]]$base.pop
     
-    # extract mean genetic value of founder population
-    gains[i,1] <- mean(founders$geneticValues)
+    # extract mean genetic value of base population
+    gains[i,1] <- mean(base.pop$geneticValues)
     # extract mean genetic value of selected populations during simulation
     for(s in 1:num.seasons){
       season <- seasons[[s+1]]
       # compute mean genetic value in selected population
-      if(!is.null(season$geneticValues)){
-        gains[i,s+1] <- mean(season$geneticValues)
+      if(!is.null(season$selected$geneticValues)){
+        gains[i,s+1] <- mean(season$selected$geneticValues)
       }
     }
     
     if (scale == "sd"){
       # subtract values from initial value and divide by intial sd
       gains[i,] <- gains[i,] - gains[i,1]
-      gains[i,] <- gains[i,] / sd(founders$geneticValues)
+      gains[i,] <- gains[i,] / sd(base.pop$geneticValues)
     } else if (scale == "jannink") {
       # normalize genetic values to [-1,1] based on minimum and maximum possible value
-      gains[i,] <- normalize.genetic.values(gains[i,], founders$qtl.effects)
+      gains[i,] <- normalize.genetic.values(gains[i,], general$qtl.effects)
       # subtract values from initial value
       gains[i,] <- gains[i,] - gains[i,1]
     } else {
@@ -399,10 +401,13 @@ extract.metadata <- function(seasons){
   num.seasons <- length(seasons)-1
   metadata <- lapply(1:(num.seasons+1), function(i) {list()} )
   
-  # store genetic values of founders and QTL effects
-  founders <- seasons[[1]]$cross.inbreed$pop.in
-  metadata[[1]]$qtl.effects <- get.qtl.effects(founders)
-  metadata[[1]]$geneticValues <- founders$geneticValues
+  # store base population variables:
+  # - genetic values
+  base.pop <- seasons[[1]]$cross.inbreed$pop.out
+  metadata[[1]]$base.pop$geneticValues <- base.pop$geneticValues
+  # store general variables:
+  # - QTL effects
+  metadata[[1]]$general$qtl.effects <- get.qtl.effects(base.pop)
 
   # go through all seasons
   for(s in 1:num.seasons){
@@ -410,15 +415,34 @@ extract.metadata <- function(seasons){
     # get season
     season <- seasons[[s+1]]
     
-    # extract selected parents (if seasons involves crossing & inbreeding)
-    selection <- NULL
+    ################################################################################
+    # TRACK VARIABLES FOR SELECTION CANDIDATES PRODUCED BY CROSSING AND INBREEDING #
+    ################################################################################
+    
+    # extract selection candidates (if applicable)
+    selection.candidates <- NULL
     if(!is.null(season$cross.inbreed)){
-      selection <- season$cross.inbreed$pop.in
+      selection.candidates <- season$cross.inbreed$pop.out
     }
     
-    # store genetic values of selected parents (if applicable)
-    if(!is.null(selection)){
-      metadata[[s+1]]$geneticValues <- selection$geneticValues
+    # store genetic values of selection candidates
+    if(!is.null(selection.candidates)){
+      metadata[[s+1]]$selection.candidates$geneticValues <- selection.candidates$geneticValues
+    }
+    
+    #############################################################
+    # TRACK VARIABLES FOR SELECTED PARENTS FOR FUTURE CROSSINGS #
+    #############################################################
+    
+    # extract selected parents (if applicable)
+    selected <- NULL
+    if(!is.null(season$select)){
+      selected <- season$select$pop.out
+    }
+    
+    # store genetic values of selection
+    if(!is.null(selected)){
+      metadata[[s+1]]$selected$geneticValues <- selected$geneticValues
     }
     
   }
