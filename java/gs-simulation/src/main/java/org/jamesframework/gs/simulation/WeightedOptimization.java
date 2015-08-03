@@ -18,8 +18,8 @@ import org.jamesframework.gs.simulation.api.API;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.data.PopulationReader;
 import org.jamesframework.gs.simulation.obj.EntryToNearestEntryDistance;
-import org.jamesframework.gs.simulation.obj.ExpectedProportionOfHeterozygotes;
-import org.jamesframework.gs.simulation.obj.MedianAccessionValue;
+import org.jamesframework.gs.simulation.obj.ExpectedProportionOfHeterozygousLoci;
+import org.jamesframework.gs.simulation.obj.MeanBreedingValue;
 import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
 
 public class WeightedOptimization {
@@ -37,23 +37,23 @@ public class WeightedOptimization {
         // read data
         PopulationReader reader = new PopulationReader();
         PopulationData data = reader.read(Paths.get(valueFile), Paths.get(markerFile));
-        // precompute MR distance matrix
-        data.precomputeDistanceMatrix(new ModifiedRogersDistance());
 
         // create diversity objective
         System.out.println("Diversity measure: " + divMeasure);
         Objective<SubsetSolution, PopulationData> divObj;
         switch(divMeasure){
-            case "HE": divObj = new ExpectedProportionOfHeterozygotes();
+            case "HE": divObj = new ExpectedProportionOfHeterozygousLoci();
                 break;
-            case "ENE": divObj = new EntryToNearestEntryDistance();
+            case "MR": divObj = new EntryToNearestEntryDistance();
+                       // precompute MR distance matrix
+                       data.precomputeDistanceMatrix(new ModifiedRogersDistance());
                 break;
             default: throw new IllegalArgumentException("Unknown diversity measure: " + divMeasure + ". "
-                                                      + "Please specify one of HE or ENE.");
+                                                      + "Please specify one of HE or MR.");
         }
 
         // create value objective
-        Objective<SubsetSolution, PopulationData> valueObj = new MedianAccessionValue();
+        Objective<SubsetSolution, PopulationData> valueObj = new MeanBreedingValue();
 
         // compose weighted index
         System.out.println("Diversity weight: " + divWeight);

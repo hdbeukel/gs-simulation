@@ -16,7 +16,7 @@ import org.jamesframework.gs.simulation.data.PopulationData;
  * 
  * @author <a href="mailto:herman.debeukelaer@ugent.be">Herman De Beukelaer</a>
  */
-public class ExpectedProportionOfHeterozygotes implements Objective<SubsetSolution, PopulationData>{
+public class ExpectedProportionOfHeterozygousLoci implements Objective<SubsetSolution, PopulationData>{
 
     @Override
     public Evaluation evaluate(SubsetSolution solution, PopulationData data) {
