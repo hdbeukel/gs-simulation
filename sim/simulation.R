@@ -13,7 +13,7 @@ library(Hmisc)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, num.select=20, num.seasons=30,
+              F1.size=200, num.select=20, num.seasons=26,
               selection.criterion=select.highest.score,
               ...){
   
@@ -110,7 +110,7 @@ PS = function(founders, heritability,
 #               + (2) cross, inbreed & select (on predicted values)
 WGS = function(founders, heritability,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               F1.size=200, add.TP=0, num.select=20, num.seasons=26,
                selection.criterion=select.highest.score,
                gp.method = c("RR", "BRR")){
   return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
@@ -119,7 +119,7 @@ WGS = function(founders, heritability,
 }
 GS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+              F1.size=200, add.TP=0, num.select=20, num.seasons=26,
               selection.criterion=select.highest.score,
               gp.method = c("RR", "BRR"), weighted = FALSE){
   
@@ -134,8 +134,8 @@ GS = function(founders, heritability,
      || heritability > 1.0){
     stop("heritability is required (real value in [0,1])")
   }
-  if(num.seasons < 4 || num.seasons %% 2 != 0){
-    stop("number of seasons should be an even number >= 4")
+  if(num.seasons < 4){
+    stop("number of seasons should be >= 4")
   }
   if(add.TP < 0){
     stop("additional training population size (add.TP) should be >= 0")
@@ -309,10 +309,12 @@ replicate.simulation = function(num.rep = 100, simulate){
 #  --> plotted: average genetic gain with confidence intervals (by default 95%)
 #               calculated from normal distribution
 plot.genetic.gain <- function(replicates,
+                              type = c("generations", "seasons"),
                               scale = c("jannink", "sd"),
                               ci=0.95, add=FALSE, pch=23,
                               bg="black", lty=2){
-  # get selected scale option
+  # get selected options
+  type <- match.arg(type)
   scale <- match.arg(scale)
   # infer number of replicates and (maximum) number of seasons
   num.rep <- length(replicates)
@@ -352,6 +354,13 @@ plot.genetic.gain <- function(replicates,
       stop(sprintf("Unknown scale option %s (should not happen)", scale))
     }
     
+    # when plotting generations, remove NA's introduced because of season timing
+    if(type == "generations"){
+      gen.gains <- gains[i,!is.na(gains[i,])]
+      gains[i,] <- NA
+      gains[i,1:length(gen.gains)] <- gen.gains
+    }
+    
   }
   # compute averages and standard error + CI across replicates
   gain.avg <- colMeans(gains)
@@ -367,10 +376,16 @@ plot.genetic.gain <- function(replicates,
   gain.ci.top <- gain.ci.top[non.na]
   gain.ci.bottom <- gain.ci.bottom[non.na]
   x <- (0:num.seasons)[non.na]
+  # set x-axis label
+  if(type == "generations"){
+    xlab <- "Generation"
+  } else {
+    xlab <- "Season"
+  }
   # first plot CI bars (points and lines are plotted on top)
   final.gain <- ceil(gain.avg[length(gain.avg)])
   errbar(x, gain.avg, gain.ci.top, gain.ci.bottom, type="n",
-         xlab="Season", ylab="Mean genetic gain from selection",
+         xlab=xlab, ylab="Mean genetic gain from selection",
          xaxp=c(0,num.seasons,num.seasons/2),
          add=add)
   points(x, gain.avg, type="o", pch=pch, bg=bg, lty=lty)
