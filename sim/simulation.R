@@ -13,7 +13,7 @@ library(Hmisc)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, num.select=20, num.seasons=30,
+              F1.size=200, num.select=20, num.seasons=26,
               selection.criterion=select.highest.score,
               ...){
   
@@ -63,21 +63,13 @@ PS = function(founders, heritability,
   for(s in 1:num.seasons){
     start.time = Sys.time()
     if(s %% 2 == 0){
-      if(s == num.seasons){
-        # final season: store final selection
-        message(paste("Season ", s, ": Simulation complete", sep=""))
-        final.selection = seasons[[s]]$select$pop.out
-        final.season = list(final.selection = list(pop = final.selection))
-        seasons[[s+1]] = final.season
-      } else {
-        # even season: cross & inbreed
-        message(paste("Season ", s, ": Cross & inbreed selected population", sep=""))
-        parents = seasons[[s]]$select$pop.out
-        offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
-        # store
-        new.season = list(cross.inbreed = list(pop.in = parents, pop.out = offspring))
-        seasons[[s+1]] = new.season
-      }
+      # even season: cross & inbreed
+      message(paste("Season ", s, ": Cross & inbreed selected population", sep=""))
+      parents = seasons[[s]]$select$pop.out
+      offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
+      # store
+      new.season = list(cross.inbreed = list(pop.in = parents, pop.out = offspring))
+      seasons[[s+1]] = new.season
     } else {
       # odd season: evaluate & select
       message(paste("Season ", s, ": Evaluate & select", sep=""))
@@ -104,13 +96,13 @@ PS = function(founders, heritability,
 
 # simulate genomic selection (possibly weighted by favourable allele frequencies)
 #  - season 0: cross & inbreed founders
-#  - season 1: evaluate offspring & select (on phenotypes)
-#  - season 2: cross & inbreed + train GP & select (on predicted values)
+#  - season 1: evaluate offspring, train GP & select (on predicted values)
+#  - season 2: cross, inbreed & select (on predicted values, no model update)
 #  - season >= 3: (1) evaluate previous offspring, update GP model
 #               + (2) cross, inbreed & select (on predicted values)
 WGS = function(founders, heritability,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               F1.size=200, add.TP=0, num.select=20, num.seasons=26,
                selection.criterion=select.highest.score,
                gp.method = c("RR", "BRR")){
   return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
@@ -119,7 +111,7 @@ WGS = function(founders, heritability,
 }
 GS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+              F1.size=200, add.TP=0, num.select=20, num.seasons=26,
               selection.criterion=select.highest.score,
               gp.method = c("RR", "BRR"), weighted = FALSE){
   
@@ -134,11 +126,20 @@ GS = function(founders, heritability,
      || heritability > 1.0){
     stop("heritability is required (real value in [0,1])")
   }
-  if(num.seasons < 4 || num.seasons %% 2 != 0){
-    stop("number of seasons should be an even number >= 4")
+  if(num.seasons < 3){
+    stop("number of seasons should be >= 3")
   }
   if(add.TP < 0){
     stop("additional training population size (add.TP) should be >= 0")
+  }
+  
+  # set weigthed/unweighted prediction
+  if(weighted){
+    # weighted GS
+    predict.values = function(model, pop) gp.predict(model, gp.design.matrix(pop), infer.weights(model, pop))
+  } else {
+    # unweighted GS
+    predict.values = function(model, pop) gp.predict(model, gp.design.matrix(pop))
   }
   
   # initialize results list (one entry per season 0-n)
@@ -155,7 +156,7 @@ GS = function(founders, heritability,
   # (re-)infer genetic values
   founders = infer.genetic.values(founders)
   
-  # SEASON 0: mate founders to create base population (+ additional training population, if desired)
+  # SEASON 0: mate founders to create base population (+ additional training population, if requested)
   
   message("Season 0: Cross & inbreed founders")
   
@@ -163,7 +164,7 @@ GS = function(founders, heritability,
   base.pop = mate.founders(founders, F1.size, "bp")
   # fix heritability (error variation is inferred)
   base.pop = set.heritability(base.pop, heritability)
-  # generate additional TP if desired
+  # generate additional TP if requested
   if(add.TP > 0){
     add.TP.pop = mate.founders(founders, add.TP, "add-tp")
     # set same error variance as base population
@@ -178,7 +179,7 @@ GS = function(founders, heritability,
   
   # SEASON 1: evaluate base population (and additional TP, if any)
   
-  message("Season 1: Evaluate & select (on phenotypic values)")
+  message("Season 1: Evaluate & select (on predicted values)")
   
   # evaluate base population
   evaluated.base.pop = infer.phenotypes(base.pop)
@@ -193,8 +194,12 @@ GS = function(founders, heritability,
     tp = evaluated.base.pop
   }
   
-  # select from base population based on phenotypes
-  selected.names = selection.criterion(evaluated.base.pop$pheno, num.select)
+  # train GP
+  gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
+  
+  # select based on estimated values
+  est.values = predict.values(gp.trained.model, evaluated.base.pop)
+  selected.names = selection.criterion(est.values, num.select)
   selected.pop = restrict.population(evaluated.base.pop, selected.names)
   
   # store season
@@ -203,23 +208,14 @@ GS = function(founders, heritability,
                   tp = list(pop = tp))
   seasons[[2]] = season.1
   
-  # SEASON 2: cross & inbreed selected population, train GP on available TP, select (based on predictions)
+  # SEASON 2: cross & inbreed selected population, select (based on predictions, no model update)
   
-  message("Season 2: Cross, inbreed & select (on predicted values)")
+  message("Season 2: Cross, inbreed & select (on predicted values, no model update)")
   
   # cross & inbreed
   offspring = mate.dh(selected.pop, F1.size, "s2")
-  # train GP
-  gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
   # select based on estimated values
-  if(weighted){
-    # weighted GS
-    est.values = gp.predict(gp.trained.model, gp.design.matrix(offspring),
-                            infer.weights(gp.trained.model, offspring))
-  } else {
-    # unweighted GS
-    est.values = gp.predict(gp.trained.model, gp.design.matrix(offspring))
-  }
+  est.values = predict.values(gp.trained.model, offspring)
   selected.names = selection.criterion(est.values, num.select)
   selected.offspring = restrict.population(offspring, selected.names)
   
@@ -231,44 +227,32 @@ GS = function(founders, heritability,
   
   # iterate over subsequent seasons (3-N)
   for(s in 3:num.seasons){
+    # record start time
     start.time = Sys.time()
-    if(s < num.seasons){
-      message("Season ", s, ": Evaluate (previous) + Cross, inbreed & select")
-      # evaluate offspring from previous season
-      prev.offspring = seasons[[s]]$cross.inbreed$pop.out
-      evaluated.prev.offspring = infer.phenotypes(prev.offspring)
-      # add evaluated population to TP
-      tp = merge.populations(tp, evaluated.prev.offspring)
-      # cross & inbreed selection from previous offspring
-      parents = seasons[[s]]$select$pop.out
-      offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
-      # update GP model
-      gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
-      # select from offspring based on estimated values using updated GP model
-      if(weighted){
-        # weighted GS
-        est.values = gp.predict(gp.trained.model, gp.design.matrix(offspring),
-                                infer.weights(gp.trained.model, offspring))
-      } else {
-        # unweighted GS
-        est.values = gp.predict(gp.trained.model, gp.design.matrix(offspring))
-      }
-      selected.names = selection.criterion(est.values, num.select)
-      selected.offspring = restrict.population(offspring, selected.names)
-      # store season
-      new.season = list(evaluate = list(add.tp = evaluated.prev.offspring),
-                        cross.inbreed = list(pop.in = parents, pop.out = offspring),
-                        select = list(pop.in = offspring, pop.out = selected.offspring),
-                        tp = list(pop = tp)) # enlarged TP
-      seasons[[s+1]] = new.season
-    } else {
-      # final season: report final selection
-      message(paste("Season ", s, ": Simulation complete", sep=""))
-      final.selection = seasons[[s]]$select$pop.out
-      final.season = list(final.selection = list(pop = final.selection))
-      seasons[[s+1]] = final.season
-    }
+    message("Season ", s, ": Evaluate (previous) + Cross, inbreed & select")
+    # evaluate offspring from previous season
+    prev.offspring = seasons[[s]]$cross.inbreed$pop.out
+    evaluated.prev.offspring = infer.phenotypes(prev.offspring)
+    # add evaluated population to TP
+    tp = merge.populations(tp, evaluated.prev.offspring)
+    # cross & inbreed selection from previous offspring
+    parents = seasons[[s]]$select$pop.out
+    offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
+    # update GP model
+    gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
+    # select from offspring based on estimated values using updated GP model
+    est.values = predict.values(gp.trained.model, offspring)
+    selected.names = selection.criterion(est.values, num.select)
+    selected.offspring = restrict.population(offspring, selected.names)
+    # store season
+    new.season = list(evaluate = list(add.tp = evaluated.prev.offspring),
+                      cross.inbreed = list(pop.in = parents, pop.out = offspring),
+                      select = list(pop.in = offspring, pop.out = selected.offspring),
+                      tp = list(pop = tp)) # enlarged TP
+    seasons[[s+1]] = new.season
+    # record stop time
     stop.time = Sys.time()
+    # print time spent on this generation
     time = as.numeric(stop.time - start.time, units = "secs")
     message("|- ", time, " seconds elapsed")
   }
@@ -309,10 +293,12 @@ replicate.simulation = function(num.rep = 100, simulate){
 #  --> plotted: average genetic gain with confidence intervals (by default 95%)
 #               calculated from normal distribution
 plot.genetic.gain <- function(replicates,
+                              type = c("generations", "seasons"),
                               scale = c("jannink", "sd"),
                               ci=0.95, add=FALSE, pch=23,
                               bg="black", lty=2){
-  # get selected scale option
+  # get selected options
+  type <- match.arg(type)
   scale <- match.arg(scale)
   # infer number of replicates and (maximum) number of seasons
   num.rep <- length(replicates)
@@ -325,31 +311,40 @@ plot.genetic.gain <- function(replicates,
     # extract seasons of current replicate
     seasons <- replicates[[i]]
     
-    # extract founder data
-    founders <- seasons[[1]]
+    # extract general variables
+    general <- seasons[[1]]$general
+    # extract base pop variables
+    base.pop <- seasons[[1]]$base.pop
     
-    # extract mean genetic value of founder population
-    gains[i,1] <- founders$geneticValues$mean
+    # extract mean genetic value of base population
+    gains[i,1] <- mean(base.pop$geneticValues)
     # extract mean genetic value of selected populations during simulation
     for(s in 1:num.seasons){
       season <- seasons[[s+1]]
       # compute mean genetic value in selected population
-      if(!is.null(season$geneticValues)){
-        gains[i,s+1] <- season$geneticValues$mean
+      if(!is.null(season$selected$geneticValues)){
+        gains[i,s+1] <- mean(season$selected$geneticValues)
       }
     }
     
     if (scale == "sd"){
       # subtract values from initial value and divide by intial sd
       gains[i,] <- gains[i,] - gains[i,1]
-      gains[i,] <- gains[i,] / founders$geneticValues$sd
+      gains[i,] <- gains[i,] / sd(base.pop$geneticValues)
     } else if (scale == "jannink") {
       # normalize genetic values to [-1,1] based on minimum and maximum possible value
-      gains[i,] <- normalize.genetic.values(gains[i,], founders$qtl.effects)
+      gains[i,] <- normalize.genetic.values(gains[i,], general$qtl.effects)
       # subtract values from initial value
       gains[i,] <- gains[i,] - gains[i,1]
     } else {
       stop(sprintf("Unknown scale option %s (should not happen)", scale))
+    }
+    
+    # when plotting generations, remove NA's introduced because of season timing
+    if(type == "generations"){
+      gen.gains <- gains[i,!is.na(gains[i,])]
+      gains[i,] <- NA
+      gains[i,1:length(gen.gains)] <- gen.gains
     }
     
   }
@@ -367,10 +362,16 @@ plot.genetic.gain <- function(replicates,
   gain.ci.top <- gain.ci.top[non.na]
   gain.ci.bottom <- gain.ci.bottom[non.na]
   x <- (0:num.seasons)[non.na]
+  # set x-axis label
+  if(type == "generations"){
+    xlab <- "Generation"
+  } else {
+    xlab <- "Season"
+  }
   # first plot CI bars (points and lines are plotted on top)
   final.gain <- ceil(gain.avg[length(gain.avg)])
   errbar(x, gain.avg, gain.ci.top, gain.ci.bottom, type="n",
-         xlab="Season", ylab="Mean genetic gain from selection",
+         xlab=xlab, ylab="Mean genetic gain from selection",
          xaxp=c(0,num.seasons,num.seasons/2),
          add=add)
   points(x, gain.avg, type="o", pch=pch, bg=bg, lty=lty)
@@ -400,30 +401,48 @@ extract.metadata <- function(seasons){
   num.seasons <- length(seasons)-1
   metadata <- lapply(1:(num.seasons+1), function(i) {list()} )
   
-  # store mean/sd genetic value of founders and QTL effects
-  founders <- seasons[[1]]$cross.inbreed$pop.in
-  metadata[[1]]$qtl.effects <- get.qtl.effects(founders)
-  metadata[[1]]$geneticValues$mean <- mean(founders$geneticValues)
-  metadata[[1]]$geneticValues$sd <- sd(founders$geneticValues)
-  
+  # store base population variables:
+  # - genetic values
+  base.pop <- seasons[[1]]$cross.inbreed$pop.out
+  metadata[[1]]$base.pop$geneticValues <- base.pop$geneticValues
+  # store general variables:
+  # - QTL effects
+  metadata[[1]]$general$qtl.effects <- get.qtl.effects(base.pop)
+
   # go through all seasons
   for(s in 1:num.seasons){
     
     # get season
     season <- seasons[[s+1]]
     
-    # extract parents (if seasons includes crossing & inbreeding or is final season)
-    parents <- NULL
+    ################################################################################
+    # TRACK VARIABLES FOR SELECTION CANDIDATES PRODUCED BY CROSSING AND INBREEDING #
+    ################################################################################
+    
+    # extract selection candidates (if applicable)
+    selection.candidates <- NULL
     if(!is.null(season$cross.inbreed)){
-      parents <- season$cross.inbreed$pop.in
-    } else if(!is.null(season$final.selection)){
-      parents <- season$final.selection$pop
+      selection.candidates <- season$cross.inbreed$pop.out
     }
     
-    # store mean/sd genetic value of parents (if applicable)
-    if(!is.null(parents)){
-      metadata[[s+1]]$geneticValues$mean <- mean(parents$geneticValues)
-      metadata[[s+1]]$geneticValues$sd <- sd(parents$geneticValues)
+    # store genetic values of selection candidates
+    if(!is.null(selection.candidates)){
+      metadata[[s+1]]$selection.candidates$geneticValues <- selection.candidates$geneticValues
+    }
+    
+    #############################################################
+    # TRACK VARIABLES FOR SELECTED PARENTS FOR FUTURE CROSSINGS #
+    #############################################################
+    
+    # extract selected parents (if applicable)
+    selected <- NULL
+    if(!is.null(season$select)){
+      selected <- season$select$pop.out
+    }
+    
+    # store genetic values of selection
+    if(!is.null(selected)){
+      metadata[[s+1]]$selected$geneticValues <- selected$geneticValues
     }
     
   }
