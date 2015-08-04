@@ -53,7 +53,7 @@ plot.pareto.front <- function(file, title = "Pareto front", xlab = "Diversity"){
   
   # plot front
   plot(x = div.mean, y = val.mean,
-       main = title, xlab = xlab, ylab = "Median genetic value")
+       main = title, xlab = xlab, ylab = "Mean genetic value")
   
   # mark point at equal weights
   if(exists("mean.div.equal.weight")){
@@ -62,7 +62,7 @@ plot.pareto.front <- function(file, title = "Pareto front", xlab = "Diversity"){
   
 }
 
-plot.pareto.fronts <- function(div.measure = c("ENE", "HE")){
+plot.pareto.fronts <- function(div.measure = c("MR", "HE")){
   
   div.measure <- match.arg(div.measure)
   dir <- sprintf("out/pareto-fronts/%s", div.measure)
