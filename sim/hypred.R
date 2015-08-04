@@ -226,6 +226,22 @@ strip.dummies = function(data){
   return(data)
 }
 
+get.dummy.indices <- function(pop){
+  # assert: dummies added
+  if(!pop$hypred$dummiesAdded){
+    stop("no dummies added in pop")
+  }
+  dummy.ends <- pop$hypred$chromBounds[,2]
+  dummy.starts <- pop$hypred$chromBounds[,2] - pop$hypred$chrNumDummies + 1
+  dummy.bounds <- cbind(dummy.starts, dummy.ends)
+  dummy.indices <- unlist(apply(dummy.bounds, 1, function(row){
+    if(row[1] <= row[2]){
+      seq(row[1], row[2])
+    }
+  }))
+  return(dummy.indices)
+}
+
 #######################################
 # ASSIGN QTL AND INFER GENETIC VALUES #
 #######################################
@@ -351,6 +367,36 @@ get.qtl.effects <- function(pop){
     stop("first assign QTL using assign.qtl(pop, ...)")
   }
   return(pop$hypred$genome@add.and.dom.eff$add)
+}
+
+get.favourable.qtl.alleles <- function(pop){
+  # get effects
+  qtl.eff <- get.qtl.effects(pop)
+  # initialize output
+  desired.qtl.alleles <- rep(0, length(qtl.eff))
+  # set to 1 for positive effects
+  desired.qtl.alleles[qtl.eff > 0] <- 1
+  
+  return(desired.qtl.alleles)
+}
+
+get.favourable.qtl.allele.frequencies <- function(pop){
+  # assert: DH population
+  if(is.null(pop$dh)){
+    stop("pop should be a DH population")
+  }
+  # get favourable alleles
+  fav.alleles <- get.favourable.qtl.alleles(pop)
+  # get QTL states
+  Q <- pop$dh[, pop$hypred$realQTL]
+  # compute frequencies
+  n <- nrow(Q)
+  m <- ncol(Q)
+  freqs <- rep(NA, m)
+  for(i in 1:m){
+    freqs[i] <- sum(Q[,i] == fav.alleles[i]) / n
+  }
+  return(freqs)
 }
 
 infer.genetic.values = function(pop){
@@ -555,7 +601,7 @@ restrict.population = function(pop, names){
   }
   # update number of genotypes
   pop$numGenotypes = length(names)
-  # update genetic values and variation (if any)
+  # update genetic values and variance (if any)
   if(!is.null(pop$geneticValues)){
     pop$geneticValues = pop$geneticValues[names]
     pop$geneticVar = var(pop$geneticValues)
@@ -567,6 +613,10 @@ restrict.population = function(pop, names){
   # update phenotypes (if any)
   if(!is.null(pop$pheno)){
     pop$pheno = pop$pheo[names]
+  }
+  # update estimated genetic values (if any)
+  if(!is.null(pop$estGeneticValues)){
+    pop$estGeneticValues = pop$estGeneticValues[names]
   }
   # return restricted population
   return(pop)
@@ -590,7 +640,7 @@ merge.populations = function(pop1, pop2){
   pop$dh = rbind(pop1$dh, pop2$dh)
   # update number of genotypes
   pop$numGenotypes = pop1$numGenotypes + pop2$numGenotypes
-  # merge genetic values and update variation (if known in both populations)
+  # merge genetic values and update variance (if known in both populations)
   if(!is.null(pop1$geneticValues) && !is.null(pop2$geneticValues)){
     pop$geneticValues = c(pop1$geneticValues, pop2$geneticValues)
     pop$geneticVar = var(pop$geneticValues)
@@ -604,8 +654,78 @@ merge.populations = function(pop1, pop2){
   if(!is.null(pop1$pheno) && !is.null(pop2$pheno)){
     pop$pheno = c(pop1$pheno, pop2$pheno)
   }
+  # merge estimated genetic values (if available for both populations)
+  if(!is.null(pop1$estGeneticValues) && !is.null(pop2$estGeneticValues)){
+    pop$estGeneticValues = c(pop1$estGeneticValues, pop2$estGeneticValues)
+  }
   # return merged population
   return(pop)
+}
+
+###################
+# LD COMPUTATIONS #
+###################
+
+QTL.marker.highest.LD <- function(pop){
+  
+  # !!! TODO: optimize !!! --> way too slow now ...
+  
+  # assert: DH population
+  if(is.null(pop$dh)){
+    stop("DH population expected")
+  }
+  
+  # get QTL indices
+  QTL.indices <- pop$hypred$realQTL
+  num.QTL <- length(QTL.indices)
+  # get dummy marker indices
+  dummy.indices <- get.dummy.indices(pop)
+  # infer non QTL non dummy indices
+  non.QTL.non.dummy <- setdiff(1:pop$numMarkers, c(QTL.indices, dummy.indices))
+  
+  # initialize result matrix
+  result <- matrix(NA, nrow = num.QTL, ncol = 3)
+  colnames(result) <- c("QTL.pos", "marker.pos", "LD")
+  
+  # find marker in highest LD with each QTL
+  for(i in 1:num.QTL){
+    QTL.index <- QTL.indices[i]
+    # get QTL alleles in population
+    QTL.alleles <- pop$dh[, QTL.index]
+    # check whether QTL is polymorphic
+    if(sd(QTL.alleles) > 0){
+      # compute LD with each marker
+      marker.LD <- sapply(non.QTL.non.dummy, function(marker.index){
+        marker.alleles <- pop$dh[, marker.index]
+        if(sd(marker.alleles) > 0){
+          return(compute.LD(QTL.alleles, marker.alleles))
+        } else {
+          return(NA)
+        }
+      })
+      # check that not all markers are fixed
+      if(sum(!is.na(marker.LD)) > 0){
+        # find highest LD and corresponding marker index
+        highest.LD <- max(marker.LD, na.rm = TRUE)
+        highest.LD.marker <- non.QTL.non.dummy[which.max(marker.LD)]
+        # store
+        result[i, ] <- c(QTL.index, highest.LD.marker, highest.LD)
+      } else {
+        # all markers fixed
+        result[i, ] <- c(QTL.index, NA, NA)
+      }
+    } else {
+      # fixed QTL
+      result[i, ] <- c(QTL.index, NA, NA)
+    }
+  }
+  
+  return(result)
+  
+}
+
+compute.LD <- function(alleles.1, alleles.2){
+  cor(alleles.1, alleles.2)^2
 }
 
 #############

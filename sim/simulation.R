@@ -136,10 +136,22 @@ GS = function(founders, heritability,
   # set weigthed/unweighted prediction
   if(weighted){
     # weighted GS
-    predict.values = function(model, pop) gp.predict(model, gp.design.matrix(pop), infer.weights(model, pop))
+    predict.values <- function(model, pop) {
+      est.values <- gp.predict(model, gp.design.matrix(pop), infer.weights(model, pop))
+      # store in population
+      pop$estGeneticValues <- est.values
+      # return modified population
+      return(pop)
+    }
   } else {
     # unweighted GS
-    predict.values = function(model, pop) gp.predict(model, gp.design.matrix(pop))
+    predict.values <- function(model, pop) {
+      est.values <- gp.predict(model, gp.design.matrix(pop))
+      # store in population
+      pop$estGeneticValues <- est.values
+      # return modified population
+      return(pop)
+    }
   }
   
   # initialize results list (one entry per season 0-n)
@@ -198,14 +210,15 @@ GS = function(founders, heritability,
   gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
   
   # select based on estimated values
-  est.values = predict.values(gp.trained.model, evaluated.base.pop)
-  selected.names = selection.criterion(est.values, num.select)
+  evaluated.base.pop = predict.values(gp.trained.model, evaluated.base.pop)
+  selected.names = selection.criterion(evaluated.base.pop$estGeneticValues, num.select)
   selected.pop = restrict.population(evaluated.base.pop, selected.names)
   
   # store season
   season.1 = list(evaluate = list(pop = evaluated.base.pop, add.tp = evaluated.add.TP.pop),
                   select = list(pop.in = evaluated.base.pop, pop.out = selected.pop),
-                  tp = list(pop = tp))
+                  tp = list(pop = tp),
+                  gp = list(model = gp.trained.model))
   seasons[[2]] = season.1
   
   # SEASON 2: cross & inbreed selected population, select (based on predictions, no model update)
@@ -214,15 +227,17 @@ GS = function(founders, heritability,
   
   # cross & inbreed
   offspring = mate.dh(selected.pop, F1.size, "s2")
+  
   # select based on estimated values
-  est.values = predict.values(gp.trained.model, offspring)
-  selected.names = selection.criterion(est.values, num.select)
+  offspring = predict.values(gp.trained.model, offspring)
+  selected.names = selection.criterion(offspring$estGeneticValues, num.select)
   selected.offspring = restrict.population(offspring, selected.names)
   
   # store season
   season.2 = list(cross.inbreed = list(pop.in = selected.pop, pop.out = offspring),
                   select = list(pop.in = offspring, pop.out = selected.offspring),
-                  tp = list(pop = tp)) # TP did not change in season 2
+                  tp = list(pop = tp),                 # TP did not change in season 2
+                  gp = list(model = gp.trained.model)) # GP model was not updated in season 2
   seasons[[3]] = season.2
   
   # iterate over subsequent seasons (3-N)
@@ -241,14 +256,15 @@ GS = function(founders, heritability,
     # update GP model
     gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
     # select from offspring based on estimated values using updated GP model
-    est.values = predict.values(gp.trained.model, offspring)
-    selected.names = selection.criterion(est.values, num.select)
+    offspring = predict.values(gp.trained.model, offspring)
+    selected.names = selection.criterion(offspring$estGeneticValues, num.select)
     selected.offspring = restrict.population(offspring, selected.names)
     # store season
-    new.season = list(evaluate = list(add.tp = evaluated.prev.offspring),
+    new.season = list(evaluate = list(pop = evaluated.prev.offspring),
                       cross.inbreed = list(pop.in = parents, pop.out = offspring),
                       select = list(pop.in = offspring, pop.out = selected.offspring),
-                      tp = list(pop = tp)) # enlarged TP
+                      tp = list(pop = tp),                 # enlarged TP
+                      gp = list(model = gp.trained.model)) # updated GP model
     seasons[[s+1]] = new.season
     # record stop time
     stop.time = Sys.time()
@@ -314,7 +330,7 @@ plot.genetic.gain <- function(replicates,
     # extract general variables
     general <- seasons[[1]]$general
     # extract base pop variables
-    base.pop <- seasons[[1]]$base.pop
+    base.pop <- seasons[[1]]$candidates
     
     # extract mean genetic value of base population
     gains[i,1] <- mean(base.pop$geneticValues)
@@ -322,8 +338,8 @@ plot.genetic.gain <- function(replicates,
     for(s in 1:num.seasons){
       season <- seasons[[s+1]]
       # compute mean genetic value in selected population
-      if(!is.null(season$selected$geneticValues)){
-        gains[i,s+1] <- mean(season$selected$geneticValues)
+      if(!is.null(season$selection$geneticValues)){
+        gains[i,s+1] <- mean(season$selection$geneticValues)
       }
     }
     
@@ -401,54 +417,142 @@ extract.metadata <- function(seasons){
   num.seasons <- length(seasons)-1
   metadata <- lapply(1:(num.seasons+1), function(i) {list()} )
   
-  # store base population variables:
-  # - genetic values
-  base.pop <- seasons[[1]]$cross.inbreed$pop.out
-  metadata[[1]]$base.pop$geneticValues <- base.pop$geneticValues
-  # store general variables:
-  # - QTL effects
-  metadata[[1]]$general$qtl.effects <- get.qtl.effects(base.pop)
+  # store general variables
+  founders <- seasons[[1]]$cross.inbreed$pop.in
+  # 1) QTL effects
+  metadata[[1]]$general$qtl.effects <- get.qtl.effects(founders)
 
   # go through all seasons
-  for(s in 1:num.seasons){
+  for(s in 0:num.seasons){
     
-    # get season
+    # get current and next season (if any)
     season <- seasons[[s+1]]
+    next.season <- NULL
+    if(s+2 <= num.seasons){
+      next.season <- seasons[[s+2]]
+    }
     
     ################################################################################
     # TRACK VARIABLES FOR SELECTION CANDIDATES PRODUCED BY CROSSING AND INBREEDING #
     ################################################################################
     
-    # extract selection candidates (if applicable)
-    selection.candidates <- NULL
+    # check whether season involves crossing and inbreeding
     if(!is.null(season$cross.inbreed)){
-      selection.candidates <- season$cross.inbreed$pop.out
-    }
-    
-    # store genetic values of selection candidates
-    if(!is.null(selection.candidates)){
-      metadata[[s+1]]$selection.candidates$geneticValues <- selection.candidates$geneticValues
+      
+      # extract produced selection candidates
+      candidates <- season$cross.inbreed$pop.out
+      # extract evaluated version (from next season, if any)
+      evaluated.candidates <- NULL
+      if(!is.null(next.season)){
+        evaluated.candidates <- next.season$evaluate$pop
+      }
+      
+      # store variables
+      
+      # 1) genetic values
+      metadata[[s+1]]$candidates$geneticValues <- candidates$geneticValues
+      # 2) simulated phenotypes (if available)
+      if(!is.null(evaluated.candidates)){
+        metadata[[s+1]]$candidates$pheno <- evaluated.candidates$pheno
+      }
+      # 3) estimated genetic values (if any)
+      if(!is.null(candidates$estGeneticValues)){
+        metadata[[s+1]]$candidates$estGeneticValues <- candidates$estGeneticValues
+      }
+      # 4) inbreeding coefficients
+      metadata[[s+1]]$candidates$inbreeding <- inbreeding.coefficients(candidates)
+      # 5) QTL favourable allele frequencies
+      metadata[[s+1]]$candidates$fav.QTL.allele.freqs <- get.favourable.qtl.allele.frequencies(candidates)
+      
     }
     
     #############################################################
     # TRACK VARIABLES FOR SELECTED PARENTS FOR FUTURE CROSSINGS #
     #############################################################
     
-    # extract selected parents (if applicable)
-    selected <- NULL
+    # check whether season involves selection
     if(!is.null(season$select)){
-      selected <- season$select$pop.out
+      
+      # extract selection
+      selection <- season$select$pop.out
+      # extract names of selected individuals
+      selection.names <- names(selection$geneticValues)
+      # extract previously inferred metadata of selection candidates from which selection was made
+      if(!is.null(metadata[[s+1]]$candidates)){
+        # selection was made from candidates produced in same season (GS/WGS)
+        candidates <- metadata[[s+1]]$candidates
+      } else {
+        # selection was made from candidates produced in previous generation (PS + first season of GS/WGS) 
+        candidates <- metadata[[s]]$candidates
+      }
+      
+      # store variables
+      
+      # 1) genetic values
+      metadata[[s+1]]$selection$geneticValues <- selection$geneticValues
+      # 2) simulated phenotypes (extract from previously inferred metadata of  selection candidates)
+      if(!is.null(candidates$pheno)){
+        metadata[[s+1]]$selection$pheno <- candidates$pheno[selection.names]
+      }
+      # 3) estimated genetic values (extract from previously inferred metadata of  selection candidates)
+      if(!is.null(candidates$estGeneticValues)){
+        metadata[[s+1]]$selection$estGeneticValues <- candidates$estGeneticValues[selection.names]
+      }
+      # 4) number of favourable QTL lost
+      num.lost <- sum(get.favourable.qtl.frequencies(selection) == 0)
+      metadata[[s+1]]$selection$num.fav.QTL.lost <- num.lost
+      
     }
     
-    # store genetic values of selection
-    if(!is.null(selected)){
-      metadata[[s+1]]$selected$geneticValues <- selected$geneticValues
+    ################################
+    # TRACK VARIABLES FOR GP MODEL #
+    ################################
+
+    # check whether season involves GP    
+    if(!is.null(season$gp)){
+      
+      # extract GP model
+      gp.trained.model <- season$gp$model
+      # extract selection candidates for which model is used
+      candidates <- season$select$pop.in
+      # selection candidates design matrix
+      Z <- gp.design.matrix(candidates)
+                  
+      # store variables
+      
+      # 1) estimated marker effects
+      metadata[[s+1]]$gp$effects <- gp.get.effects(gp.trained.model)
+      # 2) marker favourable allele frequencies in selection candidates
+      metadata[[s+1]]$gp$fav.marker.allele.freqs <- get.favourable.allele.frequencies(gp.trained.model, Z)
+      # 3) QTL - marker LD (highest LD per QTL over all markers)
+      metadata[[s+1]]$gp$QTL.marker.LD <- QTL.marker.highest.LD(candidates)
+      
     }
     
   }
   
   return(metadata)
   
+}
+
+#############################################
+# UTILITY FUNCTIONS FOR METADATA EXTRACTION #
+#############################################
+
+# make genomic relationship matrix G from marker matrix Z (0/1 DHs)
+genomic.relationship.matrix <- function (Z){
+  nSNP <- ncol(Z)
+  pfreq <- colMeans(Z)
+  Zt <- t(apply(Z, 1, function(x, pfreq) { x-pfreq }, pfreq))
+  G <- (Zt%*%t(Zt))/(sum(pfreq*(1-pfreq)))
+  return(G)
+}
+
+# get coefficients of inbreeding for each individual
+inbreeding.coefficients <- function(pop){
+  Z <- gp.design.matrix(pop)
+  G <- genomic.relationship.matrix(Z)
+  coeff <- diag(G)-1
 }
 
 ##################################################

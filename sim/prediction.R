@@ -22,14 +22,7 @@ gp.design.matrix = function(pop){
   }
   # get indices of dummy markers and *real* QTL (dummy QTLs can stay, no real effect there)
   real.qtl.indices = pop$hypred$realQTL
-  dummy.ends = pop$hypred$chromBounds[,2]
-  dummy.starts = pop$hypred$chromBounds[,2] - pop$hypred$chrNumDummies + 1
-  dummy.bounds = cbind(dummy.starts, dummy.ends)
-  dummy.indices = unlist(apply(dummy.bounds, 1, function(row){
-    if(row[1] <= row[2]){
-      seq(row[1], row[2])
-    }
-  }))
+  dummy.indices = get.dummy.indices(pop)
   qtl.or.dummy = c(real.qtl.indices, dummy.indices)
   # get DH marker data without dummies and QTL
   matrix = pop$dh[,-qtl.or.dummy]
