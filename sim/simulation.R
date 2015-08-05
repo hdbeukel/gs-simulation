@@ -304,118 +304,131 @@ replicate.simulation = function(num.rep = 100, simulate){
 
 # plot a certain variable extracted from the simulations:
 #  --> input:   list of replicates (each replicate is a list of simulated seasons)
-#  --> plotted: values of variable extracted with the given function 'extract.variable',
+#  --> plotted: values of variable extracted with the given function 'extract.values',
 #               averaged over all replicates, with confidence intervals (by default 95%)
 #               calculated from a normal distribution
+# the function 'extract.values' should take a single argument, i.e. the list of seasons
+# produced from a single simulation run, and return a vector with one extracted value per season
+# (for seasons where the value is not reported, NA should be returned)
 plot.simulation.variable <- function(replicates,
-                                     extract.variable,
-                                     type = c("generations", "seasons"),
+                                     extract.values,
+                                     ylab, type = c("generations", "seasons"),
                                      ci=0.95, add=FALSE, pch=23,
                                      bg="black", lty=2){
  
-  # ...
+  # check input
+  if(!is.function(extract.values)){
+    stop("'extract.values' should be a function")
+  }
+  # get selected type
+  type <- match.arg(type)
+  
+  # infer number of replicates and (maximum) number of seasons
+  num.rep <- length(replicates)
+  num.seasons <- max(sapply(replicates, length))-1
+  # initialize matrix (rep x seasons) to store values
+  values <- matrix(NA, num.rep, num.seasons+1)
+  
+  # go through replicates and fill value matrix
+  for(i in 1:num.rep){
+    
+    # extract seasons of current replicate
+    rep.seasons <- replicates[[i]]
+    
+    # extract variable values from season
+    rep.values <- extract.values(rep.seasons)
+    
+    # convert to generations if requested, by removing NA
+    # values, i.e. seasons where no value was reported
+    if(type == "generations"){
+      rep.values <- rep.values[!is.na(rep.values)]
+    }
+    
+    # store
+    values[i, 1:length(rep.values)] <- rep.values
+    
+  }
+  
+  # compute averages and standard error + CI across replicates
+  value.avg <- colMeans(values)
+  value.std.err <- apply(values, 2, sd)/sqrt(num.rep)
+  value.ci.halfwidth <- qnorm(ci+(1-ci)/2)*value.std.err
+  # only plot CI when large enough to be visible ???
+  # value.ci.halfwidth[value.ci.halfwidth < 0.15] = NA
+  value.ci.top <- value.avg + value.ci.halfwidth
+  value.ci.bottom <- value.avg - value.ci.halfwidth
+  # plot non NA values only
+  non.na <- !is.na(value.avg)
+  value.avg <- value.avg[non.na]
+  value.ci.top <- value.ci.top[non.na]
+  value.ci.bottom <- value.ci.bottom[non.na]
+  x <- (0:num.seasons)[non.na]
+  # set x-axis label
+  xlab <- ifelse(type == "generations", "Generation", "Season")
+  # first plot CI bars (points and lines are plotted on top)
+  final.value <- ceil(value.avg[length(value.avg)])
+  errbar(x, value.avg, value.ci.top, value.ci.bottom, type="n",
+         xlab=xlab, ylab=ylab,
+         xaxp=c(0,num.seasons,num.seasons/2),
+         add=add)
+  points(x, value.avg, type="o", pch=pch, bg=bg, lty=lty)
    
 }
 
 # plot genetic gain, with one of these scales:
-# 1) in terms of number of standard deviations of genetic value in founder population
-# 2) normalized wrt maximal genotypic value possible, as in the paper by Jannink
-#  --> input:   list of replicates (each replicate is a list of simulated seasons)
-#  --> plotted: average genetic gain with confidence intervals (by default 95%)
-#               calculated from normal distribution
+#  1) in terms of number of standard deviations of genetic value in founder population
+#  2) normalized wrt maximal genotypic value possible, as in the paper by Jannink
+# all additional arguments are passed to 'plot.simulation.variable'
 plot.genetic.gain <- function(replicates,
-                              type = c("generations", "seasons"),
                               scale = c("jannink", "sd"),
-                              ci=0.95, add=FALSE, pch=23,
-                              bg="black", lty=2){
-  # get selected options
-  type <- match.arg(type)
+                              ylab = "Genetic gain from selection",
+                              ...){
+  
+  # get selected scale
   scale <- match.arg(scale)
-  # infer number of replicates and (maximum) number of seasons
-  num.rep <- length(replicates)
-  num.seasons <- max(sapply(replicates, length))-1
-  # initialize matrix (rep x seasons) to store gains
-  gains <- matrix(NA, num.rep, num.seasons+1)
-  # go through replicates and fill gains matrix
-  for(i in 1:num.rep){
-    
-    # extract seasons of current replicate
-    seasons <- replicates[[i]]
-    
+  
+  # set function to extract genetic gains from a simulated list of seasons
+  extract.gain <- function(seasons){
+    # extract number of seasons
+    num.seasons <- length(seasons)-1
+    # initialize gain vector
+    gains <- rep(NA, length(seasons))
     # extract general variables
     general <- seasons[[1]]$general
     # extract base pop variables
     base.pop <- seasons[[1]]$candidates
     
-    # extract mean genetic value of base population
-    gains[i,1] <- mean(base.pop$geneticValues)
-    # extract mean genetic value of selected populations during simulation
+    # set mean genetic value of base population
+    gains[1] <- mean(base.pop$geneticValues)
+    # set mean genetic value of selected populations during simulation
     for(s in 1:num.seasons){
       season <- seasons[[s+1]]
       # compute mean genetic value in selected population
       if(!is.null(season$selection$geneticValues)){
-        gains[i,s+1] <- mean(season$selection$geneticValues)
+        gains[s+1] <- mean(season$selection$geneticValues)
       }
     }
     
     if (scale == "sd"){
       # subtract values from initial value and divide by intial sd
-      gains[i,] <- gains[i,] - gains[i,1]
-      gains[i,] <- gains[i,] / sd(base.pop$geneticValues)
-    } else if (scale == "jannink") {
-      # normalize genetic values to [-1,1] based on minimum and maximum possible value
-      gains[i,] <- normalize.genetic.values(gains[i,], general$qtl.effects)
-      # subtract values from initial value
-      gains[i,] <- gains[i,] - gains[i,1]
+      gains <- gains - gains[1]
+      gains <- gains / sd(base.pop$geneticValues)
     } else {
-      stop(sprintf("Unknown scale option %s (should not happen)", scale))
+      # scale according to Jannink: normalize genetic values to [-1,1]
+      # based on minimum and maximum possible value
+      gains <- normalize.genetic.values(gains, general$qtl.effects)
+      # subtract values from initial value
+      gains <- gains - gains[1]
     }
     
-    # convert to generations if requested
-    if(type == "generations"){
-      gains[i,] <- seasons.to.generations(gains[i,])
-    }
+    # return extracted gains
+    return(gains)
     
   }
-  # compute averages and standard error + CI across replicates
-  gain.avg <- colMeans(gains)
-  gain.std.err <- apply(gains, 2, sd)/sqrt(num.rep)
-  gain.ci.halfwidth <- qnorm(ci+(1-ci)/2)*gain.std.err
-  # only plot CI when large enough to be visible ???
-  # gain.ci.halfwidth[gain.ci.halfwidth < 0.15] = NA
-  gain.ci.top <- gain.avg + gain.ci.halfwidth
-  gain.ci.bottom <- gain.avg - gain.ci.halfwidth
-  # retain only non NA values
-  non.na <- !is.na(gain.avg)
-  gain.avg <- gain.avg[non.na]
-  gain.ci.top <- gain.ci.top[non.na]
-  gain.ci.bottom <- gain.ci.bottom[non.na]
-  x <- (0:num.seasons)[non.na]
-  # set x-axis label
-  if(type == "generations"){
-    xlab <- "Generation"
-  } else {
-    xlab <- "Season"
-  }
-  # first plot CI bars (points and lines are plotted on top)
-  final.gain <- ceil(gain.avg[length(gain.avg)])
-  errbar(x, gain.avg, gain.ci.top, gain.ci.bottom, type="n",
-         xlab=xlab, ylab="Mean genetic gain from selection",
-         xaxp=c(0,num.seasons,num.seasons/2),
-         add=add)
-  points(x, gain.avg, type="o", pch=pch, bg=bg, lty=lty)
-}
-
-##################
-# PLOT UTILITIES #
-##################
-
-# convert extract values per season to values per generation by moving all NA's to the end
-seasons.to.generations <- function(seasons){
-  generations <- seasons[!is.na(seasons)]
-  padded.generations <- rep(NA, length(seasons))
-  padded.generations[1:length(generations)] <- generations
-  return(padded.generations)
+ 
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values = extract.gain, ylab = ylab, ...)
+  
 }
 
 ################
