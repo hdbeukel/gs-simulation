@@ -454,12 +454,37 @@ plot.genetic.standard.deviation <- function(replicates,
         genetic.sd[s] <- sd(genetic.values)
       }
     }
-    # return genetic sd vector
     return(genetic.sd)
   }
   
   # call generic variable plot function
   plot.simulation.variable(replicates, extract.values =  extract.genetic.sd, ylab = ylab, ...)
+  
+}
+
+# plot average inbreeding coefficient among selection candidates
+plot.mean.inbreeding <- function(replicates,
+                                 ylab = "Mean inbreeding coefficient",
+                                 ...){
+  
+  # set function to extract mean inbreeding coefficient
+  extract.mean.inbr <- function(seasons){
+    # initialize result vector
+    mean.inbr <- rep(NA, length(seasons))
+    # extract mean inbreeding for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether selection candidates have been produced in this season
+      if(!is.null(season$candidates)){
+        # extract and store mean inbreeding coefficient
+        mean.inbr[s] <- mean(season$candidates$inbreeding)
+      }
+    }
+    return(mean.inbr)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.mean.inbr, ylab = ylab, ...)
   
 }
 
