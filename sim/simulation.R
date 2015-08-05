@@ -302,6 +302,21 @@ replicate.simulation = function(num.rep = 100, simulate){
 # PLOTS #
 #########
 
+# plot a certain variable extracted from the simulations:
+#  --> input:   list of replicates (each replicate is a list of simulated seasons)
+#  --> plotted: values of variable extracted with the given function 'extract.variable',
+#               averaged over all replicates, with confidence intervals (by default 95%)
+#               calculated from a normal distribution
+plot.simulation.variable <- function(replicates,
+                                     extract.variable,
+                                     type = c("generations", "seasons"),
+                                     ci=0.95, add=FALSE, pch=23,
+                                     bg="black", lty=2){
+ 
+  # ...
+   
+}
+
 # plot genetic gain, with one of these scales:
 # 1) in terms of number of standard deviations of genetic value in founder population
 # 2) normalized wrt maximal genotypic value possible, as in the paper by Jannink
@@ -356,11 +371,9 @@ plot.genetic.gain <- function(replicates,
       stop(sprintf("Unknown scale option %s (should not happen)", scale))
     }
     
-    # when plotting generations, remove NA's introduced because of season timing
+    # convert to generations if requested
     if(type == "generations"){
-      gen.gains <- gains[i,!is.na(gains[i,])]
-      gains[i,] <- NA
-      gains[i,1:length(gen.gains)] <- gen.gains
+      gains[i,] <- seasons.to.generations(gains[i,])
     }
     
   }
@@ -391,6 +404,18 @@ plot.genetic.gain <- function(replicates,
          xaxp=c(0,num.seasons,num.seasons/2),
          add=add)
   points(x, gain.avg, type="o", pch=pch, bg=bg, lty=lty)
+}
+
+##################
+# PLOT UTILITIES #
+##################
+
+# convert extract values per season to values per generation by moving all NA's to the end
+seasons.to.generations <- function(seasons){
+  generations <- seasons[!is.na(seasons)]
+  padded.generations <- rep(NA, length(seasons))
+  padded.generations[1:length(generations)] <- generations
+  return(padded.generations)
 }
 
 ################
@@ -499,7 +524,7 @@ extract.metadata <- function(seasons){
         metadata[[s+1]]$selection$estGeneticValues <- candidates$estGeneticValues[selection.names]
       }
       # 4) number of favourable QTL lost
-      num.lost <- sum(get.favourable.qtl.frequencies(selection) == 0)
+      num.lost <- sum(get.favourable.qtl.allele.frequencies(selection) == 0)
       metadata[[s+1]]$selection$num.fav.QTL.lost <- num.lost
       
     }
