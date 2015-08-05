@@ -192,42 +192,42 @@ spread.coinciding.markers = function(map, dist){
 
 # compute minor allele frequencies
 # known encodings:
+#  "dh"   ->  0,1 (homozygous) - default
 #  "012"  ->  0,2 (homozygous), 1 (heterozygous)
 #  "-101" -> -1,1 (homozygous), 0 (heterozygous)
-#  "dh"   ->  0,1 (homozygous)
-compute.minor.allele.frequencies = function(markers, encoding){
+compute.minor.allele.frequencies <- function(markers, encoding = c("dh", "-101", "012")){
   # check: known encoding
-  match.arg(encoding, c("012", "-101", "dh"))
+  encoding <- match.arg(encoding)
   # convert to 012 encoding
   if(!is.na(pmatch(encoding, "-101"))){
-    markers = markers + 1
+    markers <- markers + 1
   } else if (!is.na(pmatch(encoding, "dh"))){
-    markers = markers*2
+    markers <- markers*2
   }
   # compute MAF
-  num.genotypes = nrow(markers)
-  maf = apply(markers, 2, function(alleles){
-    freq.1 = sum(alleles)/(2*num.genotypes)
-    freq.0 = 1-freq.1
+  num.genotypes <- nrow(markers)
+  maf <- apply(markers, 2, function(alleles){
+    freq.1 <- sum(alleles)/(2*num.genotypes)
+    freq.0 <- 1-freq.1
     return(min(freq.1, freq.0))
   })
   return(maf)
 }
 # get minor alleles (0/1)
 # known encodings:
+#  "dh"   ->  0,1 (homozygous) - default
 #  "012"  ->  0,2 (homozygous), 1 (heterozygous)
-#  "dh"   ->  0,1 (homozygous)
-get.minor.alleles = function(markers, encoding){
+get.minor.alleles = function(markers, encoding = c("dh", "012")){
   # check: known encoding
-  match.arg(encoding, c("012", "dh"))
+  encoding <- match.arg(encoding)
   # convert to 012 encoding
   if(!is.na(pmatch(encoding, "dh"))){
-    markers = markers*2
+    markers <- markers*2
   }
   # compute minor allel (0/1)
-  num.genotypes = nrow(markers)
-  ma = apply(markers, 2, function(alleles){
-    freq.1 = sum(alleles)/(2*num.genotypes)
+  num.genotypes <- nrow(markers)
+  ma <- apply(markers, 2, function(alleles){
+    freq.1 <- sum(alleles)/(2*num.genotypes)
     if(freq.1 <= 0.5){
       return(1)
     } else {

@@ -668,7 +668,9 @@ merge.populations = function(pop1, pop2){
 
 QTL.marker.highest.LD <- function(pop){
   
-  # !!! TODO: optimize !!! --> way too slow now ...
+  # !!! TODO: 
+  #     1) optimize !!! --> way too slow now ...
+  #     2) in case of multiple SNP in highest LD --> take closest according to genetic map
   
   # assert: DH population
   if(is.null(pop$dh)){

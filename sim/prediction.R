@@ -49,20 +49,39 @@ gp.restrict.design.matrix = function(names, G){
 # Train GP model (RR or BRR) #
 ##############################
 
+# train GP model (RR or BRR) - fixed SNP are ignored during estimation and their effect is set to zero
 gp.train <- function(pheno, Z, method = c("RR", "BRR")){
+  
+  # ignore fixed SNP for estimation
+  mafs <- compute.minor.allele.frequencies(Z)
+  fixed <- which(mafs == 0)
+  Z.poly <- Z[, -fixed]
   
   method <- match.arg(method)
   if(method == "BRR"){
-    model <- gp.train.BRR(pheno, Z)
+    model <- gp.train.BRR(pheno, Z.poly)
   } else {
-    model <- gp.train.RR(pheno, Z)
+    model <- gp.train.RR(pheno, Z.poly)
   }
+  
+  # extract mu and effects
+  mu <- gp.get.mean.value(model)
+  effects.poly <- gp.get.effects(model)
+  
+  # set effect to zero for all SNP (including fixed)
+  effects <- rep(0, ncol(Z))
+  # overwrite with actual estimated effect for polymorphic SNP
+  effects[-fixed] <- effects.poly
+  
+  # combine mu and effects in unified model
+  model <- list(mu = mu, effects = effects)
   
   return(model)
   
 }
 
 # train RR model by estimating marker effects
+# !!! fixed SNP are not ignored when directly using this function !!!
 gp.train.RR <- function(pheno, Z){
   
   # check input
@@ -85,20 +104,20 @@ gp.train.RR <- function(pheno, Z){
   }
   
   # estimate marker effects
-  
-  trained <- mixed.solve(y = pheno, Z = Z)
+  RR.model <- mixed.solve(y = pheno, Z = Z)
   
   # append class name
+  class(RR.model) <- append(class(RR.model), "rrBLUP")
   
-  class(trained) <- append(class(trained), "rrBLUP")
-  
-  return(trained)
+  return(RR.model)
 }
 
 # train BRR model by estimating marker effects
+# !!! fixed SNP are not ignored when directly using this function !!!
 gp.train.BRR <- function(pheno, Z){
   return(gp.train.BGLR(modelGenetic="BRR", pheno = pheno, Z = Z))
 }
+# !!! fixed SNP are not ignored when directly using this function !!!
 gp.train.BGLR <- function(modelGenetic="BRR", pheno, Z=NULL,
                          fixed=NULL, randomNuisance=NULL,
                          pedigree=NULL, df0=NULL, shape0=NULL,
@@ -122,7 +141,7 @@ gp.train.BGLR <- function(modelGenetic="BRR", pheno, Z=NULL,
   # estimate marker effects
   
   dir.create("BGLR-tmp", showWarnings = FALSE)
-  trained <- BGLR(
+  BGLR.model <- BGLR(
     y=pheno,                               # phenotypes (response variable)
     ETA=model,                             # use chosen model
     nIter=nIter, burnIn=burnIn, thin=thin, # MCMC parameters
@@ -130,7 +149,7 @@ gp.train.BGLR <- function(modelGenetic="BRR", pheno, Z=NULL,
     verbose=FALSE
   )
   
-  return(trained)
+  return(BGLR.model)
 }
 
 ###################################
@@ -250,8 +269,22 @@ gp.get.mean.value.BGLR <- function(trained.model){
   return(trained.model$mu)
 }
 
+########################################
+# S3 Implementations for unified model #
+########################################
+
+# get marker effects from trained model
+gp.get.effects.GPModel <- function(trained.model){
+  return(trained.model$effects)
+}
+
+# get mean value from trained model
+gp.get.mean.value.GPModel <- function(trained.model){
+  return(trained.model$mu)
+}
+
 ###################
-# GENERIC METHODS #
+# GENERAL METHODS #
 ###################
 
 # predict value of new individuals using a trained GP model
