@@ -217,8 +217,7 @@ GS = function(founders, heritability,
   # store season
   season.1 = list(evaluate = list(pop = evaluated.base.pop, add.tp = evaluated.add.TP.pop),
                   select = list(pop.in = evaluated.base.pop, pop.out = selected.pop),
-                  tp = list(pop = tp),
-                  gp = list(model = gp.trained.model))
+                  gp = list(model = gp.trained.model, tp = tp))
   seasons[[2]] = season.1
   
   # SEASON 2: cross & inbreed selected population, select (based on predictions, no model update)
@@ -236,8 +235,7 @@ GS = function(founders, heritability,
   # store season
   season.2 = list(cross.inbreed = list(pop.in = selected.pop, pop.out = offspring),
                   select = list(pop.in = offspring, pop.out = selected.offspring),
-                  tp = list(pop = tp),                 # TP did not change in season 2
-                  gp = list(model = gp.trained.model)) # GP model was not updated in season 2
+                  gp = list(model = gp.trained.model, tp = tp)) # GP model was not updated in season 2
   seasons[[3]] = season.2
   
   # iterate over subsequent seasons (3-N)
@@ -263,8 +261,7 @@ GS = function(founders, heritability,
     new.season = list(evaluate = list(pop = evaluated.prev.offspring),
                       cross.inbreed = list(pop.in = parents, pop.out = offspring),
                       select = list(pop.in = offspring, pop.out = selected.offspring),
-                      tp = list(pop = tp),                 # enlarged TP
-                      gp = list(model = gp.trained.model)) # updated GP model
+                      gp = list(model = gp.trained.model, tp = tp)) # updated GP model from enlarged TP
     seasons[[s+1]] = new.season
     # record stop time
     stop.time = Sys.time()
@@ -488,6 +485,32 @@ plot.mean.inbreeding <- function(replicates,
   
 }
 
+# plot QTL - marker LD in selection candidates, averaged over all polymorphic QTL
+plot.mean.QTL.marker.LD <- function(replicates,
+                                    ylab = "Mean QTL - marker LD",
+                                    ...){
+  
+  # set function to extract mean LD
+  extract.mean.LD <- function(seasons){
+    # initialize result vector
+    mean.LD <- rep(NA, length(seasons))
+    # extract mean LD for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether selection candidates have been produced in this season
+      if(!is.null(season$candidates)){
+        # extract and store mean QTL - marker LD
+        mean.LD[s] <- mean(season$candidates$QTL.marker.LD$LD, na.rm = TRUE)
+      }
+    }
+    return(mean.LD)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.mean.LD, ylab = ylab, ...)
+  
+}
+
 ################
 # LOAD RESULTS #
 ################
@@ -558,6 +581,8 @@ extract.metadata <- function(seasons){
       metadata[[s+1]]$candidates$inbreeding <- inbreeding.coefficients(candidates)
       # 5) QTL favourable allele frequencies
       metadata[[s+1]]$candidates$fav.QTL.allele.freqs <- get.favourable.qtl.allele.frequencies(candidates)
+      # 6) QTL - marker LD
+      metadata[[s+1]]$candidates$QTL.marker.LD <- QTL.marker.highest.LD(candidates)
       
     }
     
@@ -606,8 +631,9 @@ extract.metadata <- function(seasons){
     # check whether season involves GP    
     if(!is.null(season$gp)){
       
-      # extract GP model
-      gp.trained.model <- season$gp$model
+      # extract GP model and TP
+      gp.model <- season$gp$model
+      gp.tp <- season$gp$tp
       # extract selection candidates for which model is used
       candidates <- season$select$pop.in
       # selection candidates design matrix
@@ -616,11 +642,27 @@ extract.metadata <- function(seasons){
       # store variables
       
       # 1) estimated marker effects
-      metadata[[s+1]]$gp$effects <- gp.get.effects(gp.trained.model)
+      metadata[[s+1]]$gp$effects <- gp.get.effects(gp.model)
       # 2) marker favourable allele frequencies in selection candidates
-      metadata[[s+1]]$gp$fav.marker.allele.freqs <- get.favourable.allele.frequencies(gp.trained.model, Z)
-      # 3) QTL - marker LD (highest LD per QTL over all markers)
-      metadata[[s+1]]$gp$QTL.marker.LD <- QTL.marker.highest.LD(candidates)
+      metadata[[s+1]]$gp$fav.marker.allele.freqs <- get.favourable.allele.frequencies(gp.model, Z)
+      # 3) marker effect estimation accuracies: computed as correlation between polymorphic QTL effects
+      #    and estimated effects of SNP in highest LD, divided by average LD (in TP)
+      QTL.marker.LD <- QTL.marker.highest.LD(gp.tp)
+      QTL.marker.LD <- QTL.marker.LD[!is.na(QTL.marker.LD$LD), ]
+      # compute mean QTL - marker LD in TP
+      mean.LD <- mean(QTL.marker.LD$LD)
+      # retrieve polymorphic QTL and corresponding marker effects
+      # (!! based on marker *names*, not indices as the latter
+      #  include dummies for which no effect was estimated)
+      all.names <- rownames(gp.tp$map)
+      all.marker.effects <- gp.get.effects(gp.model)
+      all.qtl.effects <- get.qtl.effects(gp.tp)
+      marker.names <- all.names[QTL.marker.LD$marker.index]
+      marker.effects <- all.marker.effects[marker.names]
+      qtl.names <- all.names[QTL.marker.LD$QTL.index]
+      qtl.effects <- all.qtl.effects[qtl.names]
+      # compute and store accuracies
+      metadata[[s+1]]$gp$effect.accuracies <- cor(marker.effects, qtl.effects) / mean.LD
       
     }
     

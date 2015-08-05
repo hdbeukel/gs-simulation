@@ -361,14 +361,28 @@ assign.qtl <- function(pop, num.qtl,
   return(pop)
 }
 
+# get QTL effects (*real* QTL only)
 get.qtl.effects <- function(pop){
   # assert: QTLs assigned
   if(attr(pop$hypred$genome, 'num.add.qtl.chr') == 0){
     stop("first assign QTL using assign.qtl(pop, ...)")
   }
-  return(pop$hypred$genome@add.and.dom.eff$add)
+  # retrieve positions of all QTL (including dummies)
+  all.QTL.pos <- pop$hypred$genome@pos.add.qtl$ID
+  # retrieve positions of real QTL
+  real.QTL.pos <- pop$hypred$realQTL
+  # retrieve all effects (including dummies)
+  all.QTL.effects <- pop$hypred$genome@add.and.dom.eff$add
+  # select only real effects
+  real.QTL.effects <- all.QTL.effects[all.QTL.pos %in% real.QTL.pos]
+  # retrieve and set names of real QTL in effect vector
+  real.QTL.names <- rownames(pop$map)[real.QTL.pos]
+  names(real.QTL.effects) <- real.QTL.names
+  # return named real QTL effects
+  return(real.QTL.effects)
 }
 
+# get favourable QTL alleles (*real* QTL only)
 get.favourable.qtl.alleles <- function(pop){
   # get effects
   qtl.eff <- get.qtl.effects(pop)
@@ -376,10 +390,13 @@ get.favourable.qtl.alleles <- function(pop){
   desired.qtl.alleles <- rep(0, length(qtl.eff))
   # set to 1 for positive effects
   desired.qtl.alleles[qtl.eff > 0] <- 1
+  # set names
+  names(desired.qtl.alleles) <- names(qtl.eff)
   
   return(desired.qtl.alleles)
 }
 
+# get favourable QTL allele frequencies (*real* QTL only)
 get.favourable.qtl.allele.frequencies <- function(pop){
   # assert: DH population
   if(is.null(pop$dh)){
@@ -396,6 +413,9 @@ get.favourable.qtl.allele.frequencies <- function(pop){
   for(i in 1:m){
     freqs[i] <- sum(Q[,i] == fav.alleles[i]) / n
   }
+  # set names
+  names(freqs) <- names(fav.alleles)
+  
   return(freqs)
 }
 

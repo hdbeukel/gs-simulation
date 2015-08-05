@@ -72,6 +72,8 @@ gp.train <- function(pheno, Z, method = c("RR", "BRR")){
   effects <- rep(0, ncol(Z))
   # overwrite with actual estimated effect for polymorphic SNP
   effects[-fixed] <- effects.poly
+  # set marker names in effects vector
+  names(effects) <- colnames(Z)
   
   # combine mu and effects in unified model
   model <- list(mu = mu, effects = effects)
@@ -319,6 +321,8 @@ get.favourable.alleles <- function(trained.model){
   desired.alleles <- rep(0, length(marker.effects))
   # set to 1 for positive effects
   desired.alleles[marker.effects > 0] <- 1
+  # set names
+  names(desired.alleles) <- names(marker.effects)
   
   return(desired.alleles)
 }
@@ -337,6 +341,9 @@ get.favourable.allele.frequencies <- function(trained.model, Z){
   for(i in 1:m){
     freqs[i] <- sum(Z[,i] == fav.alleles[i]) / n
   }
+  # set names
+  names(freqs) <- names(fav.alleles)
+  
   return(freqs)
 }
 
