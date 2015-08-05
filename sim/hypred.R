@@ -249,6 +249,7 @@ get.dummy.indices <- function(pop){
 # assign QTL:
 # - each QTL is randomly assigned to a chromosome with probability proportional
 #   to the chromosome length
+# - only polymorphic markers are chosen as QTL
 # - dummy QTLs with effect of 0 are added because hypred requires same number of
 #   QTL per chromosome
 # - real QTLs effects are determined using one of two provided methods:
@@ -295,13 +296,13 @@ assign.qtl <- function(pop, num.qtl,
   } else {
     genotypes <- pop$geno
   }
+  # infer positions of possible fixed markers
+  mafs <- compute.minor.allele.frequencies(genotypes, encoding = "012")
+  fixed <- which(mafs == 0)
   # pick real QTL indices per chromosome (NOT allowed to be dummy markers)
   real.qtl.indices <- sort(unlist(sapply(1:num.chroms, function(c){
     # QTL candidates on current chromosome
-    candidates <- seq(non.dummy.ranges[c,1], non.dummy.ranges[c,2])
-    # retain candidiates with non-zero allelic state standard deviation only
-    qtl.sd <- apply(genotypes[,candidates], 2, sd)
-    candidates = candidates[qtl.sd > 0]
+    candidates <- setdiff(seq(non.dummy.ranges[c,1], non.dummy.ranges[c,2]), fixed)
     # sample real QTL indices
     sample(candidates, real.qtl.per.chrom[c])
   })))

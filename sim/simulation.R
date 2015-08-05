@@ -5,9 +5,8 @@ library(Hmisc)
 #################################
 
 # simulate phenotypic selection for a number of seasons:
-#  - preprocessing: assign QTL, infer genetic values
 #  - season 0: randomly mate founders & inbreed (DH) to create base population,
-#              fix initial heritability
+#              assign QTL, infer genetic values, fix initial heritability
 #  - odd seasons >= 1: evaluate (phenotypes) and select
 #  - even seasons >= 2: randomly mate selected individuals & inbreed (DH)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
@@ -35,23 +34,20 @@ PS = function(founders, heritability,
   # initialize results list (one entry per season 0-n)
   seasons = as.list(rep(NA, num.seasons+1))
   
-  # PREPROCESSING
-  
-  # assign QTL (if not yet assigned)
-  if(is.null(founders$hypred$realQTL)){
-    founders = assign.qtl(founders, num.QTL, method = QTL.effects)
-  } else {
-    message("QTL already assigned in founder population, using existing effects")
-  }
-  # (re-)infer genetic values
-  founders = infer.genetic.values(founders)
-  
   # SEASON 0
   
   message("Season 0: Cross & inbreed founders")
   
   # mate founders to create base population
   base.pop = mate.founders(founders, F1.size, "bp")
+  # assign QTL (if not yet assigned)
+  if(is.null(base.pop$hypred$realQTL)){
+    base.pop = assign.qtl(base.pop, num.QTL, method = QTL.effects)
+  } else {
+    message("QTL already assigned in founder population, using existing effects")
+  }
+  # infer genetic values
+  base.pop = infer.genetic.values(base.pop)
   # fix heritability
   base.pop = set.heritability(base.pop, heritability)
   
@@ -95,7 +91,7 @@ PS = function(founders, heritability,
 }
 
 # simulate genomic selection (possibly weighted by favourable allele frequencies)
-#  - season 0: cross & inbreed founders
+#  - season 0: cross & inbreed founders, assign QTL, infer genetic values and fix heritability
 #  - season 1: evaluate offspring, train GP & select (on predicted values)
 #  - season 2: cross, inbreed & select (on predicted values, no model update)
 #  - season >= 3: (1) evaluate previous offspring, update GP model
@@ -157,23 +153,20 @@ GS = function(founders, heritability,
   # initialize results list (one entry per season 0-n)
   seasons = as.list(rep(NA, num.seasons+1))
   
-  # PREPROCESSING
-  
-  # assign QTL (if not yet assigned)
-  if(is.null(founders$hypred$realQTL)){
-    founders = assign.qtl(founders, num.QTL, method = QTL.effects)
-  } else {
-    message("QTL already assigned in founder population, using existing effects")
-  }
-  # (re-)infer genetic values
-  founders = infer.genetic.values(founders)
-  
   # SEASON 0: mate founders to create base population (+ additional training population, if requested)
   
   message("Season 0: Cross & inbreed founders")
   
   # mate founders to create base population
   base.pop = mate.founders(founders, F1.size, "bp")
+  # assign QTL (if not yet assigned)
+  if(is.null(base.pop$hypred$realQTL)){
+    base.pop = assign.qtl(base.pop, num.QTL, method = QTL.effects)
+  } else {
+    message("QTL already assigned in founder population, using existing effects")
+  }
+  # infer genetic values
+  base.pop = infer.genetic.values(base.pop)
   # fix heritability (error variation is inferred)
   base.pop = set.heritability(base.pop, heritability)
   # generate additional TP if requested
@@ -539,7 +532,7 @@ plot.effect.estimation.accuracy <- function(replicates,
   
 }
 
-# plot number of favourable QTL lost after selection
+# plot number of favourable QTL lost
 plot.num.fav.QTL.lost <- function(replicates,
                                   ylab = "Number favourable QTL lost",
                                   ...){
@@ -551,10 +544,10 @@ plot.num.fav.QTL.lost <- function(replicates,
     # extract number lost for each season
     for(s in 1:length(seasons)){
       season <- seasons[[s]]
-      # check whether this season involved selection
-      if(!is.null(season$selection)){
+      # check whether selection candidates have been produced in this season
+      if(!is.null(season$candidates)){
         # extract and store number
-        num.lost[s] <- season$selection$num.fav.QTL.lost
+        num.lost[s] <- season$candidates$num.fav.QTL.lost
       }
     }
     return(num.lost)
@@ -590,9 +583,9 @@ extract.metadata <- function(seasons){
   metadata <- lapply(1:(num.seasons+1), function(i) {list()} )
   
   # store general variables
-  founders <- seasons[[1]]$cross.inbreed$pop.in
+  base.pop <- seasons[[1]]$cross.inbreed$pop.out
   # 1) QTL effects
-  metadata[[1]]$general$qtl.effects <- get.qtl.effects(founders)
+  metadata[[1]]$general$qtl.effects <- get.qtl.effects(base.pop)
 
   # go through all seasons
   for(s in 0:num.seasons){
@@ -637,6 +630,9 @@ extract.metadata <- function(seasons){
       metadata[[s+1]]$candidates$fav.QTL.allele.freqs <- get.favourable.qtl.allele.frequencies(candidates)
       # 6) QTL - marker LD
       metadata[[s+1]]$candidates$QTL.marker.LD <- QTL.marker.highest.LD(candidates)
+      # 7) number of favourable QTL lost
+      num.lost <- sum(get.favourable.qtl.allele.frequencies(candidates) == 0)
+      metadata[[s+1]]$candidates$num.fav.QTL.lost <- num.lost
       
     }
     
@@ -672,10 +668,7 @@ extract.metadata <- function(seasons){
       if(!is.null(candidates$estGeneticValues)){
         metadata[[s+1]]$selection$estGeneticValues <- candidates$estGeneticValues[selection.names]
       }
-      # 4) number of favourable QTL lost
-      num.lost <- sum(get.favourable.qtl.allele.frequencies(selection) == 0)
-      metadata[[s+1]]$selection$num.fav.QTL.lost <- num.lost
-      
+
     }
     
     ################################
