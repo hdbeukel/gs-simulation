@@ -8,8 +8,9 @@
 #  3: heritability
 #  4: effect sampling method (normal, jannink)
 #  5: GP method (RR, BRR), ignored for PS
-#  6: iteration number
-# output file written to: out/<1>/<2>-seasons/h2-<3>/<4>-effects/<5>/<6>.RDS
+#  6: random generator seed (empty string for random seed)
+#  7: iteration number
+# output file written to: out/<1>/<2>-seasons/h2-<3>/<4>-effects/<5>/<7>.RDS
 
 # load scripts
 suppressMessages(source("scripts.R"))
@@ -27,7 +28,15 @@ gp.method <- args[5]
 if(sim.function.name == "PS"){
   gp.method <- ""
 }
-it <- as.numeric(args[6])
+seed <- as.numeric(args[6])
+it <- as.numeric(args[7])
+
+# set seed
+if(is.na(seed)){
+  seed <- ceiling(runif(1, 0, 2^31-1))
+}
+set.seed(seed)
+message(sprintf("Seed: %d", seed))
 
 # run simulation
 seasons <- sim.function(founders, heritability,
