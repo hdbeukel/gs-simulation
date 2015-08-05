@@ -314,7 +314,8 @@ plot.simulation.variable <- function(replicates,
                                      extract.values,
                                      ylab, type = c("generations", "seasons"),
                                      ci=0.95, add=FALSE, pch=23,
-                                     bg="black", lty=2){
+                                     bg="black", lty=2,
+                                     ...){
  
   # check input
   if(!is.function(extract.values)){
@@ -370,7 +371,8 @@ plot.simulation.variable <- function(replicates,
   errbar(x, value.avg, value.ci.top, value.ci.bottom, type="n",
          xlab=xlab, ylab=ylab,
          xaxp=c(0,num.seasons,num.seasons/2),
-         add=add)
+         add=add,
+         ...)
   points(x, value.avg, type="o", pch=pch, bg=bg, lty=lty)
    
 }
@@ -378,7 +380,6 @@ plot.simulation.variable <- function(replicates,
 # plot genetic gain, with one of these scales:
 #  1) in terms of number of standard deviations of genetic value in founder population
 #  2) normalized wrt maximal genotypic value possible, as in the paper by Jannink
-# all additional arguments are passed to 'plot.simulation.variable'
 plot.genetic.gain <- function(replicates,
                               scale = c("jannink", "sd"),
                               ylab = "Genetic gain from selection",
@@ -428,6 +429,37 @@ plot.genetic.gain <- function(replicates,
  
   # call generic variable plot function
   plot.simulation.variable(replicates, extract.values = extract.gain, ylab = ylab, ...)
+  
+}
+
+# plot genetic standard deviation among selection candidates
+plot.genetic.standard.deviation <- function(replicates,
+                                            ylab = "Genetic standard deviation",
+                                            ...){
+  
+  # set function to extract genetic standard deviation
+  extract.genetic.sd <- function(seasons){
+    # initialize result vector
+    genetic.sd <- rep(NA, length(seasons))
+    # extract general variables
+    general <- seasons[[1]]$general
+    # extract sd for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether selection candidates have been produced in this season
+      if(!is.null(season$candidates)){
+        # normalize genetic values to [-1,1] based on minimum and maximum possible value
+        genetic.values <- normalize.genetic.values(season$candidates$geneticValues, general$qtl.effects)
+        # extract and store genetic sd
+        genetic.sd[s] <- sd(genetic.values)
+      }
+    }
+    # return genetic sd vector
+    return(genetic.sd)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.genetic.sd, ylab = ylab, ...)
   
 }
 
