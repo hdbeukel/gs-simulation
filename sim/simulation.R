@@ -511,6 +511,34 @@ plot.mean.QTL.marker.LD <- function(replicates,
   
 }
 
+# plot marker effect estimation accuracy
+plot.effect.estimation.accuracy <- function(replicates,
+                                            corrected = TRUE,
+                                            ylab = "Marker effect accuracy",
+                                            ...){
+  
+  # set function to extract accuracy
+  extract.accuracy <- function(seasons){
+    # initialize result vector
+    accuracies <- rep(NA, length(seasons))
+    # extract accuracy for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether a GP model has been trained in this season
+      if(!is.null(season$gp)){
+        # extract and store effect estimation accuracy
+        acc <- season$gp$effect.estimation.accuracy
+        accuracies[s] <- ifelse(corrected, acc$corrected, acc$plain)
+      }
+    }
+    return(accuracies)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.accuracy, ylab = ylab, ...)
+  
+}
+
 ################
 # LOAD RESULTS #
 ################
@@ -645,8 +673,8 @@ extract.metadata <- function(seasons){
       metadata[[s+1]]$gp$effects <- gp.get.effects(gp.model)
       # 2) marker favourable allele frequencies in selection candidates
       metadata[[s+1]]$gp$fav.marker.allele.freqs <- get.favourable.allele.frequencies(gp.model, Z)
-      # 3) marker effect estimation accuracies: computed as correlation between polymorphic QTL effects
-      #    and estimated effects of SNP in highest LD, divided by average LD (in TP)
+      # 3) marker effect estimation accuracy: computed as correlation between polymorphic QTL effects
+      #    and estimated effects of SNP in highest LD, corrected by dividing by average actual LD (in TP)
       QTL.marker.LD <- QTL.marker.highest.LD(gp.tp)
       QTL.marker.LD <- QTL.marker.LD[!is.na(QTL.marker.LD$LD), ]
       # compute mean QTL - marker LD in TP
@@ -661,8 +689,10 @@ extract.metadata <- function(seasons){
       marker.effects <- all.marker.effects[marker.names]
       qtl.names <- all.names[QTL.marker.LD$QTL.index]
       qtl.effects <- all.qtl.effects[qtl.names]
-      # compute and store accuracies
-      metadata[[s+1]]$gp$effect.accuracies <- cor(marker.effects, qtl.effects) / mean.LD
+      # compute and store accuracy (both plain and corrected)
+      plain.acc <- cor(marker.effects, qtl.effects)
+      metadata[[s+1]]$gp$effect.estimation.accuracy$plain <- plain.acc
+      metadata[[s+1]]$gp$effect.estimation.accuracy$corrected <- plain.acc / mean.LD
       
     }
     
