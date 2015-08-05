@@ -558,6 +558,56 @@ plot.num.fav.QTL.lost <- function(replicates,
   
 }
 
+# plot mean QTL favourable allele frequency in selection candidates, averaged over all QTL
+plot.mean.QTL.fav.allele.freq <- function(replicates,
+                                         ylab = "Mean QTL favourable allele frequency",
+                                         ...){
+  
+  # set function to extract mean QTL favourable allele frequency
+  extract.mean.QTL.fav.allele.freq <- function(seasons){
+    # initialize result vector
+    mean.QTL.fav.allele.freq <- rep(NA, length(seasons))
+    # extract
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether selection candidates have been produced in this season
+      if(!is.null(season$candidates)){
+        mean.QTL.fav.allele.freq[s] <- mean(season$candidates$fav.QTL.allele.freqs)
+      }
+    }
+    return(mean.QTL.fav.allele.freq)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.mean.QTL.fav.allele.freq, ylab = ylab, ...)
+  
+}
+
+# plot mean SNP favourable allele frequency in selection candidates, averaged over all SNP
+plot.mean.marker.fav.allele.freq <- function(replicates,
+                                             ylab = "Mean marker favourable allele frequency",
+                                             ...){
+  
+  # set function to extract mean marker favourable allele frequency
+  extract.mean.marker.fav.allele.freq <- function(seasons){
+    # initialize result vector
+    mean.marker.fav.allele.freq <- rep(NA, length(seasons))
+    # extract
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether season involves GP
+      if(!is.null(season$gp)){
+        mean.marker.fav.allele.freq[s] <- mean(season$gp$fav.marker.allele.freqs)
+      }
+    }
+    return(mean.marker.fav.allele.freq)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.mean.marker.fav.allele.freq, ylab = ylab, ...)
+  
+}
+
 ################
 # LOAD RESULTS #
 ################
