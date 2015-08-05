@@ -150,6 +150,19 @@ GS = function(founders, heritability,
     }
   }
   
+  # wrap GP training to include season number in warning when all markers are fixed 
+  train <- function(pheno, Z, method, s){
+    tryCatch(gp.train(pheno, Z, method),
+             warning = function(w){
+               if(grepl("all markers fixed", w)){
+                 warning(sprintf("all markers fixed in season %d", s))
+               } else {
+                 # throw back other warnings
+                 warning(w)
+               }
+             })
+  }
+  
   # initialize results list (one entry per season 0-n)
   seasons = as.list(rep(NA, num.seasons+1))
   
@@ -200,7 +213,7 @@ GS = function(founders, heritability,
   }
   
   # train GP
-  gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
+  gp.trained.model = train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method, 1)
   
   # select based on estimated values
   evaluated.base.pop = predict.values(gp.trained.model, evaluated.base.pop)
@@ -245,7 +258,7 @@ GS = function(founders, heritability,
     parents = seasons[[s]]$select$pop.out
     offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
     # update GP model
-    gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
+    gp.trained.model = train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method, s)
     # select from offspring based on estimated values using updated GP model
     offspring = predict.values(gp.trained.model, offspring)
     selected.names = selection.criterion(offspring$estGeneticValues, num.select)
