@@ -75,6 +75,8 @@ gp.train <- function(pheno, Z, method = c("RR", "BRR")){
   
   # combine mu and effects in unified model
   model <- list(mu = mu, effects = effects)
+  # set class name
+  class(model) <- append(class(model), "GPModel")
   
   return(model)
   
