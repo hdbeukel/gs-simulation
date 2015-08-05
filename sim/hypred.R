@@ -666,12 +666,10 @@ merge.populations = function(pop1, pop2){
 # LD COMPUTATIONS #
 ###################
 
+# find QTL-marker pairs in highest LD (on the same chromosome of course)
+# returns data frame with three columns: QTL.index, marker.index, LD
 QTL.marker.highest.LD <- function(pop){
-  
-  # !!! TODO: 
-  #     1) optimize !!! --> way too slow now ...
-  #     2) in case of multiple SNP in highest LD --> take closest according to genetic map
-  
+
   # assert: DH population
   if(is.null(pop$dh)){
     stop("DH population expected")
@@ -683,46 +681,60 @@ QTL.marker.highest.LD <- function(pop){
   # get dummy marker indices
   dummy.indices <- get.dummy.indices(pop)
   # infer non QTL non dummy indices
-  non.QTL.non.dummy <- setdiff(1:pop$numMarkers, c(QTL.indices, dummy.indices))
+  SNP.indices <- setdiff(1:pop$numMarkers, c(QTL.indices, dummy.indices))
   
-  # initialize result matrix
-  result <- matrix(NA, nrow = num.QTL, ncol = 3)
-  colnames(result) <- c("QTL.pos", "marker.pos", "LD")
+  # initialize result vectors
+  highest.LD.marker.indices <- rep(NA, num.QTL)
+  QTL.marker.LD <- rep(NA, num.QTL)
   
   # find marker in highest LD with each QTL
   for(i in 1:num.QTL){
+    # get QTL index
     QTL.index <- QTL.indices[i]
     # get QTL alleles in population
     QTL.alleles <- pop$dh[, QTL.index]
     # check whether QTL is polymorphic
     if(sd(QTL.alleles) > 0){
-      # compute LD with each marker
-      marker.LD <- sapply(non.QTL.non.dummy, function(marker.index){
+      # get QTL chromosome
+      QTL.chrom <- pop$map[QTL.index, 1]
+      # get SNP indices on QTL chromosome
+      QTL.chrom.SNP.indices <- intersect(SNP.indices, which(pop$map$chr == QTL.chrom))
+      # compute LD with each SNP on same chromosome
+      marker.LD <- sapply(QTL.chrom.SNP.indices, function(marker.index){
         marker.alleles <- pop$dh[, marker.index]
-        if(sd(marker.alleles) > 0){
-          return(compute.LD(QTL.alleles, marker.alleles))
-        } else {
-          return(NA)
-        }
+        return(ifelse(sd(marker.alleles) > 0, compute.LD(QTL.alleles, marker.alleles), NA))
       })
       # check that not all markers are fixed
       if(sum(!is.na(marker.LD)) > 0){
-        # find highest LD and corresponding marker index
+        # find highest LD
         highest.LD <- max(marker.LD, na.rm = TRUE)
-        highest.LD.marker <- non.QTL.non.dummy[which.max(marker.LD)]
+        # get indices of markers in highest LD
+        highest.LD.markers <- QTL.chrom.SNP.indices[which(marker.LD == highest.LD)]
+        # select highest LD SNP closest to QTL
+        if(length(highest.LD.markers) == 1){
+          # unique max LD
+          highest.LD.marker <- highest.LD.markers[1]
+        } else {
+          # multiple max LD: select SNP closest to QTL
+          QTL.pos <- pop$map[QTL.index, 2]
+          marker.dist <- sapply(highest.LD.markers, function(marker.index){
+            marker.pos <- pop$map[marker.index, 2]
+            dist <- abs(marker.pos - QTL.pos)
+            return(dist)
+          })
+          highest.LD.marker <- highest.LD.markers[which.min(marker.dist)]
+        }
         # store
-        result[i, ] <- c(QTL.index, highest.LD.marker, highest.LD)
-      } else {
-        # all markers fixed
-        result[i, ] <- c(QTL.index, NA, NA)
+        highest.LD.marker.indices[i] <- highest.LD.marker
+        QTL.marker.LD[i] <- highest.LD
       }
-    } else {
-      # fixed QTL
-      result[i, ] <- c(QTL.index, NA, NA)
     }
   }
   
-  return(result)
+  # combine results in data frame
+  results <- data.frame(QTL.index = QTL.indices, marker.index = highest.LD.marker.indices, LD = QTL.marker.LD)
+  
+  return(results)
   
 }
 
