@@ -539,6 +539,32 @@ plot.effect.estimation.accuracy <- function(replicates,
   
 }
 
+# plot number of favourable QTL lost after selection
+plot.num.fav.QTL.lost <- function(replicates,
+                                  ylab = "Number favourable QTL lost",
+                                  ...){
+
+  # set function to extract number of favourable QTL lost
+  extract.num.fav.QTL.lost <- function(seasons){
+    # initialize result vector
+    num.lost <- rep(NA, length(seasons))
+    # extract number lost for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether this season involved selection
+      if(!is.null(season$selection)){
+        # extract and store number
+        num.lost[s] <- season$selection$num.fav.QTL.lost
+      }
+    }
+    return(num.lost)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.num.fav.QTL.lost, ylab = ylab, ...)
+  
+}
+
 ################
 # LOAD RESULTS #
 ################
