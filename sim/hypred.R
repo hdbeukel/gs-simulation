@@ -526,7 +526,7 @@ mate.dh = function(pop, n, name.prefix){
   # generate DHs
   for(i in 1:n){
     # select two distinct DH parents
-    gametes = pop$dh[sample(rownames(pop$dh), 2),]
+    gametes = pop$dh[sample(rownames(pop$dh), 2, replace = T),]
     # recombine to create new DH
     dh = recombine(pop$hypred$genome, gametes[1,], gametes[2,])
     # store

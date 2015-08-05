@@ -57,16 +57,22 @@ gp.train <- function(pheno, Z, method = c("RR", "BRR")){
   fixed <- which(mafs == 0)
   Z.poly <- Z[, -fixed]
   
-  method <- match.arg(method)
-  if(method == "BRR"){
-    model <- gp.train.BRR(pheno, Z.poly)
+  mu <- 0
+  effects.poly <- c()
+  # only train if *not* all markers fixed
+  if(ncol(Z.poly) > 0){
+    method <- match.arg(method)
+    if(method == "BRR"){
+      model <- gp.train.BRR(pheno, Z.poly)
+    } else {
+      model <- gp.train.RR(pheno, Z.poly)
+    }
+    # extract mu and effects
+    mu <- gp.get.mean.value(model)
+    effects.poly <- gp.get.effects(model)
   } else {
-    model <- gp.train.RR(pheno, Z.poly)
+    warning("did not train GP model: all markers fixed")
   }
-  
-  # extract mu and effects
-  mu <- gp.get.mean.value(model)
-  effects.poly <- gp.get.effects(model)
   
   # set effect to zero for all SNP (including fixed)
   effects <- rep(0, ncol(Z))
