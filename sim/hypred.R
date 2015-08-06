@@ -458,7 +458,7 @@ normalize.genetic.values <- function(values, effects, min = -1, max = 1){
 ###########################
 
 # create initial population by random mating of founders (non DH) + DH creation
-mate.founders = function(founders, n, name.prefix = "i"){
+mate.founders <- function(founders, n, name.prefix = "i"){
   # assert: dummies added
   if(!founders$hypred$dummiesAdded){
     stop("first add dummy markers using add.dummies(founders)")
@@ -468,47 +468,52 @@ mate.founders = function(founders, n, name.prefix = "i"){
     stop("only use this function for NON-DH populations (initial founders)")
   }
   # initialize output
-  offspring = founders
-  offspring$numGenotypes = n                          # number of DHs
-  offspring$dh = matrix(NA, n, ncol(founders$geno))   # DH matrix
-  colnames(offspring$dh) = colnames(founders$geno)
-  rownames(offspring$dh) = paste(name.prefix, seq(1:n), sep="-")
-  offspring$geno = NULL                               # discard founders genotype matrix
-  offspring$phasedGeno = NULL                         # discard founders phased genotypes
+  offspring <- founders
+  offspring$numGenotypes <- n                          # number of DHs
+  offspring$dh <- matrix(NA, n, ncol(founders$geno))   # DH matrix
+  colnames(offspring$dh) <- colnames(founders$geno)
+  rownames(offspring$dh) <- paste(name.prefix, seq(1:n), sep="-")
+  offspring$geno <- NULL                               # discard founders genotype matrix
+  offspring$phasedGeno <- NULL                         # discard founders phased genotypes
+  offspring$pedigree$par1 <- rep(NA, n)
+  offspring$pedigree$par2 <- rep(NA, n)
+  names(offspring$pedigree$par1) <- names(offspring$pedigree$par2) <- rownames(offspring$dh)
   # generate DHs
   for(i in 1:n){
     # select two distinct parents
-    parents = sample(nrow(founders$geno), 2)
+    parents <- sample(rownames(founders$geno), 2)
     # create gametes from each parent (recombination)
-    gametes = lapply(parents, function(p) {
+    gametes <- lapply(parents, function(p) {
       recombine(founders$hypred$genome, founders$phasedGeno$hap1[p,], founders$phasedGeno$hap2[p,])
     })
     # create DH
-    dh = recombine(founders$hypred$genome, gametes[[1]], gametes[[2]])
+    dh <- recombine(founders$hypred$genome, gametes[[1]], gametes[[2]])
     # store
-    offspring$dh[i,] = dh
+    offspring$dh[i,] <- dh
+    offspring$pedigree$par1[i] <- parents[1]
+    offspring$pedigree$par2[i] <- parents[2]
   }
   
   # update genetic values if QTL assigned
   if(!is.null(offspring$hypred$realQTL)){
-    offspring = infer.genetic.values(offspring)
+    offspring <- infer.genetic.values(offspring)
   }
   
   # update heritability (if set)
   if(!is.null(offspring$heritability)){
     # update heritability
-    offspring$heritability = offspring$geneticVar / (offspring$geneticVar + offspring$errorVar)
+    offspring$heritability <- offspring$geneticVar / (offspring$geneticVar + offspring$errorVar)
   }
   
   # erase phenotypes (if any)
-  offspring$pheno = NULL
+  offspring$pheno <- NULL
   
   return(offspring)
 }
 
 # create new population through random mating of individuals in a given DH population
 # random crossings create n F1 individuals + inbreeding --> one DH per F1 genotype
-mate.dh = function(pop, n, name.prefix){
+mate.dh <- function(pop, n, name.prefix){
   # assert: DH population
   if(is.null(pop$dh)){
     stop("only use this function for DH populations")
@@ -518,34 +523,40 @@ mate.dh = function(pop, n, name.prefix){
     stop("first add dummy markers using add.dummies(pop)")
   }
   # initialize output
-  offspring = pop
-  offspring$numGenotypes = n                          # number of DHs
-  offspring$dh = matrix(NA, n, pop$numMarkers)        # DH matrix
-  colnames(offspring$dh) = colnames(pop$dh)
-  rownames(offspring$dh) = paste(name.prefix, seq(1:n), sep="-")
+  offspring <- pop
+  offspring$numGenotypes <- n                          # number of DHs
+  offspring$dh <- matrix(NA, n, pop$numMarkers)        # DH matrix
+  colnames(offspring$dh) <- colnames(pop$dh)
+  rownames(offspring$dh) <- paste(name.prefix, seq(1:n), sep="-")
+  offspring$pedigree$par1 <- rep(NA, n)
+  offspring$pedigree$par2 <- rep(NA, n)
+  names(offspring$pedigree$par1) <- names(offspring$pedigree$par2) <- rownames(offspring$dh)
   # generate DHs
   for(i in 1:n){
     # select two distinct DH parents
-    gametes = pop$dh[sample(rownames(pop$dh), 2, replace = T),]
+    parents <- sample(rownames(pop$dh), 2, replace = T)
+    gametes <- pop$dh[parents,]
     # recombine to create new DH
-    dh = recombine(pop$hypred$genome, gametes[1,], gametes[2,])
+    dh <- recombine(pop$hypred$genome, gametes[1,], gametes[2,])
     # store
-    offspring$dh[i,] = dh
+    offspring$dh[i,] <- dh
+    offspring$pedigree$par1[i] <- parents[1]
+    offspring$pedigree$par2[i] <- parents[2]
   }
   
   # update genetic values if QTL assigned
   if(!is.null(offspring$hypred$realQTL)){
-    offspring = infer.genetic.values(offspring)
+    offspring <- infer.genetic.values(offspring)
   }
   
   # update heritability (if set)
   if(!is.null(offspring$heritability)){
     # update heritability
-    offspring$heritability = offspring$geneticVar / (offspring$geneticVar + offspring$errorVar)
+    offspring$heritability <- offspring$geneticVar / (offspring$geneticVar + offspring$errorVar)
   }
   
   # erase phenotypes (if any)
-  offspring$pheno = NULL
+  offspring$pheno <- NULL
   
   return(offspring)
 }
@@ -639,6 +650,11 @@ restrict.population = function(pop, names){
   if(!is.null(pop$estGeneticValues)){
     pop$estGeneticValues = pop$estGeneticValues[names]
   }
+  # restrict pedigree (if any)
+  if(!is.null(pop$pedigree)){
+    pop$pedigree$par1 = pop$pedigree$par1[names]
+    pop$pedigree$par2 = pop$pedigree$par2[names]
+  }
   # return restricted population
   return(pop)
 }
@@ -678,6 +694,11 @@ merge.populations = function(pop1, pop2){
   # merge estimated genetic values (if available for both populations)
   if(!is.null(pop1$estGeneticValues) && !is.null(pop2$estGeneticValues)){
     pop$estGeneticValues = c(pop1$estGeneticValues, pop2$estGeneticValues)
+  }
+  # merge pedigree (if available for both populations)
+  if(!is.null(pop1$pedigree) && !is.null(pop2$pedigree)){
+    pop$pedigree$par1 = c(pop1$pedigree$par1, pop2$pedigree$par1)
+    pop$pedigree$par2 = c(pop1$pedigree$par2, pop2$pedigree$par2)
   }
   # return merged population
   return(pop)

@@ -237,6 +237,26 @@ get.minor.alleles = function(markers, encoding = c("dh", "012")){
   return(ma)
 }
 
+# get genotype names
+get.geno.names <- function(pop){
+  if(!is.null(pop$dh)){
+    geno <- pop$dh
+  } else {
+    geno <- pop$geno
+  }
+  return(rownames(geno))
+}
+
+# get marker names
+get.marker.names <- function(pop){
+  if(!is.null(pop$dh)){
+    geno <- pop$dh
+  } else {
+    geno <- pop$geno
+  }
+  return(colnames(geno))
+}
+
 ###################
 # PREPROCESS DATA #
 ###################
