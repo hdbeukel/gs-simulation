@@ -305,6 +305,26 @@ replicate.simulation = function(num.rep = 100, simulate){
 # PLOTS #
 #########
 
+plot.multi <- function(simulations, plot.function, same.plot = FALSE, param.list = list(), ylim){
+  for(s in 1:length(simulations)){
+    # retrieve plot function parameters (cyclically reused)
+    p <- ((s-1) %% length(param.list)) + 1
+    params <- param.list[[p]]
+    # set simulation to plot
+    sim <- simulations[[s]]
+    params$replicates <- sim
+    # add to same plot if requested
+    add <- same.plot && s > 1
+    params$add <- add
+    # add ylim to params if set
+    if(!missing(ylim)){
+      params$ylim <- ylim
+    }
+    # plot simulation results
+    do.call(plot.function, params)
+  }
+}
+
 # plot a certain variable extracted from the simulations:
 #  --> input:   list of replicates (each replicate is a list of simulated seasons)
 #  --> plotted: values of variable extracted with the given function 'extract.values',
@@ -354,8 +374,8 @@ plot.simulation.variable <- function(replicates,
   }
   
   # compute averages and standard error + CI across replicates
-  value.avg <- colMeans(values)
-  value.std.err <- apply(values, 2, sd)/sqrt(num.rep)
+  value.avg <- colMeans(values, na.rm = TRUE)
+  value.std.err <- apply(values, 2, sd, na.rm = TRUE)/sqrt(num.rep)
   value.ci.halfwidth <- qnorm(ci+(1-ci)/2)*value.std.err
   # only plot CI when large enough to be visible ???
   # value.ci.halfwidth[value.ci.halfwidth < 0.15] = NA
@@ -568,6 +588,35 @@ plot.num.fav.QTL.lost <- function(replicates,
   
   # call generic variable plot function
   plot.simulation.variable(replicates, extract.values =  extract.num.fav.QTL.lost, ylab = ylab, ...)
+  
+}
+
+# plot ratio of fixed QTL
+plot.ratio.fixed.QTL <- function(replicates,
+                                 ylab = "Ratio of fixed QTL",
+                                 ...){
+  
+  # set function to extract ratio of fixed QTL
+  extract.ratio.fixed.QTL <- function(seasons){
+    # initialize result vector
+    ratio.fixed <- rep(NA, length(seasons))
+    # extract ratio for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether selection candidates have been produced in this season
+      if(!is.null(season$candidates)){
+        # extract and store ratio
+        fav.QTL.allele.freqs <- season$candidates$fav.QTL.allele.freqs
+        mafs <- pmin(fav.QTL.allele.freqs, 1 - fav.QTL.allele.freqs)
+        ratio <- sum(mafs == 0)/length(fav.QTL.allele.freqs)
+        ratio.fixed[s] <- ratio
+      }
+    }
+    return(ratio.fixed)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.ratio.fixed.QTL, ylab = ylab, ...)
   
 }
 
