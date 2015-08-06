@@ -55,7 +55,11 @@ gp.train <- function(pheno, Z, method = c("RR", "BRR")){
   # ignore fixed SNP for estimation
   mafs <- compute.minor.allele.frequencies(Z)
   fixed <- which(mafs == 0)
-  Z.poly <- Z[, -fixed]
+  if(length(fixed) > 0){
+    Z.poly <-  Z[, -fixed]
+  } else {
+    Z.poly <- Z
+  }
   
   mu <- 0
   effects.poly <- c()
