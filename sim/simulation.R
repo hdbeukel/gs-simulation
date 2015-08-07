@@ -1,4 +1,5 @@
 library(Hmisc)
+library(synbreed)
 
 #################################
 # SELECTION STRATEGY SIMULATION #
@@ -487,8 +488,12 @@ plot.genetic.standard.deviation <- function(replicates,
 
 # plot average inbreeding coefficient among selection candidates
 plot.mean.inbreeding <- function(replicates,
+                                 type = c("ped", "geno"),
                                  ylab = "Mean inbreeding coefficient",
                                  ...){
+  
+  # get selected type
+  type <- match.arg(type)
   
   # set function to extract mean inbreeding coefficient
   extract.mean.inbr <- function(seasons){
@@ -500,7 +505,7 @@ plot.mean.inbreeding <- function(replicates,
       # check whether selection candidates have been produced in this season
       if(!is.null(season$candidates)){
         # extract and store mean inbreeding coefficient
-        mean.inbr[s] <- mean(season$candidates$inbreeding)
+        mean.inbr[s] <- mean(season$candidates$inbreeding[[type]])
       }
     }
     return(mean.inbr)
@@ -692,13 +697,17 @@ extract.metadata <- function(seasons){
   
   # initialize result list
   num.seasons <- length(seasons)-1
-  metadata <- lapply(1:(num.seasons+1), function(i) {list()} )
+  metadata <- lapply(1:(num.seasons+1), function(i) {list()})
+  
+  # initialize complete pedigree
+  pedigree <- list()
   
   # store general variables
   base.pop <- seasons[[1]]$cross.inbreed$pop.out
   # 1) QTL effects
   metadata[[1]]$general$qtl.effects <- get.qtl.effects(base.pop)
-
+  # 2) complete pedigree --> after processing each season (see below)
+  
   # go through all seasons
   for(s in 0:num.seasons){
     
@@ -736,8 +745,32 @@ extract.metadata <- function(seasons){
       if(!is.null(candidates$estGeneticValues)){
         metadata[[s+1]]$candidates$estGeneticValues <- candidates$estGeneticValues
       }
+      
       # 4) inbreeding coefficients
-      metadata[[s+1]]$candidates$inbreeding <- inbreeding.coefficients(candidates)
+      
+      # 4A) genomic
+  
+      metadata[[s+1]]$candidates$inbreeding$geno <- genomic.inbreeding.coefficients(candidates)
+      
+      # 4B) pedigree
+      
+      # update pedigree data
+      pedigree$ID <- c(pedigree$ID, get.geno.names(candidates))
+      pedigree$par1 <- c(pedigree$par1, candidates$pedigree$par1)
+      pedigree$par2 <- c(pedigree$par2, candidates$pedigree$par2)
+      # convert to synbreed data
+      candidates.ped <- create.pedigree(pedigree$ID, pedigree$par1, pedigree$par2, add.ancestors = TRUE)
+      candidates.ped <- create.gpData(pedigree = candidates.ped)
+      # compute A-matrix
+      A <- kin(candidates.ped, ret = "add")
+      # infer all inbreeding coefficients
+      all.inbreeding.coefs <- diag(A) - 1
+      # erase relationship matrix class
+      class(all.inbreeding.coefs) <- NULL
+      # store inbreeding coefficients of current selection candidates only
+      cur.gener <- max(candidates.ped$pedigree$gener)
+      metadata[[s+1]]$candidates$inbreeding$ped <- all.inbreeding.coefs[candidates.ped$pedigree$gener == cur.gener]
+      
       # 5) QTL favourable allele frequencies
       metadata[[s+1]]$candidates$fav.QTL.allele.freqs <- get.favourable.qtl.allele.frequencies(candidates)
       # 6) QTL - marker LD
@@ -829,6 +862,9 @@ extract.metadata <- function(seasons){
     
   }
   
+  # store complete pedigree
+  metadata[[1]]$general$pedigree <- pedigree
+  
   return(metadata)
   
 }
@@ -846,8 +882,8 @@ genomic.relationship.matrix <- function (Z){
   return(G)
 }
 
-# get coefficients of inbreeding for each individual
-inbreeding.coefficients <- function(pop){
+# get genomic coefficients of inbreeding for each individual
+genomic.inbreeding.coefficients <- function(pop){
   Z <- gp.design.matrix(pop)
   G <- genomic.relationship.matrix(Z)
   coeff <- diag(G)-1
