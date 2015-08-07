@@ -4,13 +4,16 @@
 
 # command line arguments:
 #  1: simulation type (PS, GS, WGS)
-#  2: number of seasons (even)
+#  2: number of seasons
 #  3: heritability
-#  4: effect sampling method (normal, jannink)
-#  5: GP method (RR, BRR), ignored for PS
-#  6: random generator seed (empty string for random seed)
-#  7: iteration number
-# output file written to: out/<1>/<2>-seasons/h2-<3>/<4>-effects/<5>/<7>.RDS
+#  4: additional TP size, ignored for PS
+#  5: effect sampling method (normal, jannink)
+#  6: GP method (RR, BRR), ignored for PS
+#  7: random generator seed (empty string for random seed)
+#  8: iteration number
+# output file written to:
+#  - GS, WGS: out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/<8>.RDS
+#  - PS:      out/<1>/<2>-seasons/h2-<3>/<5>-effects/<8>.RDS
 
 # load scripts
 suppressMessages(source("scripts.R"))
@@ -23,13 +26,14 @@ sim.function.name <- args[1]
 sim.function = get(sim.function.name)
 num.seasons <- as.numeric(args[2])
 heritability <- as.numeric(args[3])
-QTL.effects <- args[4]
-gp.method <- args[5]
+add.TP <- as.numeric(args[4])
+QTL.effects <- args[5]
+gp.method <- args[6]
 if(sim.function.name == "PS"){
   gp.method <- ""
 }
-seed <- as.numeric(args[6])
-it <- as.numeric(args[7])
+seed <- as.numeric(args[7])
+it <- as.numeric(args[8])
 
 # set seed
 if(is.na(seed)){
@@ -42,13 +46,28 @@ message(sprintf("Seed: %d", seed))
 seasons <- sim.function(founders, heritability,
                         num.seasons = num.seasons,
                         QTL.effects = QTL.effects,
-                        gp.method = gp.method)
+                        gp.method = gp.method,
+                        add.TP = add.TP)
 
 # write output
-out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/%s-effects/%s",
-                   sim.function.name, num.seasons,
-                   heritability, QTL.effects, gp.method)
+if(sim.function.name == "PS"){
+  out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/%s-effects",
+                     sim.function.name, num.seasons,
+                     heritability, QTL.effects)
+} else {
+  out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s",
+                     sim.function.name, num.seasons, heritability,
+                     add.TP, QTL.effects, gp.method)
+}
 file.name <- paste(it, "RDS", sep=".")
 dir.create(out.dir, showWarning = FALSE, recursive = TRUE)
 full.path <- paste(out.dir, file.name, sep="/")
 saveRDS(seasons, file = full.path)
+
+
+
+
+
+
+
+
