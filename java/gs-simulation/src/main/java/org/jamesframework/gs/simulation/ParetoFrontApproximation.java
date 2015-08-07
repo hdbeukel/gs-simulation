@@ -4,6 +4,8 @@ package org.jamesframework.gs.simulation;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.jamesframework.core.problems.objectives.Objective;
 import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
@@ -17,8 +19,8 @@ import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.data.PopulationReader;
 import org.jamesframework.gs.simulation.obj.EntryToNearestEntryDistance;
 import org.jamesframework.gs.simulation.obj.ExpectedProportionOfHeterozygousLoci;
-import org.jamesframework.gs.simulation.obj.MeanBreedingValue;
 import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
+import org.jamesframework.gs.simulation.obj.NormalizedObjective;
 
 public class ParetoFrontApproximation {
 
@@ -48,12 +50,19 @@ public class ParetoFrontApproximation {
             default: throw new IllegalArgumentException("Unknown diversity measure: " + divMeasure + ". "
                                                       + "Please specify one of HE or MR.");
         }
-
-        // create value objective
-        Objective<SubsetSolution, PopulationData> valueObj = new MeanBreedingValue();
+        
+        // normalize objectives
+        System.out.println("Normalizing objectives ...");
+        // find solutions with highest value and diversity
+        SubsetSolution highestValueSol = API.get().getHighestValueSolution(data, subsetSize);
+        SubsetSolution highestDivSol = API.get().getHighestDiversitySolution(divObj, data, subsetSize);
+        // normalize objectives
+        NormalizedObjective<SubsetSolution, PopulationData> normValueObj, normDivObj;
+        normDivObj = API.get().getNormalizedDiversityObjective(highestValueSol, highestDivSol, divObj, data);
+        normValueObj = API.get().getNormalizedValueObjective(highestValueSol, highestDivSol, data);
 
         // run optimizations with different weighted objectives
-        System.out.println("ID, repeat, divWeight, valueWeight, div, value, weighted");
+        System.out.println("ID, repeat, divWeight, valueWeight, div, value, weighted (normalized)");
 
         double divWeight = 0.0, valueWeight;
         int experimentID = 0;
@@ -62,14 +71,10 @@ public class ParetoFrontApproximation {
             // set value weight
             valueWeight = 1.0 - divWeight;
 
-            // compose weighted index
-            WeightedIndex<SubsetSolution, PopulationData> index = new WeightedIndex<>();
-            if(divWeight > 1e-8){
-                index.addObjective(divObj, divWeight);
-            }
-            if(valueWeight > 1e-8){
-                index.addObjective(valueObj, valueWeight);
-            }
+            // create weighted index
+            List<Objective<SubsetSolution, PopulationData>> objs = Arrays.asList(normDivObj, normValueObj);
+            List<Double> weights = Arrays.asList(divWeight, valueWeight);
+            WeightedIndex<SubsetSolution, PopulationData> index = API.get().getWeightedIndex(objs, weights);
 
             // create problem
             SubsetProblem<PopulationData> problem = new SubsetProblem<>(data, index, subsetSize);
@@ -77,16 +82,16 @@ public class ParetoFrontApproximation {
             // repeatedly run optimization
             for(int r=0; r<repeats; r++){
                 // create search
-                Search<SubsetSolution> search = API.get().createSearch(problem);
+                Search<SubsetSolution> search = API.get().createParallelTempering(problem);
                 // set maximum runtime
                 search.addStopCriterion(new MaxRuntime(timeLimit, TimeUnit.SECONDS));
                 // run search
                 search.start();
-                // output results
+                // output results (!! non-normalized values)
                 SubsetSolution bestSol = search.getBestSolution();
                 Evaluation weightedEval = search.getBestSolutionEvaluation();
-                Evaluation divEval = divObj.evaluate(bestSol, data);
-                Evaluation valueEval = valueObj.evaluate(bestSol, data);
+                Evaluation divEval = normDivObj.getObjective().evaluate(bestSol, data);
+                Evaluation valueEval = normValueObj.getObjective().evaluate(bestSol, data);
                 System.out.format("%d, %d, %f, %f, %f, %f, %f\n",
                                   experimentID,
                                   r,
