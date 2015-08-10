@@ -9,10 +9,10 @@ public class CLI {
         System.out.println();
         System.out.println("java -cp gs-simulation.jar org.jamesframework.gs.simulation.ParetoFrontApproximation "
                          + "<value-file> <marker-file> <diversity-measure> <weight-delta> "
-                         + "<subset-size> <repeats> <algo-time-limit>");
+                         + "<subset-size> <repeats> <time-limit-without-impr>");
         System.out.println("java -cp gs-simulation.jar org.jamesframework.gs.simulation.WeightedOptimization "
                          + "<value-file> <marker-file> <diversity-measure> <diversity-weight> "
-                         + "<subset-size> <time-limit>");
+                         + "<subset-size> <time-without-impr>");
         System.out.println();
     }
     

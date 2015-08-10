@@ -11,6 +11,7 @@ import org.jamesframework.core.problems.objectives.Objective;
 import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
 import org.jamesframework.core.search.Search;
 import org.jamesframework.core.search.stopcriteria.MaxRuntime;
+import org.jamesframework.core.search.stopcriteria.MaxTimeWithoutImprovement;
 import org.jamesframework.core.subset.SubsetProblem;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.ext.problems.objectives.WeightedIndex;
@@ -33,7 +34,7 @@ public class ParetoFrontApproximation {
         double weightDelta = Double.parseDouble(args[3]);
         int subsetSize = Integer.parseInt(args[4]);
         int repeats = Integer.parseInt(args[5]);
-        int timeLimit = Integer.parseInt(args[6]);
+        int timeWithoutImpr = Integer.parseInt(args[6]);
         // read data
         PopulationReader reader = new PopulationReader();
         PopulationData data = reader.read(Paths.get(valueFile), Paths.get(markerFile));
@@ -80,7 +81,7 @@ public class ParetoFrontApproximation {
                 // create search
                 Search<SubsetSolution> search = API.get().createParallelTempering(problem);
                 // set maximum runtime
-                search.addStopCriterion(new MaxRuntime(timeLimit, TimeUnit.SECONDS));
+                search.addStopCriterion(new MaxTimeWithoutImprovement(timeWithoutImpr, TimeUnit.SECONDS));
                 // run search
                 search.start();
                 // output results (!! non-normalized values)

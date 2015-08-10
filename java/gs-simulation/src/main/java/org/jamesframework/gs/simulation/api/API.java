@@ -13,6 +13,7 @@ import org.jamesframework.core.search.algo.ParallelTempering;
 import org.jamesframework.core.search.algo.RandomDescent;
 import org.jamesframework.core.search.neigh.Neighbourhood;
 import org.jamesframework.core.search.stopcriteria.MaxRuntime;
+import org.jamesframework.core.search.stopcriteria.MaxTimeWithoutImprovement;
 import org.jamesframework.core.subset.SubsetProblem;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.core.subset.neigh.SingleSwapNeighbourhood;
@@ -76,9 +77,9 @@ public class API {
         
         // create problem: maximize diversity
         SubsetProblem<PopulationData> maxDivProblem = new SubsetProblem<>(data, divObj, subsetSize);
-        // run parallel tempering search with short time limit (5 seconds)
+        // run short parallel tempering search (stop after 3 seconds without improvement)
         Search<SubsetSolution> pt = createParallelTempering(maxDivProblem);
-        pt.addStopCriterion(new MaxRuntime(5, TimeUnit.SECONDS));
+        pt.addStopCriterion(new MaxTimeWithoutImprovement(3, TimeUnit.SECONDS));
         pt.start();
         pt.dispose();
         // retrieve solution with maximized diversity and corresponding diversity score

@@ -11,6 +11,7 @@ import org.jamesframework.core.problems.objectives.Objective;
 import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
 import org.jamesframework.core.search.Search;
 import org.jamesframework.core.search.stopcriteria.MaxRuntime;
+import org.jamesframework.core.search.stopcriteria.MaxTimeWithoutImprovement;
 import org.jamesframework.core.subset.SubsetProblem;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.examples.util.ProgressSearchListener;
@@ -34,7 +35,7 @@ public class WeightedOptimization {
         double divWeight = Double.parseDouble(args[3]);
         double valueWeight = 1.0 - divWeight;
         int subsetSize = Integer.parseInt(args[4]);
-        int timeLimit = Integer.parseInt(args[5]);
+        int timeWithoutImpr = Integer.parseInt(args[5]);
         // read data
         PopulationReader reader = new PopulationReader();
         PopulationData data = reader.read(Paths.get(valueFile), Paths.get(markerFile));
@@ -71,7 +72,7 @@ public class WeightedOptimization {
         // create parallel tempering search
         Search<SubsetSolution> search = API.get().createParallelTempering(problem);
         // set maximum runtime
-        search.addStopCriterion(new MaxRuntime(timeLimit, TimeUnit.SECONDS));
+        search.addStopCriterion(new MaxTimeWithoutImprovement(timeWithoutImpr, TimeUnit.SECONDS));
         // track progress
         search.addSearchListener(new ProgressSearchListener());
         
