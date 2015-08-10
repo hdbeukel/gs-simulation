@@ -57,9 +57,12 @@ public class API {
         return search;
     }
     
-    public SubsetSolution getHighestValueSolution(PopulationData data, int subsetSize){
+    public NormalizedObjectives getNormalizedObjectives(Objective<SubsetSolution, PopulationData> divObj,
+                                                        PopulationData data, int subsetSize){
+
+        System.err.println("Normalizing objectives ...");
         
-        // infer subset with highest possible average value (sorting)
+        // STEP 1: infer subset with highest possible average value (sorting)
         
         // sort individual IDs on breeding value
         List<Integer> ids = new ArrayList<>(data.getIDs());
@@ -68,15 +71,8 @@ public class API {
         // create solution with highest value IDs
         SubsetSolution highestValSol = new SubsetSolution(data.getIDs());
         highestValSol.selectAll(ids.subList(ids.size() - subsetSize, ids.size()));
-        
-        return highestValSol;
-        
-    }
-    
-    public SubsetSolution getHighestDiversitySolution(Objective<SubsetSolution, PopulationData> divObj,
-                                                      PopulationData data, int subsetSize){
-        
-        // approximate subset with highest possible diversity (requires preliminary optimization)
+
+        // STEP 2: approximate subset with highest possible diversity (requires preliminary optimization)
         
         // create problem: maximize diversity
         SubsetProblem<PopulationData> maxDivProblem = new SubsetProblem<>(data, divObj, subsetSize);
@@ -88,44 +84,30 @@ public class API {
         // retrieve solution with maximized diversity and corresponding diversity score
         SubsetSolution highestDivSol = pt.getBestSolution();
         
-        return highestDivSol;
+        // STEP 3: get bounds of Pareto front
         
-    }
-    
-    public NormalizedObjective<SubsetSolution, PopulationData> getNormalizedValueObjective(SubsetSolution highestValueSol,
-                                                                                           SubsetSolution highestDivSol,
-                                                                                           PopulationData data){
-
         MeanBreedingValue valueObj = new MeanBreedingValue();
         
         // get maximum value
-        double maxVal = valueObj.evaluate(highestValueSol, data).getValue();
-        
+        double maxVal = valueObj.evaluate(highestValSol, data).getValue();
         // get value of highest diversity solution
         double minVal = valueObj.evaluate(highestDivSol, data).getValue();
-        
-        // normalize objective from this range to [0,1]
-        NormalizedObjective<SubsetSolution, PopulationData> normalizedObj = new NormalizedObjective<>(valueObj, minVal, maxVal);
-        
-        return normalizedObj;
-        
-    }
-    
-    public NormalizedObjective<SubsetSolution, PopulationData> getNormalizedDiversityObjective(SubsetSolution highestValueSol,
-                                                                                               SubsetSolution highestDivSol,
-                                                                                               Objective<SubsetSolution, PopulationData> divObj,
-                                                                                               PopulationData data){
-        
         // get maximum diversity
         double maxDiv = divObj.evaluate(highestDivSol, data).getValue();
-        
         // get diversity of highest value solution
-        double minDiv = divObj.evaluate(highestValueSol, data).getValue();
+        double minDiv = divObj.evaluate(highestValSol, data).getValue();
         
-        // normalize objective from this range to [0,1]
-        NormalizedObjective<SubsetSolution, PopulationData> normalizedObj = new NormalizedObjective<>(divObj, minDiv, maxDiv);
+        System.err.format("Mean breeding value range: [%f, %f]\n", minVal, maxVal);
+        System.err.format("Diversity score range: [%f, %f]\n", minDiv, maxDiv);
         
-        return normalizedObj;
+        // STEP 4: create normalized objectives
+        
+        NormalizedObjective<SubsetSolution, PopulationData> normValueObj = new NormalizedObjective<>(valueObj, minVal, maxVal);
+        NormalizedObjective<SubsetSolution, PopulationData> normDivObj = new NormalizedObjective<>(divObj, minDiv, maxDiv);
+        
+        NormalizedObjectives normObjs = new NormalizedObjectives(normValueObj, normDivObj);
+        
+        return normObjs;
         
     }
     

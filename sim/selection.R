@@ -14,6 +14,25 @@ select.highest.score <- function(scores, n){
   return(selected.names)
 }
 
+####################
+# DIVERSITY SCORES #
+####################
+
+HE <- function(Z, sel){
+  
+  # compute average genome of selection
+  freqs <- colMeans(Z[sel, ])
+
+  # compute HE from p
+  he <- sum(sapply(freqs, function(p){
+    p * (1-p)
+  }))
+  he <- 2*he/ncol(Z)
+  
+  return(he)
+    
+}
+
 ####################################
 # WEIGHTED SELECTION PARETO FRONTS #
 ####################################
@@ -62,10 +81,10 @@ plot.pareto.front <- function(file, title = "Pareto front", xlab = "Diversity"){
   
 }
 
-plot.pareto.fronts <- function(div.measure = c("MR", "HE")){
+plot.pareto.fronts <- function(dir, div.measure = c("MR", "HE")){
   
   div.measure <- match.arg(div.measure)
-  dir <- sprintf("out/pareto-fronts/%s", div.measure)
+  dir <- sprintf("%s/%s", dir, div.measure)
   
   for(pop in 1:3){
     for(snapshot in c("early", "medium", "late")){

@@ -20,23 +20,26 @@ public class HEEvaluation implements Evaluation {
     
     public HEEvaluation(HEEvaluation toCopy){
         this.n = toCopy.n;
-        this.alleleFreqs = Arrays.copyOf(toCopy.alleleFreqs, n);
+        this.alleleFreqs = Arrays.copyOf(toCopy.alleleFreqs, toCopy.alleleFreqs.length);
     }
     
     public void swap(int[] delGenome, int[] addGenome){
-        for(int m=0; m<n; m++){
-            alleleFreqs[m] -= ((double) delGenome[m])/n;
-            alleleFreqs[m] += ((double) addGenome[m])/n;
+        int numMarkers = alleleFreqs.length;
+        for(int m=0; m<numMarkers; m++){
+            alleleFreqs[m] *= n;
+            alleleFreqs[m] -= delGenome[m];
+            alleleFreqs[m] += addGenome[m];
+            alleleFreqs[m] /= n;
         }
     }
-
     @Override
     public double getValue() {
         double he = 0.0;
-        for(int m=0; m<n; m++){
+        int numMarkers = alleleFreqs.length;
+        for(int m=0; m<numMarkers; m++){
             he += alleleFreqs[m] * (1.0 - alleleFreqs[m]);
         }
-        he = 2.0/n * he;
+        he = 2.0/numMarkers * he;
         return he;
     }
     

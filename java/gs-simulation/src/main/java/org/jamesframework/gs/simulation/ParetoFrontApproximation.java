@@ -15,12 +15,12 @@ import org.jamesframework.core.subset.SubsetProblem;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.ext.problems.objectives.WeightedIndex;
 import org.jamesframework.gs.simulation.api.API;
+import org.jamesframework.gs.simulation.api.NormalizedObjectives;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.data.PopulationReader;
 import org.jamesframework.gs.simulation.obj.EntryToNearestEntryDistance;
 import org.jamesframework.gs.simulation.obj.ExpectedProportionOfHeterozygousLoci;
 import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
-import org.jamesframework.gs.simulation.obj.NormalizedObjective;
 
 public class ParetoFrontApproximation {
 
@@ -52,17 +52,10 @@ public class ParetoFrontApproximation {
         }
         
         // normalize objectives
-        System.out.println("Normalizing objectives ...");
-        // find solutions with highest value and diversity
-        SubsetSolution highestValueSol = API.get().getHighestValueSolution(data, subsetSize);
-        SubsetSolution highestDivSol = API.get().getHighestDiversitySolution(divObj, data, subsetSize);
-        // normalize objectives
-        NormalizedObjective<SubsetSolution, PopulationData> normValueObj, normDivObj;
-        normDivObj = API.get().getNormalizedDiversityObjective(highestValueSol, highestDivSol, divObj, data);
-        normValueObj = API.get().getNormalizedValueObjective(highestValueSol, highestDivSol, data);
+        NormalizedObjectives normObjs = API.get().getNormalizedObjectives(divObj, data, subsetSize);
 
         // run optimizations with different weighted objectives
-        System.out.println("ID, repeat, divWeight, valueWeight, div, value, weighted (normalized)");
+        System.out.println("ID, repeat, divWeight, valueWeight, div, value, div (normalized), value (normalized), weighted (normalized)");
 
         double divWeight = 0.0, valueWeight;
         int experimentID = 0;
@@ -72,7 +65,10 @@ public class ParetoFrontApproximation {
             valueWeight = 1.0 - divWeight;
 
             // create weighted index
-            List<Objective<SubsetSolution, PopulationData>> objs = Arrays.asList(normDivObj, normValueObj);
+            List<Objective<SubsetSolution, PopulationData>> objs = Arrays.asList(
+                    normObjs.getDivObj(),
+                    normObjs.getValueObj()
+            );
             List<Double> weights = Arrays.asList(divWeight, valueWeight);
             WeightedIndex<SubsetSolution, PopulationData> index = API.get().getWeightedIndex(objs, weights);
 
@@ -90,15 +86,19 @@ public class ParetoFrontApproximation {
                 // output results (!! non-normalized values)
                 SubsetSolution bestSol = search.getBestSolution();
                 Evaluation weightedEval = search.getBestSolutionEvaluation();
-                Evaluation divEval = normDivObj.getObjective().evaluate(bestSol, data);
-                Evaluation valueEval = normValueObj.getObjective().evaluate(bestSol, data);
-                System.out.format("%d, %d, %f, %f, %f, %f, %f\n",
+                Evaluation divEval = normObjs.getDivObj().getObjective().evaluate(bestSol, data);
+                Evaluation valueEval = normObjs.getValueObj().getObjective().evaluate(bestSol, data);
+                Evaluation divNormEval = normObjs.getDivObj().evaluate(bestSol, data);
+                Evaluation valueNormEval = normObjs.getValueObj().evaluate(bestSol, data);
+                System.out.format("%d, %d, %f, %f, %f, %f, %f, %f, %f\n",
                                   experimentID,
                                   r,
                                   divWeight,
                                   valueWeight,
                                   divEval.getValue(),
                                   valueEval.getValue(),
+                                  divNormEval.getValue(),
+                                  valueNormEval.getValue(),
                                   weightedEval.getValue());
                 // dispose search
                 search.dispose();
