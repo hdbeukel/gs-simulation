@@ -185,7 +185,12 @@ GS = function(founders, heritability,
   base.pop = set.heritability(base.pop, heritability)
   # generate additional TP if requested
   if(add.TP > 0){
+    # cross founders
     add.TP.pop = mate.founders(founders, add.TP, "add-tp")
+    # set same QTL effects as in base population
+    add.TP.pop$hypred = base.pop$hypred
+    # infer genetic values
+    add.TP.pop = infer.genetic.values(add.TP.pop)
     # set same error variance as base population
     add.TP.pop = set.error.variance(add.TP.pop, base.pop$errorVar)
   } else {

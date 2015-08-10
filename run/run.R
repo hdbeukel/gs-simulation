@@ -49,6 +49,9 @@ seasons <- sim.function(founders, heritability,
                         gp.method = gp.method,
                         add.TP = add.TP)
 
+# print warnings
+warnings()
+
 # write output
 if(sim.function.name == "PS"){
   out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/%s-effects",

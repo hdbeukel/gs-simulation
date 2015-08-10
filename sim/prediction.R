@@ -78,11 +78,14 @@ gp.train <- function(pheno, Z, method = c("RR", "BRR")){
     warning("did not train GP model: all markers fixed")
   }
   
-  # set effect to zero for all SNP (including fixed)
-  effects <- rep(0, ncol(Z))
-  # overwrite with actual estimated effect for polymorphic SNP
-  effects[-fixed] <- effects.poly
-  # set marker names in effects vector
+  if(length(fixed) > 0){
+    # some markers fixed: set effect to zero
+    effects <- rep(0, ncol(Z))
+    effects[-fixed] <- effects.poly
+  } else {
+    # estimated effect for all markers
+    effects <- effects.poly
+  }
   names(effects) <- colnames(Z)
   
   # combine mu and effects in unified model
