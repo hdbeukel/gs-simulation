@@ -255,7 +255,7 @@ GS = function(founders, heritability,
                                        values = evaluated.base.pop$estGeneticValues,
                                        markers = gp.design.matrix(evaluated.base.pop))
   selected.pop = restrict.population(evaluated.base.pop, selected.names)
-  
+
   # store season
   season.1 = list(evaluate = list(pop = evaluated.base.pop, add.tp = evaluated.add.TP.pop),
                   select = list(pop.in = evaluated.base.pop, pop.out = selected.pop),
@@ -268,7 +268,7 @@ GS = function(founders, heritability,
   
   # cross & inbreed
   offspring = mate.dh(selected.pop, F1.size, "s2")
-  
+
   # select based on estimated values
   offspring = predict.values(gp.trained.model, offspring)
   selected.names = selection.criterion(n = num.select,
@@ -774,7 +774,7 @@ extract.metadata <- function(seasons){
     # get current and next season (if any)
     season <- seasons[[s+1]]
     next.season <- NULL
-    if(s+2 <= num.seasons){
+    if(s+2 <= (num.seasons+1)){
       next.season <- seasons[[s+2]]
     }
     
