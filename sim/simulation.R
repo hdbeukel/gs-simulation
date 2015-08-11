@@ -13,7 +13,7 @@ library(synbreed)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, num.select=20, num.seasons=26,
+              F1.size=200, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
               ...){
   
@@ -74,7 +74,9 @@ PS = function(founders, heritability,
       # evaluate (phenotypes)
       evaluated.pop = infer.phenotypes(pop)
       # select
-      selected.names = selection.criterion(num.select, evaluated.pop$pheno)
+      selected.names = selection.criterion(n = num.select,
+                                           values = evaluated.pop$pheno,
+                                           markers = gp.design.matrix(evaluated.pop))
       selected.pop = restrict.population(evaluated.pop, selected.names)
       # store
       new.season = list(evaluate = list(pop = evaluated.pop),
@@ -91,26 +93,52 @@ PS = function(founders, heritability,
   
 }
 
+WGS = function(founders, heritability,
+               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               selection.criterion=select.highest.score,
+               gp.method = c("RR", "BRR"), ...){
+  return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion,
+            gp.method, weighted = TRUE, ...))
+}
+CGS = function(founders, heritability,
+               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               gp.method = c("RR", "BRR"),
+               div.weight, div.measure = c("MR", "HE"),
+               type = c("index", "split"), ...){
+  
+  # get selected type
+  type <- match.arg(type)
+  
+  if(type == "index"){
+    # maximize weighted index
+    sel.crit <- function(n, values, markers){
+      select.weighted.index(n, values, markers, div.weight, div.measure)
+    }
+  } else {
+    # split & combine: highest quality + most diverse individuals
+    stop("not yet supported!")
+  }
+  
+  # run GS with combinatorial selection strategy
+  return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = sel.crit,
+            gp.method, weighted = FALSE, ...))
+  
+}
 # simulate genomic selection (possibly weighted by favourable allele frequencies)
 #  - season 0: cross & inbreed founders, assign QTL, infer genetic values and fix heritability
 #  - season 1: evaluate offspring, train GP & select (on predicted values)
 #  - season 2: cross, inbreed & select (on predicted values, no model update)
 #  - season >= 3: (1) evaluate previous offspring, update GP model
 #               + (2) cross, inbreed & select (on predicted values)
-WGS = function(founders, heritability,
-               num.QTL=100, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=26,
-               selection.criterion=select.highest.score,
-               gp.method = c("RR", "BRR")){
-  return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
-            add.TP, num.select, num.seasons, selection.criterion,
-            gp.method, weighted = TRUE))
-}
 GS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, add.TP=0, num.select=20, num.seasons=26,
+              F1.size=200, add.TP=0, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
-              gp.method = c("RR", "BRR"), weighted = FALSE){
+              gp.method = c("RR", "BRR"), weighted = FALSE, ...){
   
   # check input
   if(missing(founders)){
@@ -223,7 +251,9 @@ GS = function(founders, heritability,
   
   # select based on estimated values
   evaluated.base.pop = predict.values(gp.trained.model, evaluated.base.pop)
-  selected.names = selection.criterion(num.select, evaluated.base.pop$estGeneticValues)
+  selected.names = selection.criterion(n = num.select,
+                                       values = evaluated.base.pop$estGeneticValues,
+                                       markers = gp.design.matrix(evaluated.base.pop))
   selected.pop = restrict.population(evaluated.base.pop, selected.names)
   
   # store season
@@ -241,7 +271,9 @@ GS = function(founders, heritability,
   
   # select based on estimated values
   offspring = predict.values(gp.trained.model, offspring)
-  selected.names = selection.criterion(num.select, offspring$estGeneticValues)
+  selected.names = selection.criterion(n = num.select,
+                                       values = offspring$estGeneticValues,
+                                       markers = gp.design.matrix(offspring))
   selected.offspring = restrict.population(offspring, selected.names)
   
   # store season
@@ -267,7 +299,9 @@ GS = function(founders, heritability,
     gp.trained.model = train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method, s)
     # select from offspring based on estimated values using updated GP model
     offspring = predict.values(gp.trained.model, offspring)
-    selected.names = selection.criterion(num.select, offspring$estGeneticValues)
+    selected.names = selection.criterion(n = num.select,
+                                         values = offspring$estGeneticValues,
+                                         markers = gp.design.matrix(offspring))
     selected.offspring = restrict.population(offspring, selected.names)
     # store season
     new.season = list(evaluate = list(pop = evaluated.prev.offspring),
