@@ -3,14 +3,38 @@
 # SELECTION STRATEGIES #
 ########################
 
-# selection criterion that selects the n plants with the highest score
+# selection criterion that selects the n plants with the highest value
 # (phenotype, estimated genetic value, weighted genetic value, ...)
-select.highest.score <- function(scores, n){
+select.highest.score <- function(n, values, ...){
   # check input
-  if(is.null(names(scores))){
-    stop("scores should be named by individual")
+  if(is.null(names(values))){
+    stop("values should be named by individual")
   }
-  selected.names <- names(head(sort(scores, decreasing = TRUE), n=n))
+  selected.names <- names(head(sort(values, decreasing = TRUE), n=n))
+  return(selected.names)
+}
+
+# select by maximizing weighted index of mean breeding value and diversity
+select.weighted <- function(n, values, markers, div.weight, div.measure = c("MR", "HE"), ...){
+  # check input
+  if(is.null(names(values))){
+    stop("values should be named by individual")
+  }
+  if(rownames(markers) != names(values)){
+    stop("rownames of marker matrix do not correspond with names of values vector")
+  }
+  if(div.weight < 0 || div.weight > 1){
+    stop("div.weight should be a number in [0,1]")
+  }
+  # get selected diversity measure
+  div.measure <- match.arg(div.measure)
+  if(div.measure == "MR"){
+    div.measure <- j.MR.ENE()
+  } else {
+    div.measure <- j.HE()
+  }
+  # run optimization
+  selected.names <- j.max.index(n, values, markers, div.weight, div.measure)
   return(selected.names)
 }
 

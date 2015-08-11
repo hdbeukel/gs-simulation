@@ -4,5 +4,6 @@ source("sim/hypred.R")
 source("sim/prediction.R")
 source("sim/simulation.R")
 source("sim/selection.R")
+source("sim/java.R")
 # set path to BEAGLE
 beaglePath = "beaglejar"

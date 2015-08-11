@@ -74,7 +74,7 @@ PS = function(founders, heritability,
       # evaluate (phenotypes)
       evaluated.pop = infer.phenotypes(pop)
       # select
-      selected.names = selection.criterion(evaluated.pop$pheno, num.select)
+      selected.names = selection.criterion(num.select, evaluated.pop$pheno)
       selected.pop = restrict.population(evaluated.pop, selected.names)
       # store
       new.season = list(evaluate = list(pop = evaluated.pop),
@@ -223,7 +223,7 @@ GS = function(founders, heritability,
   
   # select based on estimated values
   evaluated.base.pop = predict.values(gp.trained.model, evaluated.base.pop)
-  selected.names = selection.criterion(evaluated.base.pop$estGeneticValues, num.select)
+  selected.names = selection.criterion(num.select, evaluated.base.pop$estGeneticValues)
   selected.pop = restrict.population(evaluated.base.pop, selected.names)
   
   # store season
@@ -241,7 +241,7 @@ GS = function(founders, heritability,
   
   # select based on estimated values
   offspring = predict.values(gp.trained.model, offspring)
-  selected.names = selection.criterion(offspring$estGeneticValues, num.select)
+  selected.names = selection.criterion(num.select, offspring$estGeneticValues)
   selected.offspring = restrict.population(offspring, selected.names)
   
   # store season
@@ -267,7 +267,7 @@ GS = function(founders, heritability,
     gp.trained.model = train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method, s)
     # select from offspring based on estimated values using updated GP model
     offspring = predict.values(gp.trained.model, offspring)
-    selected.names = selection.criterion(offspring$estGeneticValues, num.select)
+    selected.names = selection.criterion(num.select, offspring$estGeneticValues)
     selected.offspring = restrict.population(offspring, selected.names)
     # store season
     new.season = list(evaluate = list(pop = evaluated.prev.offspring),
