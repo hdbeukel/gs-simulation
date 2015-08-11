@@ -19,6 +19,9 @@ j.max.index <- function(n, names, values, markers, div.weight, div.measure, sec.
                            "[S", "selectWeighted",
                            n, names, values, markers, div.weight, div.measure, sec.without.impr)
   
+  # sort for reproducible results
+  selected.names <- sort(selected.names)
+  
   return(selected.names)
   
 }
