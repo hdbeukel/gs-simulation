@@ -21,6 +21,9 @@
 
 # load scripts
 suppressMessages(source("scripts.R"))
+# set Java options
+options(java.parameters = "-Xmx1g")
+
 # load founder dataset
 load("data/ProcessedData.RData")
 
