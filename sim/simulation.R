@@ -345,7 +345,24 @@ replicate.simulation = function(num.rep = 100, simulate){
 # PLOTS #
 #########
 
-plot.multi <- function(simulations, plot.function, same.plot = FALSE, param.list = list(), ylim){
+add.legend <- function(pos = "bottomright", inset = c(0.02, 0.02), names, param.list = list()){
+  # expand parameters
+  n <- length(names)
+  expanded.params <- as.list(rep(NA, n))
+  for(s in 1:n){
+    # retrieve graphical parameters (cyclically reused)
+    p <- ((s-1) %% length(param.list)) + 1
+    expanded.params[[s]] <- param.list[[p]]
+  }
+  # extract lty, pch and bg
+  lty <- sapply(expanded.params, function(params){ params$lty })
+  pch <- sapply(expanded.params, function(params){ params$pch })
+  bg <- sapply(expanded.params, function(params){ params$bg })
+  # add legend to active plot
+  legend(x = pos, inset = inset, legend = names, lty = lty, pch = pch, pt.bg = bg)
+}
+
+plot.multi <- function(simulations, plot.function, same.plot = FALSE, param.list = list(), ylim, xlim){
   for(s in 1:length(simulations)){
     # retrieve plot function parameters (cyclically reused)
     p <- ((s-1) %% length(param.list)) + 1
@@ -359,6 +376,10 @@ plot.multi <- function(simulations, plot.function, same.plot = FALSE, param.list
     # add ylim to params if set
     if(!missing(ylim)){
       params$ylim <- ylim
+    }
+    # add xlim to params if set
+    if(!missing(xlim)){
+      params$xlim <- xlim
     }
     # plot simulation results
     do.call(plot.function, params)
