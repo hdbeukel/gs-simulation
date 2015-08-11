@@ -804,6 +804,8 @@ extract.metadata <- function(seasons){
       # 3) estimated genetic values (if any)
       if(!is.null(candidates$estGeneticValues)){
         metadata[[s+1]]$candidates$estGeneticValues <- candidates$estGeneticValues
+      } else if(!is.null(evaluated.candidates$estGeneticValues)){
+        metadata[[s+1]]$candidates$estGeneticValues <- evaluated.candidates$estGeneticValues
       }
       
       # 4) inbreeding coefficients
