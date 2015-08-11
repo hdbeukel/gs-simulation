@@ -1,12 +1,26 @@
 library(rJava)
-.jinit()
 
 ###############################################################
 # MAXIMIZE WEIGHTED INDEX: AVERAGE BREEDING VALUE + DIVERSITY #
 ###############################################################
 
-j.max.index <- function(n, values, markers, div.weight, div.measure){
-  # ...
+j.max.index <- function(n, names, values, markers, div.weight, div.measure, sec.without.impr = 5){
+  
+  # convert parameters
+  n <- as.integer(n)
+  values <- as.numeric(values)
+  markers <- .jarray(markers, dispatch = TRUE)
+  div.weight <- as.numeric(div.weight)
+  div.measure <- .jcast(div.measure, j.core("problems/objectives/Objective"))
+  sec.without.impr <- as.integer(sec.without.impr)
+
+  # call java API
+  selected.names <- .jcall(j.api(),
+                           "[S", "selectWeighted",
+                           n, names, values, markers, div.weight, div.measure, sec.without.impr)
+  
+  return(selected.names)
+  
 }
 
 ######################
@@ -14,11 +28,11 @@ j.max.index <- function(n, values, markers, div.weight, div.measure){
 ######################
 
 j.MR.ENE <- function(){
-  j.new("obj.EntryToNearestEntryDistance")
+  .jnew(j.gs("obj/EntryToNearestEntryDistance"))
 }
 
 j.HE <- function(){
-  j.new("obj.ExpectedProportionOfHeterozygousLoci")
+  .jnew(j.gs("obj/ExpectedProportionOfHeterozygousLoci"))
 }
 
 #############
@@ -33,6 +47,23 @@ j.load.jar <- function(){
   .jaddClassPath("java/gs-simulation/bin/gs-simulation.jar")
 }
 
-j.new <- function(class){
-  .jnew(sprintf("org.jamesframework.gs.simulation.%s", class))
+j.api <- function(){
+  .jnew(j.gs("api/API"))
 }
+
+j.gs <- function(class){
+  sprintf("org/jamesframework/gs/simulation/%s", class)
+}
+
+j.core <- function(class){
+  sprintf("org/jamesframework/core/%s", class)
+}
+
+#########################################################
+# Start JVM and load JAR after processing all functions #
+#########################################################
+
+.jinit()
+j.load.jar()
+
+

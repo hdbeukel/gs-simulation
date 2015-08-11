@@ -26,6 +26,8 @@ public class ParetoFrontApproximation {
 
     public static void main(String[] args) throws IOException {
         
+        API api = new API(true);
+        
         // get arguments
         String valueFile = args[0];
         String markerFile = args[1];
@@ -52,7 +54,7 @@ public class ParetoFrontApproximation {
         }
         
         // normalize objectives
-        NormalizedObjectives normObjs = API.get().getNormalizedObjectives(divObj, data, subsetSize);
+        NormalizedObjectives normObjs = api.getNormalizedObjectives(divObj, data, subsetSize);
 
         // run optimizations with different weighted objectives
         System.out.println("ID, repeat, divWeight, valueWeight, div, value, div (normalized), value (normalized), weighted (normalized)");
@@ -70,7 +72,7 @@ public class ParetoFrontApproximation {
                     normObjs.getValueObj()
             );
             List<Double> weights = Arrays.asList(divWeight, valueWeight);
-            WeightedIndex<SubsetSolution, PopulationData> index = API.get().getWeightedIndex(objs, weights);
+            WeightedIndex<SubsetSolution, PopulationData> index = api.getWeightedIndex(objs, weights);
 
             // create problem
             SubsetProblem<PopulationData> problem = new SubsetProblem<>(data, index, subsetSize);
@@ -78,12 +80,12 @@ public class ParetoFrontApproximation {
             // repeatedly run optimization
             for(int r=0; r<repeats; r++){
                 // create search
-                Search<SubsetSolution> search = API.get().createParallelTempering(problem);
+                Search<SubsetSolution> search = api.createParallelTempering(problem);
                 // set maximum runtime
                 search.addStopCriterion(new MaxTimeWithoutImprovement(timeWithoutImpr, TimeUnit.SECONDS));
                 // run search
                 search.start();
-                // output results (!! non-normalized values)
+                // output results
                 SubsetSolution bestSol = search.getBestSolution();
                 Evaluation weightedEval = search.getBestSolutionEvaluation();
                 Evaluation divEval = normObjs.getDivObj().getObjective().evaluate(bestSol, data);

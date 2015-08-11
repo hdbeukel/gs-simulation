@@ -3,11 +3,13 @@
 package org.jamesframework.gs.simulation.api;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.jamesframework.core.problems.Problem;
 import org.jamesframework.core.problems.objectives.Objective;
+import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
 import org.jamesframework.core.search.Search;
 import org.jamesframework.core.search.algo.ParallelTempering;
 import org.jamesframework.core.search.algo.RandomDescent;
@@ -16,22 +18,115 @@ import org.jamesframework.core.search.stopcriteria.MaxTimeWithoutImprovement;
 import org.jamesframework.core.subset.SubsetProblem;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.core.subset.neigh.SingleSwapNeighbourhood;
+import org.jamesframework.examples.util.ProgressSearchListener;
 import org.jamesframework.ext.problems.objectives.WeightedIndex;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.obj.MeanBreedingValue;
+import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
 import org.jamesframework.gs.simulation.obj.NormalizedObjective;
 
 public class API {
     
     private static final double FLOATING_POINT_TOL = 1e-10;
     
-    // singleton instance
-    private static final API API = new API();
+    private final boolean verbose;
     
-    private API(){}
+    public API(){
+        this(false);
+    }
     
-    public static API get(){
-        return API;
+    public API(boolean verbose){
+        this.verbose = verbose;
+    }
+    
+    private void message(String mess){
+        if(verbose){
+            System.out.println(mess);
+        }
+    }
+    
+    /**
+     * Select based on weighted index.
+     * 
+     * @param subsetSize subset size
+     * @param values (estimated) breeding values
+     * @param markers marker matrix Z (0/1)
+     * @param divWeight weight of the diversity component (real number in [0,1])
+     * @param divObj diversity objective (MR-ENE or HE)
+     * @param secondsWithoutImprovement number of seconds without improvement after which the search stops
+     * @return array of selected individuals (names)
+     */
+    public String[] selectWeighted(int subsetSize, String[] names, double[] values, int[][] markers,
+                                   double divWeight, Objective<SubsetSolution, PopulationData> divObj,
+                                   int secondsWithoutImprovement){
+        
+        // wrap data
+        PopulationData data = new PopulationData(names, values, markers);
+        
+        return selectWeighted(subsetSize, data, divWeight, divObj, secondsWithoutImprovement);
+        
+    }
+    
+    public String[] selectWeighted(int subsetSize, PopulationData data,
+                                   double divWeight, Objective<SubsetSolution, PopulationData> divObj,
+                                   int secondsWithoutImprovement){
+        
+        message("############################");
+        message("# WEIGHTED INDEX SELECTION #");
+        message("############################");
+        
+        // precompute distance matrix
+        data.precomputeDistanceMatrix(new ModifiedRogersDistance());
+        // set value weight
+        double valueWeight = 1.0 - divWeight;
+        message("Diversity weight: " + divWeight);
+        message("Breeding value weight: " + valueWeight);
+        
+        // normalize objectives
+        NormalizedObjectives normObjs = getNormalizedObjectives(divObj, data, subsetSize);
+        // create index
+        List<Objective<SubsetSolution, PopulationData>> objs = Arrays.asList(
+                normObjs.getDivObj(),
+                normObjs.getValueObj()
+        );
+        List<Double> weights = Arrays.asList(divWeight, valueWeight);
+        WeightedIndex<SubsetSolution, PopulationData> index = getWeightedIndex(objs, weights);
+        
+        // create problem
+        SubsetProblem<PopulationData> problem = new SubsetProblem<>(data, index, subsetSize);
+        
+        // create parallel tempering search
+        Search<SubsetSolution> search = createParallelTempering(problem);
+        // set maximum runtime
+        search.addStopCriterion(new MaxTimeWithoutImprovement(secondsWithoutImprovement, TimeUnit.SECONDS));
+        // track progress (if verbose only)
+        if(verbose){
+            search.addSearchListener(new ProgressSearchListener());
+        }
+        
+        // run search
+        search.start();
+        // output results
+        SubsetSolution bestSol = search.getBestSolution();
+        Integer[] selection = bestSol.getSelectedIDs().toArray(new Integer[0]);
+        Arrays.sort(selection);
+        Evaluation bestEval = search.getBestSolutionEvaluation();
+        Evaluation divNormEval = normObjs.getDivObj().evaluate(bestSol, data);
+        Evaluation valueNormEval = normObjs.getValueObj().evaluate(bestSol, data);
+        Evaluation divEval = normObjs.getDivObj().getObjective().evaluate(bestSol, data);
+        Evaluation valueEval = normObjs.getValueObj().getObjective().evaluate(bestSol, data);
+        message("Final selection: " + Arrays.toString(selection));
+        message("Best weighted value (normalized): " + bestEval.getValue());
+        message("Diversity score (normalized): " + divNormEval.getValue());
+        message("Mean breeding value (normalized): " + valueNormEval.getValue());
+        message("Diversity score: " + divEval.getValue());
+        message("Mean breeding value: " + valueEval.getValue());
+        
+        // dispose search
+        search.dispose();
+        
+        return search.getBestSolution().getSelectedIDs().stream().map(data::getName).toArray(n -> new String[n]);
+        
     }
 
     public Neighbourhood<SubsetSolution> getNeighbourhood(){
@@ -60,7 +155,7 @@ public class API {
     public NormalizedObjectives getNormalizedObjectives(Objective<SubsetSolution, PopulationData> divObj,
                                                         PopulationData data, int subsetSize){
 
-        System.err.println("Normalizing objectives ...");
+        message("Normalizing objectives ...");
         
         // STEP 1: infer subset with highest possible average value (sorting)
         
@@ -97,8 +192,8 @@ public class API {
         // get diversity of highest value solution
         double minDiv = divObj.evaluate(highestValSol, data).getValue();
         
-        System.err.format("Mean breeding value range: [%f, %f]\n", minVal, maxVal);
-        System.err.format("Diversity score range: [%f, %f]\n", minDiv, maxDiv);
+        message(String.format("Mean breeding value range: [%f, %f]", minVal, maxVal));
+        message(String.format("Diversity score range: [%f, %f]", minDiv, maxDiv));
         
         // STEP 4: create normalized objectives
         

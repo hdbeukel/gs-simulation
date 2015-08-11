@@ -15,15 +15,18 @@ select.highest.score <- function(n, values, ...){
 }
 
 # select by maximizing weighted index of mean breeding value and diversity
-select.weighted <- function(n, values, markers, div.weight, div.measure = c("MR", "HE"), ...){
+select.weighted.index <- function(n, values, markers, div.weight, div.measure = c("MR", "HE"), ...){
   # check input
-  if(is.null(names(values))){
-    stop("values should be named by individual")
+  if(!is.numeric(n)){
+    stop("n should be an integer (selection size)")
   }
-  if(rownames(markers) != names(values)){
-    stop("rownames of marker matrix do not correspond with names of values vector")
+  if(is.null(names(values)) || !is.numeric(values)){
+    stop("values should be a named numeric vector (one entry per individual)")
   }
-  if(div.weight < 0 || div.weight > 1){
+  if(rownames(markers) != names(values) || !is.numeric(markers)){
+    stop("markers matrix should be 0/1 with rownames corresponding to individuals")
+  }
+  if(!is.numeric(div.weight) || div.weight < 0 || div.weight > 1){
     stop("div.weight should be a number in [0,1]")
   }
   # get selected diversity measure
@@ -34,7 +37,7 @@ select.weighted <- function(n, values, markers, div.weight, div.measure = c("MR"
     div.measure <- j.HE()
   }
   # run optimization
-  selected.names <- j.max.index(n, values, markers, div.weight, div.measure)
+  selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure)
   return(selected.names)
 }
 
