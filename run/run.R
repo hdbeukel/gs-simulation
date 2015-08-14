@@ -1,3 +1,5 @@
+library(setRNG)
+
 ##############################################################
 # Run one iteration of a simulation & output seasons to file #
 ##############################################################
@@ -50,7 +52,9 @@ if(is.na(seed)){
   seed <- ceiling(runif(1, 0, 2^31-1))
 }
 set.seed(seed, kind = "default", normal.kind = "default")
-message(sprintf("Seed: %d", seed))
+message(sprintf("RNG Seed: %d", seed))
+message(sprintf("RNG Kind: %s", getRNG()$kind))
+message(sprintf("RNG Normal kind: %s", getRNG()$normal.kind))
 
 # run simulation
 seasons <- sim.function(founders, heritability,
