@@ -50,7 +50,7 @@ gp.restrict.design.matrix = function(names, G){
 ##############################
 
 # train GP model (RR or BRR) - fixed SNP are ignored during estimation and their effect is set to zero
-gp.train <- function(pheno, Z, method = c("RR", "BRR")){
+gp.train <- function(pheno, Z, method = c("RR", "BRR"), rescale = TRUE){
   
   # ignore fixed SNP for estimation
   mafs <- compute.minor.allele.frequencies(Z)
@@ -65,15 +65,31 @@ gp.train <- function(pheno, Z, method = c("RR", "BRR")){
   effects.poly <- c()
   # only train if *not* all markers fixed
   if(ncol(Z.poly) > 0){
+    if(rescale){
+      # center and rescale (to avoid numerical issues)
+      freqs <- colMeans(Z.poly)
+      Z.centered <- t(t(Z.poly) - freqs)
+      scale <- sqrt(sum(freqs * (1-freqs)))
+      Z.scaled <- Z.centered/scale
+      Z.final <- Z.scaled
+    } else {
+      Z.final <- Z.poly
+    }
+    # train GP
     method <- match.arg(method)
     if(method == "BRR"){
-      model <- gp.train.BRR(pheno, Z.poly)
+      model <- gp.train.BRR(pheno, Z.final)
     } else {
-      model <- gp.train.RR(pheno, Z.poly)
+      model <- gp.train.RR(pheno, Z.final)
     }
     # extract mu and effects
     mu <- gp.get.mean.value(model)
     effects.poly <- gp.get.effects(model)
+    if(rescale){
+      # scale back mu and effects
+      effects.poly <- effects.poly/scale
+      mu <- mu - as.numeric(freqs %*% effects.poly)
+    }
   } else {
     warning("did not train GP model: all markers fixed")
   }
