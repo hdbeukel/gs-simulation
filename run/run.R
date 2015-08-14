@@ -49,7 +49,7 @@ it <- as.numeric(args[11])
 if(is.na(seed)){
   seed <- ceiling(runif(1, 0, 2^31-1))
 }
-set.seed(seed)
+set.seed(seed, kind = "default", normal.kind = "default")
 message(sprintf("Seed: %d", seed))
 
 # run simulation
