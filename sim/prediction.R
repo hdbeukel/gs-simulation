@@ -56,18 +56,17 @@ enlarge.tp <- function(cur.tp, add, min.dist = 0.1){
   Z.add <- gp.design.matrix(add)
   Z.all <- rbind(Z.cur, Z.add)
   
-  # get rid of redundancy (very similar individuals)
-  numSNP <- ncol(Z.all)
+  # get rid of redundancy (duplicate individuals)
   num.add <- nrow(Z.add)
   num.all <- nrow(Z.all)
   add.ind <- (num.all - num.add + 1):num.all
   redundant <- sapply(add.ind, function(i){
     a <- Z.all[i, ]
-    d <- sapply(1:(i-1), function(j){
+    dup <- sapply(1:(i-1), function(j){
       b <- Z.all[j, ]
-      return(MR(a,b))
+      return(identical(a, b))
     })
-    return(any(d < min.dist))
+    return(any(dup))
   })
   add.names <- rownames(Z.add)
   non.redundant <- add.names[!redundant]
