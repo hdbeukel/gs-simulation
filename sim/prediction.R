@@ -45,6 +45,38 @@ gp.restrict.design.matrix = function(names, G){
   return(GDesign)
 }
 
+###############################
+# ENLARGE TRAINING POPULATION #
+###############################
+
+enlarge.tp <- function(cur.tp, add){
+  
+  # get design matrices
+  Z.cur <- gp.design.matrix(cur.tp)
+  Z.add <- gp.design.matrix(add)
+  Z.all <- rbind(Z.cur, Z.add)
+  
+  # get rid of redundancy (duplicate individuals)
+  num.add <- nrow(Z.add)
+  num.all <- nrow(Z.all)
+  add.ind <- (num.all - num.add + 1):num.all
+  redundant <- sapply(add.ind, function(i){
+    a <- Z.all[i, ]
+    dup <- sapply(1:(i-1), function(j){
+      identical(a, Z.all[j, ])
+    })
+    return(any(dup))
+  })
+  add.names <- rownames(Z.add)
+  non.redundant <- add.names[!redundant]
+  add <- restrict.population(add, non.redundant)
+  
+  # enlarge TP
+  enlarged.tp <- merge.populations(cur.tp, add)
+  return(enlarged.tp)
+  
+}
+
 ##############################
 # Train GP model (RR or BRR) #
 ##############################

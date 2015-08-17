@@ -239,7 +239,7 @@ GS = function(founders, heritability,
   if(!is.null(add.TP.pop)){
     evaluated.add.TP.pop = infer.phenotypes(add.TP.pop)
     # combine all training data
-    tp = merge.populations(evaluated.base.pop, evaluated.add.TP.pop)
+    tp = enlarge.tp(evaluated.base.pop, evaluated.add.TP.pop)
   } else {
     evaluated.add.TP.pop = NULL
     # only base population itself serves as TP
@@ -291,7 +291,7 @@ GS = function(founders, heritability,
     prev.offspring = seasons[[s]]$cross.inbreed$pop.out
     evaluated.prev.offspring = infer.phenotypes(prev.offspring)
     # add evaluated population to TP
-    tp = merge.populations(tp, evaluated.prev.offspring)
+    tp = enlarge.tp(tp, evaluated.prev.offspring)
     # cross & inbreed selection from previous offspring
     parents = seasons[[s]]$select$pop.out
     offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
