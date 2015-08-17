@@ -644,7 +644,7 @@ restrict.population = function(pop, names){
   }
   # update phenotypes (if any)
   if(!is.null(pop$pheno)){
-    pop$pheno = pop$pheo[names]
+    pop$pheno = pop$pheno[names]
   }
   # update estimated genetic values (if any)
   if(!is.null(pop$estGeneticValues)){
