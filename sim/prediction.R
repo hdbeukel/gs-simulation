@@ -122,7 +122,7 @@ gp.train <- function(pheno, Z, method = c("RR", "BRR"), rescale = TRUE){
     if(rescale){
       # scale back mu and effects
       effects.poly <- effects.poly/scale
-      mu <- mu - as.numeric(freqs %*% effects.poly)
+      mu <- mu - sum(freqs * effects.poly)
     }
   } else {
     warning("did not train GP model: all markers fixed")
