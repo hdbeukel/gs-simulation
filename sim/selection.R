@@ -45,6 +45,7 @@ select.weighted.index <- function(n, values, markers, div.weight, div.measure = 
 # DIVERSITY SCORES #
 ####################
 
+# for DH population (0/1)
 HE <- function(Z, sel){
   
   # compute average genome of selection
@@ -58,6 +59,15 @@ HE <- function(Z, sel){
   
   return(he)
     
+}
+
+# for DH individuals (0/1)
+MR <- function(ind1, ind2){
+  if(length(ind1) != length(ind2)){
+    stop("marker vector of both individuals should be of same size")
+  }
+  d <- sqrt(sum(abs(ind1 - ind2))/length(ind1))
+  return(d)
 }
 
 ####################################

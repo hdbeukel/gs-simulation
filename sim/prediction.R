@@ -49,23 +49,25 @@ gp.restrict.design.matrix = function(names, G){
 # ENLARGE TRAINING POPULATION #
 ###############################
 
-enlarge.tp <- function(cur.tp, add){
+enlarge.tp <- function(cur.tp, add, min.dist = 0.1){
   
   # get design matrices
   Z.cur <- gp.design.matrix(cur.tp)
   Z.add <- gp.design.matrix(add)
   Z.all <- rbind(Z.cur, Z.add)
   
-  # get rid of redundancy (duplicate individuals)
+  # get rid of redundancy (very similar individuals)
+  numSNP <- ncol(Z.all)
   num.add <- nrow(Z.add)
   num.all <- nrow(Z.all)
   add.ind <- (num.all - num.add + 1):num.all
   redundant <- sapply(add.ind, function(i){
     a <- Z.all[i, ]
-    dup <- sapply(1:(i-1), function(j){
-      identical(a, Z.all[j, ])
+    d <- sapply(1:(i-1), function(j){
+      b <- Z.all[j, ]
+      return(MR(a,b))
     })
-    return(any(dup))
+    return(any(d < min.dist))
   })
   add.names <- rownames(Z.add)
   non.redundant <- add.names[!redundant]
