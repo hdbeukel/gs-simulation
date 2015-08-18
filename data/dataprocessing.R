@@ -1,5 +1,7 @@
 # load libraries
-library(synbreed)
+library(synbreed) # version 0.10-5
+# set path to BEAGLE used by synbreed
+beaglePath <- "beaglejar"
 # tolerance for floating point comparison
 floating.point.tol = 1e-12
 
@@ -439,13 +441,13 @@ prepare.hypred = function(packed.data){
   # number of dummy markers per chromosome to meet marker count
   chrNumDummies = markersPerChrom - packed.data$chrNumMarkers
   
-  # create hypred genome definition
-  hypred.genome = 
-  
   # attach hypred data
   hypred = list(chromBounds = chromBounds, markersPerChrom = markersPerChrom,
                 chrNumDummies = chrNumDummies, dummiesAdded = FALSE)
   packed.data$hypred = hypred
+  
+  # add dummy markers
+  packed.data = add.dummies(packed.data)
   
   return(packed.data)
 }
