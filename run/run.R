@@ -1,4 +1,3 @@
-library(setRNG)
 
 ##############################################################
 # Run one iteration of a simulation & output seasons to file #

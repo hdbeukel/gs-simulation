@@ -1,5 +1,3 @@
-library(hypred)
-library(gdata)
 
 ###############################
 # ADD AND STRIP DUMMY MARKERS #

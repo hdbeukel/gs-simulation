@@ -1,6 +1,3 @@
-library(BGLR)
-library(coda)
-library(rrBLUP)
 
 #########################
 # PREPARE DESIGN MATRIX #

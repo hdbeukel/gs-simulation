@@ -1,5 +1,3 @@
-library(Hmisc)
-library(synbreed)
 
 #################################
 # SELECTION STRATEGY SIMULATION #

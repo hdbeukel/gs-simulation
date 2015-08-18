@@ -1,4 +1,3 @@
-library(rJava)
 
 ###############################################################
 # MAXIMIZE WEIGHTED INDEX: AVERAGE BREEDING VALUE + DIVERSITY #

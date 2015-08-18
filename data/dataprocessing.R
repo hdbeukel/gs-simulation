@@ -1,7 +1,4 @@
-# load libraries
-library(synbreed) # version 0.10-5
-# set path to BEAGLE used by synbreed
-beaglePath <- "beaglejar"
+
 # tolerance for floating point comparison
 floating.point.tol = 1e-12
 
