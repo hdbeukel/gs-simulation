@@ -740,6 +740,8 @@ load.simulation.results <- function(dir) {
 
 extract.metadata <- function(seasons){
   
+  message("Extracting metadata ...")
+  
   # initialize result list
   num.seasons <- length(seasons)-1
   metadata <- lapply(1:(num.seasons+1), function(i) {list()})
@@ -802,7 +804,7 @@ extract.metadata <- function(seasons){
       # 4B) pedigree
       
       # update pedigree data
-      pedigree$ID <- c(pedigree$ID, get.geno.names(candidates))
+      pedigree$ID <- c(pedigree$ID, geno.names(candidates))
       pedigree$par1 <- c(pedigree$par1, candidates$pedigree$par1)
       pedigree$par2 <- c(pedigree$par2, candidates$pedigree$par2)
       # convert to synbreed data

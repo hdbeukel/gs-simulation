@@ -3,6 +3,8 @@
 # Run one iteration of a simulation & output seasons to file #
 ##############################################################
 
+# should be run from parent directory, as 'run/run.R'
+
 # command line arguments:
 #  1: simulation type ("PS", "GS", "WGS", "CGS")
 #  2: number of seasons
@@ -21,12 +23,12 @@
 #  - PS:      out/<1>/<2>-seasons/h2-<3>/<5>-effects/<11>.RDS
 
 # load scripts
-suppressMessages(source("scripts.R"))
+suppressMessages(source("init.R"))
 # set Java options
 options(java.parameters = "-Xmx1g")
 
 # load founder dataset
-load("data/ProcessedData.RData")
+founders <- readRDS("data/founders.RDS")
 
 # get command line arguments
 args <- commandArgs(trailingOnly = TRUE)

@@ -29,7 +29,7 @@ add.dummies = function(data){
     rownames(dh) = rownames(data$dh)
     colnames(dh) = seq(1, num.markers)
   }
-  map = matrix(NA, num.markers, 3)
+  map = matrix(NA, num.markers, 2)
   rownames(map) = seq(1, num.markers)
   colnames(map) = colnames(data$map)
   # fill extended genotype matrices and map (per chromosome)
@@ -88,14 +88,8 @@ add.dummies = function(data){
       map[start.dummy:end.dummy,1] = i
       # position
       map[start.dummy:end.dummy,2] = data$chrLengths[i] + seq(1,data$hypred$chrNumDummies[i])
-      # cumulative position
-      map[start.dummy:end.dummy,3] = data$chrCumuLengths[i] + seq(1,data$hypred$chrNumDummies[i])
       # names
       rownames(map)[start.dummy:end.dummy] = dummy.names
-    }
-    # adjust cumulative positions for previously introduced dummies
-    if(i > 1){
-      map[start.real:end.dummy,3] = map[start.real:end.dummy,3] + sum(data$hypred$chrNumDummies[1:(i-1)])
     }
   }
   # set extended genotype matrices and map
@@ -113,7 +107,6 @@ add.dummies = function(data){
   # update metadata
   data$numMarkers = num.markers
   data$chrLengths = data$chrLengths + data$hypred$chrNumDummies
-  data$chrCumuLengths = cumsum(data$chrLengths)
   data$chrNumMarkers[] = data$hypred$markersPerChrom
   data$hypred$chromBounds[,1] = data$hypred$chromBounds[,1] + c(0, cumsum(data$hypred$chrNumDummies[1:(data$numChroms-1)]))
   data$hypred$chromBounds[,2] = data$hypred$chromBounds[,2] + cumsum(data$hypred$chrNumDummies)
@@ -193,10 +186,6 @@ strip.dummies = function(data){
     # strip map
     map[start.stripped:end.stripped,] = as.matrix(data$map[start.extended:end.extended,])
     rownames(map)[start.stripped:end.stripped] = rownames(data$map)[start.extended:end.extended]
-    # adjust cumulative positions for removed dummies in previous chromosomes
-    if(i > 1){
-      map[start.stripped:end.stripped,3] = map[start.stripped:end.stripped,3] - sum(data$hypred$chrNumDummies[1:(i-1)])
-    }
   }
   # set stripped genotype matrices and map
   if(exists("geno")){
@@ -213,7 +202,6 @@ strip.dummies = function(data){
   # update metadata
   data$numMarkers = num.markers
   data$chrLengths = data$chrLengths - data$hypred$chrNumDummies
-  data$chrCumuLengths = cumsum(data$chrLengths)
   data$chrNumMarkers = data$chrNumMarkers - data$hypred$chrNumDummies
   data$hypred$chromBounds[,1] = data$hypred$chromBounds[,1] - c(0, cumsum(data$hypred$chrNumDummies[1:(data$numChroms-1)]))
   data$hypred$chromBounds[,2] = data$hypred$chromBounds[,2] - cumsum(data$hypred$chrNumDummies)
