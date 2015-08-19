@@ -83,7 +83,7 @@ enlarge.tp <- function(cur.tp, add, min.dist = 0.1){
 gp.train <- function(pheno, Z, method = c("RR", "BRR"), rescale = TRUE){
   
   # ignore fixed SNP for estimation
-  mafs <- compute.minor.allele.frequencies(Z)
+  mafs <- maf(Z, encoding = "dh")
   fixed <- which(mafs == 0)
   if(length(fixed) > 0){
     Z.poly <-  Z[, -fixed]

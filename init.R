@@ -13,9 +13,9 @@ library(setRNG)   # version used: 2013.9-1
 beaglePath <- "beaglejar"
 
 # load scripts
-source("data/dataprocessing.R")
-source("sim/hypred.R")
-source("sim/prediction.R")
-source("sim/simulation.R")
-source("sim/selection.R")
-source("sim/java.R")
+source("R/dataprocessing.R")
+source("R/hypred.R")
+source("R/prediction.R")
+source("R/simulation.R")
+source("R/selection.R")
+source("R/java.R")

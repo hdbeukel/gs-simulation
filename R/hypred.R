@@ -283,7 +283,7 @@ assign.qtl <- function(pop, num.qtl,
     genotypes <- pop$geno
   }
   # infer positions of possible fixed markers
-  mafs <- compute.minor.allele.frequencies(genotypes, encoding = "012")
+  mafs <- maf(genotypes, encoding = "012")
   fixed <- which(mafs == 0)
   # pick real QTL indices per chromosome (NOT allowed to be dummy markers)
   real.qtl.indices <- sort(unlist(sapply(1:num.chroms, function(c){

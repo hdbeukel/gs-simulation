@@ -422,8 +422,8 @@ prepare <- function(map, hap1, hap2, dh = FALSE){
     prepared.data <- list(isDH = FALSE, geno = geno, phasedGeno = haplotypes)
   }
   prepared.data <- c(prepared.data, list(map = map,
-                                         numGenotypes = nrow(markers),
-                                         numMarkers = ncol(markers),
+                                         numGenotypes = nrow(geno),
+                                         numMarkers = ncol(geno),
                                          numChroms = num.chromosomes,
                                          chrLengths = chr.lengths,
                                          chrNumMarkers = chr.num.markers))
