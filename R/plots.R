@@ -12,11 +12,105 @@ load.simulation.results <- function(dir) {
   return(breeding.cycles)
 }
 
+#############################
+# AUTOMATED PLOT GENERATION #
+#############################
+
+create.pdf <- function(file, plot.fun, width = 10, height = 7.5){
+  
+  pdf(file, width = width, height = height)
+  plot.fun()
+  invisible(dev.off())
+  
+}
+
+# stores PDF plots in "figures/simulation/GS-WGS"
+plot.GS.vs.WGS <- function(xlim = c(0,30)){
+  
+  fig.dir <- "figures/simulation/GS-WGS"
+  
+  message("Load data ...")
+  
+  # load data:
+  #  1)  GS, h2 = 0.2, add TP = 0
+  #  2)  GS, h2 = 0.2, add TP = 800
+  #  3)  GS, h2 = 1.0, add TP = 0
+  #  4)  GS, h2 = 1.0, add TP = 800
+  #  5) WGS, h2 = 0.2, add TP = 0
+  #  6) WGS, h2 = 0.2, add TP = 800
+  #  7) WGS, h2 = 1.0, add TP = 0
+  #  8) WGS, h2 = 1.0, add TP = 800
+  dirs <- sort(Sys.glob("out/[GW]*S/30-seasons/h2-*/addTP-*/normal-effects/BRR"))
+  data <- lapply(dirs, load.simulation.results)
+  # group small and large TP results
+  small.TP <- data[c(1,3,5,7)]
+  large.TP <- data[c(2,4,6,8)]
+  results <- list(
+    list(data = small.TP, file.suffix = "small-TP", title.suffix = "(small TP)"),
+    list(data = large.TP, file.suffix = "large-TP", title.suffix = "(large TP)")
+  )
+  
+  # set graphical parameters
+  params <- list(
+    # GS, h2 = 0.2
+    list(lty = 1, bg = "black", pch = 23),
+    # GS, h2 = 1.0
+    list(lty = 1, bg = "black", pch = 21),
+    # WGS, h2 = 0.2
+    list(lty = 2, bg = "white", pch = 23),
+    # WGS, h2 = 1.0
+    list(lty = 2, bg = "white", pch = 21)
+  )
+  # set plot names
+  names <- c(
+    expression(GS ~ (h^2 == 0.2)),
+    expression(GS ~ (h^2 == 1.0)),
+    expression(WGS ~ (h^2 == 0.2)),
+    expression(WGS ~ (h^2 == 1.0))
+  )
+  
+  message("Create plots ...")
+  
+  # setup plot functions
+  plot.functions <- list(
+    list(f = plot.genetic.gain, file.name = "gain", title = "Genetic gain", ylim = c(0, 0.7)),
+    list(f = plot.ratio.fixed.QTL, file.name = "QTL-fixed", title = "Ratio of fixed QTL", ylim = c(0, 1)),
+    list(f = plot.mean.QTL.fav.allele.freq, file.name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency", ylim = c(0.48, 0.78)),
+    list(f = plot.mean.QTL.marker.LD, file.name = "LD", title = "Mean polymorphic QTL - marker LD", ylim = c(0, 1), legend = "bottomleft"),
+    list(f = plot.mean.inbreeding, file.name = "inbreeding", title = "Mean inbreeding in selection candidates", ylim = c(0, 0.68)),
+    list(f = plot.genetic.standard.deviation, file.name = "genetic-sd", title = "Genetic standard deviation", ylim = c(0, 0.075), legend = "topright"),
+    list(f = plot.num.fav.QTL.lost, file.name = "fav-QTL-lost", title = "Number of favourable QTL lost", ylim = c(0, 36)),
+    list(f = plot.effect.estimation.accuracy, file.name = "eff-acc", title = "Effect estimation accuracy", ylim = c(0.45, 0.97))
+  )
+  
+  # create plots
+  for(res in results){
+    
+    for(plot.fun in plot.functions){
+    
+      file <- sprintf("%s/%s-%s.pdf", fig.dir, plot.fun$file.name, res$file.suffix)
+      title <- sprintf("%s %s", plot.fun$title, res$title.suffix)
+      
+      create.pdf(file, function(){
+        plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim)
+        title(title)
+        pos <- ifelse(is.null(plot.fun$legend), "bottomright", plot.fun$legend)
+        add.legend(names, params, pos = pos)
+      })
+      
+    }
+    
+  }
+
+  
+  
+}
+
 ##################
 # PLOT FUNCTIONS #
 ##################
 
-add.legend <- function(pos = "bottomright", inset = c(0.02, 0.02), names, param.list = list()){
+add.legend <- function(names, param.list = list(), pos = "bottomright", inset = c(0.02, 0.02)){
   # expand parameters
   n <- length(names)
   expanded.params <- as.list(rep(NA, n))
@@ -33,7 +127,7 @@ add.legend <- function(pos = "bottomright", inset = c(0.02, 0.02), names, param.
   legend(x = pos, inset = inset, legend = names, lty = lty, pch = pch, pt.bg = bg)
 }
 
-plot.multi <- function(simulations, plot.function, same.plot = FALSE, param.list = list(), ylim, xlim){
+plot.multi <- function(simulations, plot.function, param.list = list(), xlim, ylim, same.plot = TRUE){
   for(s in 1:length(simulations)){
     # retrieve plot function parameters (cyclically reused)
     p <- ((s-1) %% length(param.list)) + 1
@@ -109,8 +203,6 @@ plot.simulation.variable <- function(replicates,
   value.avg <- colMeans(values, na.rm = TRUE)
   value.std.err <- apply(values, 2, sd, na.rm = TRUE)/sqrt(num.rep)
   value.ci.halfwidth <- qnorm(ci+(1-ci)/2)*value.std.err
-  # only plot CI when large enough to be visible ???
-  # value.ci.halfwidth[value.ci.halfwidth < 0.15] = NA
   value.ci.top <- value.avg + value.ci.halfwidth
   value.ci.bottom <- value.avg - value.ci.halfwidth
   # plot non NA values only
