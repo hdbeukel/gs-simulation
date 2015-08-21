@@ -185,19 +185,23 @@ GS = function(founders, heritability,
   message("Season 0: Cross & inbreed founders")
   
   # mate founders to create base population
+  message("|- Cross & inbreed founders: generate base population")
   base.pop = mate.founders(founders, F1.size, "bp")
   # assign QTL (if not yet assigned)
   if(is.null(base.pop$hypred$realQTL)){
+    message("|- Assign QTL")
     base.pop = assign.qtl(base.pop, num.QTL, method = QTL.effects)
   } else {
-    message("QTL already assigned in founder population, using existing effects")
+    message("|- QTL already assigned in founder population, using existing effects")
   }
+  message("|- Fix heritability to ", heritability)
   # infer genetic values
   base.pop = infer.genetic.values(base.pop)
   # fix heritability (error variation is inferred)
   base.pop = set.heritability(base.pop, heritability)
   # generate additional TP if requested
   if(add.TP > 0){
+    message("|- Cross & inbreed founders: generate additional TP")
     # cross founders
     add.TP.pop = mate.founders(founders, add.TP, "add-tp")
     # set same QTL effects as in base population
@@ -218,10 +222,12 @@ GS = function(founders, heritability,
   
   message("Season 1: Evaluate & select (on predicted values)")
   
+  message("|- Evaluate base population")
   # evaluate base population
   evaluated.base.pop = infer.phenotypes(base.pop)
   # evaluate additional TP, if any
   if(!is.null(add.TP.pop)){
+    message("|- Evaluate additional TP")
     evaluated.add.TP.pop = infer.phenotypes(add.TP.pop)
     # combine all training data
     tp = enlarge.tp(evaluated.base.pop, evaluated.add.TP.pop)
@@ -232,9 +238,11 @@ GS = function(founders, heritability,
   }
   
   # train GP
+  message("|- Train GP model")
   gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
   
   # select based on estimated values
+  message("|- Select")
   evaluated.base.pop = predict.values(gp.trained.model, evaluated.base.pop)
   selected.names = selection.criterion(n = num.select,
                                        values = evaluated.base.pop$estGeneticValues,
@@ -252,9 +260,11 @@ GS = function(founders, heritability,
   message("Season 2: Cross, inbreed & select (on predicted values, no model update)")
   
   # cross & inbreed
+  message("|- Cross & inbreed")
   offspring = mate.dh(selected.pop, F1.size, "s2")
 
   # select based on estimated values
+  message("|- Select (no model update)")
   offspring = predict.values(gp.trained.model, offspring)
   selected.names = selection.criterion(n = num.select,
                                        values = offspring$estGeneticValues,
@@ -273,16 +283,21 @@ GS = function(founders, heritability,
     start.time = Sys.time()
     message("Season ", s, ": Evaluate (previous) + Cross, inbreed & select")
     # evaluate offspring from previous season
+    message("|- Evaluate selection candidates from previous generation")
     prev.offspring = seasons[[s]]$cross.inbreed$pop.out
     evaluated.prev.offspring = infer.phenotypes(prev.offspring)
     # add evaluated population to TP
+    message("|- Enlarge TP")
     tp = enlarge.tp(tp, evaluated.prev.offspring)
+    # update GP model
+    message("|- Update GP model")
+    gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
     # cross & inbreed selection from previous offspring
+    message("|- Cross & inbreed parents selected in previous generation")
     parents = seasons[[s]]$select$pop.out
     offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
-    # update GP model
-    gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
     # select from offspring based on estimated values using updated GP model
+    message("|- Select")
     offspring = predict.values(gp.trained.model, offspring)
     selected.names = selection.criterion(n = num.select,
                                          values = offspring$estGeneticValues,
