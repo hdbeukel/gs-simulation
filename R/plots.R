@@ -2,10 +2,11 @@
 # LOAD RESULTS #
 ################
 
-# create list containing simulated breeding cycles read from all RDS files found in the given directory
-load.simulation.results <- function(dir) {
+# create list containing simulated breeding cycles, read from all
+# files found in the given directory that match the given file pattern
+load.simulation.results <- function(dir, file.pattern = "*.RDS") {
   # get file paths
-  files <- Sys.glob(sprintf("%s/*.RDS", dir))
+  files <- Sys.glob(sprintf("%s/%s", dir, file.pattern))
   # load list of simulated breeding cycles
   breeding.cycles <- lapply(files, readRDS)
   # return results
@@ -24,8 +25,37 @@ create.pdf <- function(file, plot.fun, width = 10, height = 7.5){
   
 }
 
+# stored PDF plots in "figures/simulation/CGS";
+# organized into subfolders according to heritability
+# size of additional TP
+plot.CGS <- function(xlim = c(0,30)){
+  
+  fig.dir <- "figures/simulation/CGS"
+  
+  # make all combinations of heritability and additional TP size
+  for(h in c(0.2, 1.0)){
+    for(tp in c(0, 800)){
+      
+      fig.subdir <- sprintf("%s/h2-%.1f/tp-%d", fig.dir, h, tp)
+      
+      message(sprintf("Heritability: %.1f, additional TP: %d", h, tp))
+      if(!dir.exists(fig.subdir)){
+        message(sprintf("|- Creating output directory \"%s\"", fig.subdir))
+        dir.create(fig.subdir, recursive = T)
+      }
+      
+      # load data
+      message("|- Load data ...")
+      
+      # ...
+      
+    }
+  }
+  
+}
+
 # stores PDF plots in "figures/simulation/GS-WGS"
-plot.GS.vs.WGS <- function(xlim = c(0,30)){
+plot.GS.vs.WGS <- function(file.pattern = "*.RDS", xlim = c(0,30)){
   
   fig.dir <- "figures/simulation/GS-WGS"
   
@@ -41,7 +71,7 @@ plot.GS.vs.WGS <- function(xlim = c(0,30)){
   #  7) WGS, h2 = 1.0, add TP = 0
   #  8) WGS, h2 = 1.0, add TP = 800
   dirs <- sort(Sys.glob("out/[GW]*S/30-seasons/h2-*/addTP-*/normal-effects/BRR"))
-  data <- lapply(dirs, load.simulation.results)
+  data <- lapply(dirs, load.simulation.results, file.pattern)
   # group small and large TP results
   small.TP <- data[c(1,3,5,7)]
   large.TP <- data[c(2,4,6,8)]
