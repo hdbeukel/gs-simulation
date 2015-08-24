@@ -17,7 +17,7 @@ load.simulation.results <- function(dir, file.pattern = "*.RDS") {
 # AUTOMATED PLOT GENERATION #
 #############################
 
-create.pdf <- function(file, plot.fun, width = 10, height = 7.5){
+create.pdf <- function(file, width, height, plot.fun){
   
   pdf(file, width = width, height = height)
   plot.fun()
@@ -25,31 +25,158 @@ create.pdf <- function(file, plot.fun, width = 10, height = 7.5){
   
 }
 
-# stored PDF plots in "figures/simulation/CGS";
-# organized into subfolders according to heritability
-# size of additional TP
-plot.CGS <- function(xlim = c(0,30)){
+get.plot.functions <- function(ylims){
+  plot.functions <- list(
+    list(f = plot.genetic.gain, name = "gain", title = "Genetic gain", legend = "bottomright"),
+    list(f = plot.ratio.fixed.QTL, name = "QTL-fixed", title = "Ratio of fixed QTL", legend = "bottomright"),
+    list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency", legend = "bottomright"),
+    list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD", legend = "bottomleft"),
+    list(f = plot.mean.inbreeding, name = "inbreeding", title = "Mean inbreeding in selection candidates", legend = "bottomright"),
+    list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation", legend = "topright"),
+    list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost", legend = "bottomright"),
+    list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy", legend = "bottomright"),
+    list(f = function(...){ 
+      plot.effect.estimation.accuracy(..., corrected = TRUE) 
+    }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy", legend = "bottomright")
+  )
+  # set ylims
+  plot.functions <- lapply(plot.functions, function(pf){
+    c(pf, list(ylim = ylims[[pf$name]]))
+  })
+  return(plot.functions)
+}
+
+# stores PDF plots in "figures/simulation/CGS";
+# organized into subfolders according to the applied
+# diversity measure (HE, MR) and range of diversity weights
+plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE", "MR"), file.pattern = "*.RDS", xlim = c(0,30)){
   
+  min.w <- min(div.weights)
+  max.w <- max(div.weights)
   fig.dir <- "figures/simulation/CGS"
   
-  # make all combinations of heritability and additional TP size
-  for(h in c(0.2, 1.0)){
-    for(tp in c(0, 800)){
+  # create plots for each diversity measure
+  for(div in div.measures){
+    
+    message("Diversity measure: ", div)
+    
+    fig.subdir <- sprintf("%s/%s-%.2f-%.2f", fig.dir, div, min.w, max.w)
+    
+    if(!dir.exists(fig.subdir)){
+      message(sprintf("|- Create output directory \"%s\"", fig.subdir))
+      dir.create(fig.subdir, recursive = T)
+    }
+    
+    # heritability/TP settings
+    settings <- list(
+      list(h = 0.2, add.tp = 0),
+      list(h = 0.2, add.tp = 800),
+      list(h = 1.0, add.tp = 0),
+      list(h = 1.0, add.tp = 800)
+    )
+    
+    # load data
+    message("|- Load data ...")
+    
+    all.data <- lapply(settings, function(setting){
       
-      fig.subdir <- sprintf("%s/h2-%.1f/tp-%d", fig.dir, h, tp)
+      h <- setting$h
+      add.tp <- setting$add.tp
+      tp <- add.tp + 200
       
-      message(sprintf("Heritability: %.1f, additional TP: %d", h, tp))
-      if(!dir.exists(fig.subdir)){
-        message(sprintf("|- Creating output directory \"%s\"", fig.subdir))
-        dir.create(fig.subdir, recursive = T)
-      }
+      message(sprintf(" |- Heritability: %.1f, additional TP: %d", h, add.tp))
       
-      # load data
-      message("|- Load data ...")
+      # determine data directory names
+      dir.template <- sprintf("out/%%s/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.tp)
+      # CGS results with specified diversity weights
+      CGS.dir.template <- paste(sprintf(dir.template, "CGS"), sprintf("%s-%%.2f/index", div), sep = "/")
+      CGS.dirs <- sapply(div.weights, function(w){
+        sprintf(CGS.dir.template, w)
+      })
+      # corresponding GS/WGS results
+      GS.dir <- sprintf(dir.template, "GS")
+      WGS.dir <- sprintf(dir.template, "WGS")
       
-      # ...
+      # load:
+      #      1) GS
+      # 2..n-1) CGS with specified series of weights
+      #      n) WGS
+      data <- lapply(c(GS.dir, CGS.dirs, WGS.dir), load.simulation.results, file.pattern)
+      
+      return(list(data = data, h = h, tp = tp))
+      
+    })
+    
+    # set graphical parameters
+    params <- as.list(rep(NA, length(div.weights)+2))
+    
+    # GS
+    params[[1]] <- list(lty = 1, bg = "black", pch = 24)
+    # CGS
+    colors <- gray.colors(length(div.weights))
+    params[2:(length(params)-1)] <- lapply(colors, function(col){
+      c(list(bg = col), list(lty = 1, pch = 21))
+    })
+    # WGS
+    params[[length(params)]] <- list(lty = 2, bg = "white", pch = 25)
+    
+    # set curve names
+    names <- as.list(rep(NA, length(params)))
+    
+    # GS
+    names[[1]] <- bquote(GS)
+    # CGS
+    names[2:(length(names)-1)] <- sapply(div.weights, function(w){
+      bquote(CGS ~ (alpha == .(sprintf("%.2f", w))))
+    })
+    # WGS
+    names[[length(names)]] <- bquote(WGS)
+    # convert to expressions
+    names <- as.expression(names)
+    
+    # setup plot functions
+    ylims <- list(
+      'gain' = c(0, 0.75),
+      'QTL-fixed' = c(0, 1.1),
+      'QTL-fav-allele-freq' = c(0.48, 0.81),
+      'LD' = c(0.1, 0.9),
+      'inbreeding' = c(0, 0.68),
+      'genetic-sd' = c(0, 0.11),
+      'fav-QTL-lost' = c(0, 36),
+      'eff-acc' = c(0.35, 0.72),
+      'eff-acc-corrected' = c(0.45, 1.02)
+    )
+    plot.functions <- get.plot.functions(ylims)
+    # init function to extend plot title
+    make.title <- function(title, h, tp){
+      h.formatted <- sprintf("%.1f", h)
+      bquote(.(title) ~ (.(substitute(list(.div, h^2 == .h2, TP == .tp), list(.div = div, .h2 = h.formatted, .tp = tp)))))
+    }
+    
+    # create plots
+    message("|- Create plots ...")
+    
+    for(plot.fun in plot.functions){
+      
+      file <- sprintf("%s/%s.pdf", fig.subdir, plot.fun$name)
+
+      create.pdf(file, width = 16, height = 12,  function(){
+        
+        # combine plots for different heritabilities and TP sizes
+        par(mfrow = c(2,2))
+        
+        for(data in all.data){
+          # plot
+          plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim)
+          # extend title (include heritability and TP size)
+          title(make.title(plot.fun$title, data$h, data$tp))
+          add.legend(names, params, pos = plot.fun$legend) 
+        }
+        
+      })
       
     }
+    
   }
   
 }
@@ -76,22 +203,22 @@ plot.GS.vs.WGS <- function(file.pattern = "*.RDS", xlim = c(0,30)){
   small.TP <- data[c(1,3,5,7)]
   large.TP <- data[c(2,4,6,8)]
   results <- list(
-    list(data = small.TP, file.suffix = "small-TP", title.suffix = "(small TP)"),
-    list(data = large.TP, file.suffix = "large-TP", title.suffix = "(large TP)")
+    list(data = small.TP, title.suffix = "(TP = 200)"),
+    list(data = large.TP, title.suffix = "(TP = 1000)")
   )
   
   # set graphical parameters
   params <- list(
     # GS, h2 = 0.2
-    list(lty = 1, bg = "black", pch = 23),
+    list(lty = 1, bg = "black", pch = 24),
     # GS, h2 = 1.0
     list(lty = 1, bg = "black", pch = 21),
     # WGS, h2 = 0.2
-    list(lty = 2, bg = "white", pch = 23),
+    list(lty = 2, bg = "white", pch = 24),
     # WGS, h2 = 1.0
     list(lty = 2, bg = "white", pch = 21)
   )
-  # set plot names
+  # set curve names
   names <- c(
     expression(GS ~ (h^2 == 0.2)),
     expression(GS ~ (h^2 == 1.0)),
@@ -102,37 +229,35 @@ plot.GS.vs.WGS <- function(file.pattern = "*.RDS", xlim = c(0,30)){
   message("Create plots ...")
   
   # setup plot functions
-  plot.functions <- list(
-    list(f = plot.genetic.gain, file.name = "gain", title = "Genetic gain", ylim = c(0, 0.7)),
-    list(f = plot.ratio.fixed.QTL, file.name = "QTL-fixed", title = "Ratio of fixed QTL", ylim = c(0, 1)),
-    list(f = plot.mean.QTL.fav.allele.freq, file.name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency", ylim = c(0.48, 0.78)),
-    list(f = plot.mean.QTL.marker.LD, file.name = "LD", title = "Mean polymorphic QTL - marker LD", ylim = c(0, 1), legend = "bottomleft"),
-    list(f = plot.mean.inbreeding, file.name = "inbreeding", title = "Mean inbreeding in selection candidates", ylim = c(0, 0.68)),
-    list(f = plot.genetic.standard.deviation, file.name = "genetic-sd", title = "Genetic standard deviation", ylim = c(0, 0.075), legend = "topright"),
-    list(f = plot.num.fav.QTL.lost, file.name = "fav-QTL-lost", title = "Number of favourable QTL lost", ylim = c(0, 36)),
-    list(f = plot.effect.estimation.accuracy, file.name = "eff-acc", title = "Effect estimation accuracy", ylim = c(0.45, 0.97))
+  ylims <- list(
+    'gain' = c(0, 0.7),
+    'QTL-fixed' = c(0, 1),
+    'QTL-fav-allele-freq' = c(0.48, 0.78),
+    'LD' = c(0.1, 0.9),
+    'inbreeding' = c(0, 0.68),
+    'genetic-sd' = c(0, 0.075),
+    'fav-QTL-lost' = c(0, 36),
+    'eff-acc' = c(0.35, 0.72),
+    'eff-acc-corrected' = c(0.45, 0.97)
   )
-  
-  # create plots
-  for(res in results){
-    
-    for(plot.fun in plot.functions){
-    
-      file <- sprintf("%s/%s-%s.pdf", fig.dir, plot.fun$file.name, res$file.suffix)
-      title <- sprintf("%s %s", plot.fun$title, res$title.suffix)
-      
-      create.pdf(file, function(){
-        plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim)
-        title(title)
-        pos <- ifelse(is.null(plot.fun$legend), "bottomright", plot.fun$legend)
-        add.legend(names, params, pos = pos)
-      })
-      
-    }
-    
-  }
+  plot.functions <- get.plot.functions(ylims)
 
+  # create plots
+  for(plot.fun in plot.functions){
   
+    file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+
+    create.pdf(file, width = 16, height = 6, function(){
+      # combine small/large TP plots
+      par(mfrow = c(1,2))
+      for(res in results){
+        plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim)
+        title(sprintf("%s %s", plot.fun$title, res$title.suffix))
+        add.legend(names, params, pos = plot.fun$legend)
+      }
+    })
+      
+  }
   
 }
 
@@ -184,8 +309,7 @@ plot.multi <- function(simulations, plot.function, param.list = list(), xlim, yl
 # plot a certain variable extracted from the simulations:
 #  --> input:   list of replicates (each replicate is a list of simulated seasons)
 #  --> plotted: values of variable extracted with the given function 'extract.values',
-#               averaged over all replicates, with confidence intervals (by default 95%)
-#               calculated from a normal distribution
+#               averaged over all replicates, with Wald confidence intervals (by default 95%)
 # the function 'extract.values' should take a single argument, i.e. the list of seasons
 # produced from a single simulation run, and return a vector with one extracted value per season
 # (for seasons where the value is not reported, NA should be returned)
@@ -232,7 +356,7 @@ plot.simulation.variable <- function(replicates,
   # compute averages and standard error + CI across replicates
   value.avg <- colMeans(values, na.rm = TRUE)
   value.std.err <- apply(values, 2, sd, na.rm = TRUE)/sqrt(num.rep)
-  value.ci.halfwidth <- qnorm(ci+(1-ci)/2)*value.std.err
+  value.ci.halfwidth <- qt(ci+(1-ci)/2, df = num.rep-1) * value.std.err
   value.ci.top <- value.avg + value.ci.halfwidth
   value.ci.bottom <- value.avg - value.ci.halfwidth
   # plot non NA values only
@@ -397,7 +521,7 @@ plot.mean.QTL.marker.LD <- function(replicates,
 
 # plot marker effect estimation accuracy
 plot.effect.estimation.accuracy <- function(replicates,
-                                            corrected = TRUE,
+                                            corrected = FALSE,
                                             ylab = "Marker effect accuracy",
                                             ...){
   
