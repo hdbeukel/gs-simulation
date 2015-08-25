@@ -113,7 +113,7 @@ plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE", "
     # GS
     params[[1]] <- list(lty = 1, bg = "black", pch = 24)
     # CGS
-    colors <- gray.colors(length(div.weights))
+    colors <- gray.colors(length(div.weights), start = 0.5, end = 0.9)
     params[2:(length(params)-1)] <- lapply(colors, function(col){
       c(list(bg = col), list(lty = 1, pch = 21))
     })

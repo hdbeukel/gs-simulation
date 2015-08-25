@@ -3,7 +3,7 @@
 # MAXIMIZE WEIGHTED INDEX: AVERAGE BREEDING VALUE + DIVERSITY #
 ###############################################################
 
-j.max.index <- function(n, names, values, markers, div.weight, div.measure, sec.without.impr = 5){
+j.max.index <- function(n, names, values, markers, div.weight, div.measure, fav.alleles = NULL, sec.without.impr = 5){
   
   # convert parameters
   n <- as.integer(n)
@@ -11,12 +11,18 @@ j.max.index <- function(n, names, values, markers, div.weight, div.measure, sec.
   markers <- .jarray(markers, dispatch = TRUE)
   div.weight <- as.numeric(div.weight)
   div.measure <- .jcast(div.measure, j.core("problems/objectives/Objective"))
+  if(is.null(fav.alleles)){
+    fav.alleles <- .jnull()
+  } else {
+    fav.alleles <- as.integer(fav.alleles)
+  }
   sec.without.impr <- as.integer(sec.without.impr)
 
   # call java API
   selected.names <- .jcall(j.api(),
                            "[S", "selectWeighted",
-                           n, names, values, markers, div.weight, div.measure, sec.without.impr)
+                           n, names, values, markers, fav.alleles,
+                           div.weight, div.measure, sec.without.impr)
   
   # sort for reproducible results
   selected.names <- sort(selected.names)
@@ -35,6 +41,10 @@ j.MR.ENE <- function(){
 
 j.HE <- function(){
   .jnew(j.gs("obj/ExpectedProportionOfHeterozygousLoci"))
+}
+
+j.adj.HE <- function(){
+  .jnew(j.gs("obj/AdjustedHE"))
 }
 
 #############

@@ -51,17 +51,18 @@ public class API {
      * @param subsetSize subset size
      * @param values (estimated) breeding values
      * @param markers marker matrix Z (0/1)
+     * @param favAlleles favourable alleles (0/1) -- can be null for diversity measures HE and MR-ENE
      * @param divWeight weight of the diversity component (real number in [0,1])
      * @param divObj diversity objective (MR-ENE or HE)
      * @param secondsWithoutImprovement number of seconds without improvement after which the search stops
      * @return array of selected individuals (names)
      */
     public String[] selectWeighted(int subsetSize, String[] names, double[] values, int[][] markers,
-                                   double divWeight, Objective<SubsetSolution, PopulationData> divObj,
+                                   int[] favAlleles, double divWeight, Objective<SubsetSolution, PopulationData> divObj,
                                    int secondsWithoutImprovement){
         
         // wrap data
-        PopulationData data = new PopulationData(names, values, markers);
+        PopulationData data = new PopulationData(names, values, markers, favAlleles);
         
         return selectWeighted(subsetSize, data, divWeight, divObj, secondsWithoutImprovement);
         

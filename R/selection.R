@@ -15,7 +15,7 @@ select.highest.score <- function(n, values, ...){
 }
 
 # select by maximizing weighted index of mean breeding value and diversity
-select.weighted.index <- function(n, values, markers, div.weight, div.measure = c("MR", "HE"), ...){
+select.weighted.index <- function(n, values, markers, div.weight, div.measure = c("MR", "HE", "HEadj"), fav.alleles = NULL, ...){
   # check input
   if(!is.numeric(n)){
     stop("n should be an integer (selection size)")
@@ -26,6 +26,9 @@ select.weighted.index <- function(n, values, markers, div.weight, div.measure = 
   if(rownames(markers) != names(values) || !is.numeric(markers)){
     stop("markers matrix should be 0/1 with rownames corresponding to individuals")
   }
+  if(!is.null(fav.alleles) && !is.numeric(fav.alleles)){
+    stop("fav.alleles should be a 0/1 vector")
+  }
   if(!is.numeric(div.weight) || div.weight < 0 || div.weight > 1){
     stop("div.weight should be a number in [0,1]")
   }
@@ -33,11 +36,13 @@ select.weighted.index <- function(n, values, markers, div.weight, div.measure = 
   div.measure <- match.arg(div.measure)
   if(div.measure == "MR"){
     div.measure <- j.MR.ENE()
-  } else {
+  } else if (div.measure == "HE"){
     div.measure <- j.HE()
+  } else {
+    div.measure <- j.adj.HE()
   }
   # run optimization
-  selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure)
+  selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles)
   return(selected.names)
 }
 

@@ -9,7 +9,8 @@ public class NormalizedObjectives {
 
     private final NormalizedObjective<SubsetSolution, PopulationData> valueObj, divObj;
 
-    public NormalizedObjectives(NormalizedObjective<SubsetSolution, PopulationData> valueObj, NormalizedObjective<SubsetSolution, PopulationData> divObj) {
+    public NormalizedObjectives(NormalizedObjective<SubsetSolution, PopulationData> valueObj,
+                                NormalizedObjective<SubsetSolution, PopulationData> divObj) {
         this.valueObj = valueObj;
         this.divObj = divObj;
     }

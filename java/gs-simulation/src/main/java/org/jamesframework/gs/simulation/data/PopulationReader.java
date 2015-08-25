@@ -52,8 +52,8 @@ public class PopulationReader {
             i++;
         }
         
-        // initialize data
-        PopulationData data = new PopulationData(names, values, markers);
+        // initialize data (no favourable allele references)
+        PopulationData data = new PopulationData(names, values, markers, null);
         
         return data;
         

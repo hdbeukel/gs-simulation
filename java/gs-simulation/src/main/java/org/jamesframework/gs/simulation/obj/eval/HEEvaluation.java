@@ -2,38 +2,19 @@
 
 package org.jamesframework.gs.simulation.obj.eval;
 
-import java.util.Arrays;
-import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
-
-
-public class HEEvaluation implements Evaluation {
-
-    // subset size
-    private final int n;
-    // averaged allele frequencies
-    private final double[] alleleFreqs;
+public class HEEvaluation extends AvgGenomeEvaluation {
 
     public HEEvaluation(int n, double[] alleleFreqs) {
-        this.n = n;
-        this.alleleFreqs = alleleFreqs;
+        super(n, alleleFreqs);
     }
     
     public HEEvaluation(HEEvaluation toCopy){
-        this.n = toCopy.n;
-        this.alleleFreqs = Arrays.copyOf(toCopy.alleleFreqs, toCopy.alleleFreqs.length);
+        super(toCopy);
     }
     
-    public void swap(int[] delGenome, int[] addGenome){
-        int numMarkers = alleleFreqs.length;
-        for(int m=0; m<numMarkers; m++){
-            alleleFreqs[m] *= n;
-            alleleFreqs[m] -= delGenome[m];
-            alleleFreqs[m] += addGenome[m];
-            alleleFreqs[m] /= n;
-        }
-    }
     @Override
     public double getValue() {
+        double[] alleleFreqs = getAlleleFreqs();
         double he = 0.0;
         int numMarkers = alleleFreqs.length;
         for(int m=0; m<numMarkers; m++){

@@ -80,7 +80,7 @@ enlarge.tp <- function(cur.tp, add, min.dist = 0.1){
 ##############################
 
 # train GP model (RR or BRR) - fixed SNP are ignored during estimation and their effect is set to zero
-gp.train <- function(pheno, Z, method = c("RR", "BRR"), rescale = TRUE){
+gp.train <- function(pheno, Z, method = c("BRR", "RR"), rescale = TRUE){
   
   # ignore fixed SNP for estimation
   mafs <- maf(Z, encoding = "dh")
