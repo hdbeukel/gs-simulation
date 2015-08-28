@@ -19,11 +19,11 @@ import org.jamesframework.core.subset.SubsetProblem;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.core.subset.neigh.SingleSwapNeighbourhood;
 import org.jamesframework.examples.util.ProgressSearchListener;
+import org.jamesframework.ext.problems.objectives.NormalizedObjective;
 import org.jamesframework.ext.problems.objectives.WeightedIndex;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.obj.MeanBreedingValue;
 import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
-import org.jamesframework.gs.simulation.obj.NormalizedObjective;
 
 public class API {
     
@@ -114,8 +114,8 @@ public class API {
         Evaluation bestEval = search.getBestSolutionEvaluation();
         Evaluation divNormEval = normObjs.getDivObj().evaluate(bestSol, data);
         Evaluation valueNormEval = normObjs.getValueObj().evaluate(bestSol, data);
-        Evaluation divEval = normObjs.getDivObj().getObjective().evaluate(bestSol, data);
-        Evaluation valueEval = normObjs.getValueObj().getObjective().evaluate(bestSol, data);
+        Evaluation divEval = normObjs.getDivObj().getUnnormalizedObjective().evaluate(bestSol, data);
+        Evaluation valueEval = normObjs.getValueObj().getUnnormalizedObjective().evaluate(bestSol, data);
         message("Final selection: " + Arrays.toString(selection));
         message("Best weighted value (normalized): " + bestEval.getValue());
         message("Diversity score (normalized): " + divNormEval.getValue());

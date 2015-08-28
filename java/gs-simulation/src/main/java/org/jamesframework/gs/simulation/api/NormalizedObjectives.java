@@ -2,8 +2,8 @@
 package org.jamesframework.gs.simulation.api;
 
 import org.jamesframework.core.subset.SubsetSolution;
+import org.jamesframework.ext.problems.objectives.NormalizedObjective;
 import org.jamesframework.gs.simulation.data.PopulationData;
-import org.jamesframework.gs.simulation.obj.NormalizedObjective;
 
 public class NormalizedObjectives {
 

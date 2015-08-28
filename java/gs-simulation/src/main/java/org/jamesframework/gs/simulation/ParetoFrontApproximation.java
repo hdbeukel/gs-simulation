@@ -88,8 +88,8 @@ public class ParetoFrontApproximation {
                 // output results
                 SubsetSolution bestSol = search.getBestSolution();
                 Evaluation weightedEval = search.getBestSolutionEvaluation();
-                Evaluation divEval = normObjs.getDivObj().getObjective().evaluate(bestSol, data);
-                Evaluation valueEval = normObjs.getValueObj().getObjective().evaluate(bestSol, data);
+                Evaluation divEval = normObjs.getDivObj().getUnnormalizedObjective().evaluate(bestSol, data);
+                Evaluation valueEval = normObjs.getValueObj().getUnnormalizedObjective().evaluate(bestSol, data);
                 Evaluation divNormEval = normObjs.getDivObj().evaluate(bestSol, data);
                 Evaluation valueNormEval = normObjs.getValueObj().evaluate(bestSol, data);
                 System.out.format("%d, %d, %f, %f, %f, %f, %f, %f, %f\n",
