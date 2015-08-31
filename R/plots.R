@@ -47,14 +47,26 @@ get.plot.functions <- function(ylims){
 }
 
 # stores PDF plots in "figures/simulation/CGS";
-# organized into subfolders according to the applied
-# diversity measure (HE, MR) and range of diversity weights
-plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE", "MR"), file.pattern = "*.RDS", xlim = c(0,30)){
+# organized into subfolders according to
+#  1) the two included heritabilities
+#  2) the applied diversity measure (HE, MR)
+#     and range of diversity weights
+plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE"),
+                     heritability = c(0.2, 0.5), file.pattern = "*.RDS", xlim = c(0,30)){
+  
+  # check: two heritabilities
+  if(length(heritability) != 2){
+    stop("'heritability' should be a vector of length 2")
+  }
+  # extract low and high heritability
+  low.h <- min(heritability)
+  high.h <- max(heritability)
+  
+  fig.dir <- sprintf("figures/simulation/CGS/h2-%.1f-%.1f", low.h, high.h)
   
   min.w <- min(div.weights)
   max.w <- max(div.weights)
-  fig.dir <- "figures/simulation/CGS"
-  
+
   # create plots for each diversity measure
   for(div in div.measures){
     
@@ -69,10 +81,10 @@ plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE", "
     
     # heritability/TP settings
     settings <- list(
-      list(h = 0.2, add.tp = 0),
-      list(h = 0.2, add.tp = 800),
-      list(h = 1.0, add.tp = 0),
-      list(h = 1.0, add.tp = 800)
+      list(h = low.h, add.tp = 0),
+      list(h = low.h, add.tp = 800),
+      list(h = high.h, add.tp = 0),
+      list(h = high.h, add.tp = 800)
     )
     
     # load data
@@ -181,24 +193,43 @@ plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE", "
   
 }
 
-# stores PDF plots in "figures/simulation/GS-WGS"
-plot.GS.vs.WGS <- function(file.pattern = "*.RDS", xlim = c(0,30)){
+# stores PDF plots in "figures/simulation/GS-WGS",
+# within a subfolder according to the two included heritabilities
+plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", xlim = c(0,30)){
   
-  fig.dir <- "figures/simulation/GS-WGS"
+  # check: two heritabilities
+  if(length(heritability) != 2){
+    stop("'heritability' should be a vector of length 2")
+  }
+  # extract low and high heritabilities
+  low.h <- min(heritability)
+  high.h <- max(heritability)
+  
+  fig.dir <- sprintf("figures/simulation/GS-WGS/h2-%.1f-%.1f", low.h, high.h)
+  
+  # create output directory
+  if(!dir.exists(fig.dir)){
+    message(sprintf("Create output directory \"%s\"", fig.dir))
+    dir.create(fig.dir, recursive = T)
+  }
   
   message("Load data ...")
   
-  # load data:
-  #  1)  GS, h2 = 0.2, add TP = 0
-  #  2)  GS, h2 = 0.2, add TP = 800
-  #  3)  GS, h2 = 1.0, add TP = 0
-  #  4)  GS, h2 = 1.0, add TP = 800
-  #  5) WGS, h2 = 0.2, add TP = 0
-  #  6) WGS, h2 = 0.2, add TP = 800
-  #  7) WGS, h2 = 1.0, add TP = 0
-  #  8) WGS, h2 = 1.0, add TP = 800
-  dirs <- sort(Sys.glob("out/[GW]*S/30-seasons/h2-*/addTP-*/normal-effects/BRR"))
-  data <- lapply(dirs, load.simulation.results, file.pattern)
+  # load data
+  dirs.low.h2 <- sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", low.h)))
+  dirs.high.h2 <- sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h)))
+  data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
+  data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
+  # combine data:
+  # 1)  GS, h2: low, add TP: 0
+  # 2)  GS, h2: low, add TP: 800
+  # 3) WGS, h2: low, add TP: 0
+  # 4) WGS, h2: low, add TP: 800
+  # 5)  GS, h2: high, add TP: 0
+  # 6)  GS, h2: high, add TP: 800
+  # 7) WGS, h2: high, add TP: 0
+  # 8) WGS, h2: high, add TP: 800
+  data <- c(data.low.h2, data.high.h2)
   # group small and large TP results
   small.TP <- data[c(1,3,5,7)]
   large.TP <- data[c(2,4,6,8)]
@@ -209,22 +240,23 @@ plot.GS.vs.WGS <- function(file.pattern = "*.RDS", xlim = c(0,30)){
   
   # set graphical parameters
   params <- list(
-    # GS, h2 = 0.2
+    # GS, h2 = low
     list(lty = 1, bg = "black", pch = 24),
-    # GS, h2 = 1.0
-    list(lty = 1, bg = "black", pch = 21),
-    # WGS, h2 = 0.2
+    # WGS, h2 = low
     list(lty = 2, bg = "white", pch = 24),
-    # WGS, h2 = 1.0
+    # GS, h2 = high
+    list(lty = 1, bg = "black", pch = 21),
+    # WGS, h2 = high
     list(lty = 2, bg = "white", pch = 21)
   )
   # set curve names
   names <- c(
-    expression(GS ~ (h^2 == 0.2)),
-    expression(GS ~ (h^2 == 1.0)),
-    expression(WGS ~ (h^2 == 0.2)),
-    expression(WGS ~ (h^2 == 1.0))
+    bquote(GS ~ (h^2 == .(low.h))),
+    bquote(WGS ~ (h^2 == .(low.h))),
+    bquote(GS ~ (h^2 == .(high.h))),
+    bquote(WGS ~ (h^2 == .(high.h)))
   )
+  names <- sapply(names, as.expression)
   
   message("Create plots ...")
   
