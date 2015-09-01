@@ -13,17 +13,17 @@ import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
 public abstract class FrequencyBasedEvaluation implements Evaluation {
 
     // subset size
-    private final int n;
+    private final int subsetSize;
     // allele frequencies (ratio of 1-alleles)
     private final double[] alleleFreqs;
 
-    public FrequencyBasedEvaluation(int n, double[] alleleFreqs) {
-        this.n = n;
+    public FrequencyBasedEvaluation(int subsetSize, double[] alleleFreqs) {
+        this.subsetSize = subsetSize;
         this.alleleFreqs = alleleFreqs;
     }
     
     public FrequencyBasedEvaluation(FrequencyBasedEvaluation toCopy){
-        this.n = toCopy.n;
+        this.subsetSize = toCopy.subsetSize;
         this.alleleFreqs = Arrays.copyOf(toCopy.alleleFreqs, toCopy.alleleFreqs.length);
     }
     
@@ -31,15 +31,15 @@ public abstract class FrequencyBasedEvaluation implements Evaluation {
     public void swap(int[] delGenome, int[] addGenome){
         int numMarkers = alleleFreqs.length;
         for(int m=0; m<numMarkers; m++){
-            alleleFreqs[m] *= n;
+            alleleFreqs[m] *= subsetSize;
             alleleFreqs[m] -= delGenome[m];
             alleleFreqs[m] += addGenome[m];
-            alleleFreqs[m] /= n;
+            alleleFreqs[m] /= subsetSize;
         }
     }
 
     public int getSubsetSize() {
-        return n;
+        return subsetSize;
     }
 
     public double[] getAlleleFreqs() {

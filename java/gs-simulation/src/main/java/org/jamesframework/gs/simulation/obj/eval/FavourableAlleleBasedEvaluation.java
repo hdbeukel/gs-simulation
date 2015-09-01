@@ -12,8 +12,8 @@ public abstract class FavourableAlleleBasedEvaluation extends FrequencyBasedEval
     // indicates which allele is favourable
     private final int[] favAlleles;
     
-    public FavourableAlleleBasedEvaluation(int n, double[] alleleFreqs, int[] favAlleles) {
-        super(n, alleleFreqs);
+    public FavourableAlleleBasedEvaluation(int subsetSize, double[] alleleFreqs, int[] favAlleles) {
+        super(subsetSize, alleleFreqs);
         this.favAlleles = favAlleles;
     }
     
