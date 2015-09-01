@@ -123,7 +123,7 @@ plot.pareto.front <- function(file, title = "Pareto front", xlab = "Diversity"){
   
 }
 
-plot.pareto.fronts <- function(dir, div.measure = c("MR", "HE")){
+plot.pareto.fronts <- function(dir, div.measure = c("MR", "HE", "HEadj", "LOG")){
   
   div.measure <- match.arg(div.measure)
   dir <- sprintf("%s/%s", dir, div.measure)
