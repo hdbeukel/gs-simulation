@@ -28,7 +28,7 @@ public class ParetoFrontApproximation {
 
     public static void main(String[] args) throws IOException {
         
-        API api = new API(true);
+        API api = new API();
         
         // get arguments
         String valueFile = args[0];
