@@ -17,7 +17,7 @@ import org.jamesframework.gs.simulation.obj.eval.HEEvaluation;
  * 
  * @author <a href="mailto:herman.debeukelaer@ugent.be">Herman De Beukelaer</a>
  */
-public class ExpectedProportionOfHeterozygousLoci extends AvgGenomeObjective{
+public class ExpectedProportionOfHeterozygousLoci extends FrequencyBasedObjective{
     
     @Override
     public Evaluation evaluate(SubsetSolution solution, PopulationData data) {
@@ -25,7 +25,7 @@ public class ExpectedProportionOfHeterozygousLoci extends AvgGenomeObjective{
         // retrieve selection size
         int n = solution.getNumSelectedIDs();
         // compute average genome
-        double[] avgMarkers = computeAvgGenome(solution, data);
+        double[] avgMarkers = computeAlleleFrequencies(solution, data);
         
         // wrap in HE evaluation
         return new HEEvaluation(n, avgMarkers);

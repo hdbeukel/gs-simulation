@@ -21,7 +21,7 @@ public class PopulationData implements IntegerIdentifiedData {
     private final double[] values;
     private final int[][] markers;
     private final int[] favourable;
-    
+        
     private final Set<Integer> ids;
     
     // inter-accession distance matrix
@@ -29,16 +29,16 @@ public class PopulationData implements IntegerIdentifiedData {
 
     public PopulationData(String[] names, double[] values, int[][] markers, int[] favourable) {
         // check sizes
-        int n = names.length;
-        int m = markers[0].length;
-        if(values.length != n){
+        int numInd = names.length;
+        int numMarkers = markers[0].length;
+        if(values.length != numInd){
             throw new IllegalArgumentException("Number of names and values do not correspond.");
         }
-        if(markers.length != n){
+        if(markers.length != numInd){
             throw new IllegalArgumentException("Number of names does not correspond with number of rows "
                                              + "in marker matrix.");
         }
-        if(favourable != null && favourable.length != m){
+        if(favourable != null && favourable.length != numMarkers){
             throw new IllegalArgumentException("Length of favourable allele array does not correspond to "
                                              + "number of columns in marker matrix.");
         }

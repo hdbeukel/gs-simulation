@@ -13,6 +13,7 @@ PS = function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
               F1.size=200, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
+              extract.metadata = TRUE,
               ...){
   
   # check input
@@ -85,24 +86,30 @@ PS = function(founders, heritability,
     message("|- ", time, " seconds elapsed")
   }
   
-  # return simulated seasons metadata
-  return(extract.metadata(seasons))
+  if(extract.metadata){
+    # return simulated seasons metadata
+    return(extract.metadata(seasons))
+  } else {
+    # return full data
+    return(seasons)
+  }
   
 }
 
-WGS = function(founders, heritability,
+WGS <- function(founders, heritability,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                selection.criterion=select.highest.score,
-               gp.method = c("BRR", "RR"), ...){
+               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+               ...){
   return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion,
-            gp.method, weighted = TRUE, ...))
+            gp.method, extract.metadata, weighted = TRUE, ...))
 }
-CGS = function(founders, heritability,
+CGS <- function(founders, heritability,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
-               gp.method = c("BRR", "RR"),
+               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                div.weight, div.measure = c("MR", "HE", "HEadj"),
                type = c("index", "split"), ...){
   
@@ -122,7 +129,7 @@ CGS = function(founders, heritability,
   # run GS with combinatorial selection strategy
   return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion = sel.crit,
-            gp.method, weighted = FALSE, ...))
+            gp.method, extract.metadata, weighted = FALSE, ...))
   
 }
 # simulate genomic selection (possibly weighted by favourable allele frequencies)
@@ -131,11 +138,12 @@ CGS = function(founders, heritability,
 #  - season 2: cross, inbreed & select (on predicted values, no model update)
 #  - season >= 3: (1) evaluate previous offspring, update GP model
 #               + (2) cross, inbreed & select (on predicted values)
-GS = function(founders, heritability,
+GS <- function(founders, heritability,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
-              gp.method = c("BRR", "RR"), weighted = FALSE, ...){
+              gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+              weighted = FALSE, ...){
   
   # check input
   if(missing(founders)){
@@ -246,7 +254,7 @@ GS = function(founders, heritability,
   selected.names = selection.criterion(n = num.select,
                                        values = evaluated.base.pop$estGeneticValues,
                                        markers = gp.design.matrix(evaluated.base.pop),
-                                       fav.alleles = get.favourable.alleles(gp.trained.model))
+                                       fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
   selected.pop = restrict.population(evaluated.base.pop, selected.names)
 
   # store season
@@ -269,7 +277,7 @@ GS = function(founders, heritability,
   selected.names = selection.criterion(n = num.select,
                                        values = offspring$estGeneticValues,
                                        markers = gp.design.matrix(offspring),
-                                       fav.alleles = get.favourable.alleles(gp.trained.model))
+                                       fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
   selected.offspring = restrict.population(offspring, selected.names)
   
   # store season
@@ -303,7 +311,7 @@ GS = function(founders, heritability,
     selected.names = selection.criterion(n = num.select,
                                          values = offspring$estGeneticValues,
                                          markers = gp.design.matrix(offspring),
-                                         fav.alleles = get.favourable.alleles(gp.trained.model))
+                                         fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
     selected.offspring = restrict.population(offspring, selected.names)
     # store season
     new.season = list(evaluate = list(pop = evaluated.prev.offspring),
@@ -318,14 +326,19 @@ GS = function(founders, heritability,
     message("|- ", time, " seconds elapsed")
   }
   
-  # return simulated seasons metadata
-  return(extract.metadata(seasons))
+  if(extract.metadata){
+    # return simulated seasons metadata
+    return(extract.metadata(seasons))
+  } else {
+    # return full data
+    return(seasons)
+  }
 }
 
-infer.weights = function(gp.trained.model, pop){
-  Z = gp.design.matrix(pop)
+infer.weights <- function(gp.trained.model, pop){
+  Z <- gp.design.matrix(pop)
   # weigh according to favourable allele frequencies (inversely proportional)
-  weights = 1/sqrt(get.favourable.allele.frequencies(gp.trained.model, Z))
+  weights <- 1/sqrt(get.favourable.allele.frequencies(gp.get.effects(gp.trained.model), Z))
   # set Inf's to zero (fixed alleles no longer influence GP anyway)
   weights[is.infinite(weights)] = 0
   return(weights)
@@ -494,7 +507,7 @@ extract.metadata <- function(seasons){
       # 1) estimated marker effects
       metadata[[s+1]]$gp$effects <- gp.get.effects(gp.model)
       # 2) marker favourable allele frequencies in selection candidates
-      metadata[[s+1]]$gp$fav.marker.allele.freqs <- get.favourable.allele.frequencies(gp.model, Z)
+      metadata[[s+1]]$gp$fav.marker.allele.freqs <- get.favourable.allele.frequencies(gp.get.effects(gp.model), Z)
       # 3) marker effect estimation accuracy: computed as correlation between polymorphic QTL effects
       #    and estimated effects of SNP in highest LD, corrected by dividing by average actual LD (in TP)
       QTL.marker.LD <- QTL.marker.highest.LD(gp.tp)

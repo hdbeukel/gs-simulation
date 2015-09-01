@@ -7,18 +7,18 @@ import org.jamesframework.core.problems.objectives.Objective;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.core.subset.neigh.moves.SwapMove;
 import org.jamesframework.gs.simulation.data.PopulationData;
-import org.jamesframework.gs.simulation.obj.eval.AvgGenomeEvaluation;
+import org.jamesframework.gs.simulation.obj.eval.FrequencyBasedEvaluation;
 
 
-public abstract class AvgGenomeObjective implements Objective<SubsetSolution, PopulationData>{
+public abstract class FrequencyBasedObjective implements Objective<SubsetSolution, PopulationData>{
 
-    public double[] computeAvgGenome(SubsetSolution sol, PopulationData data){
+    public double[] computeAlleleFrequencies(SubsetSolution sol, PopulationData data){
         
         // retrieve selection
         Set<Integer> selection = sol.getSelectedIDs();
         int n = selection.size();
         
-        // compute average genome
+        // compute allele frequencies
         int numMarkers = data.numMarkers();
         double[] avgMarkers = new double[numMarkers];
         selection.forEach(sel -> {
@@ -37,7 +37,7 @@ public abstract class AvgGenomeObjective implements Objective<SubsetSolution, Po
         
     }
     
-    public void updateEvaluation(AvgGenomeEvaluation eval, SwapMove move, PopulationData data){
+    public void updateEvaluation(FrequencyBasedEvaluation eval, SwapMove move, PopulationData data){
         
         // extract genome of added/deleted individual
         int[] delGenome = data.getMarkers(move.getDeletedID());

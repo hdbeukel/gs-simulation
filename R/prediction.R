@@ -373,9 +373,7 @@ gp.predict <- function(trained.model, Z, weights=NULL){
 }
 
 # get favourable allele at each marker (1 if positive effect, 0 if negative effect)
-get.favourable.alleles <- function(trained.model){
-  # get effects
-  marker.effects <- gp.get.effects(trained.model)
+get.favourable.alleles <- function(marker.effects){
   # initialize output
   desired.alleles <- rep(0, length(marker.effects))
   # set to 1 for positive effects
@@ -387,12 +385,12 @@ get.favourable.alleles <- function(trained.model){
 }
 
 # get favourable allele frequencies
-get.favourable.allele.frequencies <- function(trained.model, Z){
+get.favourable.allele.frequencies <- function(marker.effects, Z){
   if(missing(Z) || is.null(Z) || !is.matrix(Z)){
     stop("Z should be a matrix")
   }
   # get favourable alleles
-  fav.alleles <- get.favourable.alleles(trained.model)
+  fav.alleles <- get.favourable.alleles(marker.effects)
   # compute frequencies
   n <- nrow(Z)
   m <- ncol(Z)

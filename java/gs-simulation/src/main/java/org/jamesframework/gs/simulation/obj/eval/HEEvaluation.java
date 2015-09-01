@@ -2,7 +2,7 @@
 
 package org.jamesframework.gs.simulation.obj.eval;
 
-public class HEEvaluation extends AvgGenomeEvaluation {
+public class HEEvaluation extends FrequencyBasedEvaluation {
 
     public HEEvaluation(int n, double[] alleleFreqs) {
         super(n, alleleFreqs);

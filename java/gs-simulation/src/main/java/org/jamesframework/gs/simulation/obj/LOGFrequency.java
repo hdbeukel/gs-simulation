@@ -8,25 +8,28 @@ import org.jamesframework.core.search.neigh.Move;
 import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.core.subset.neigh.moves.SwapMove;
 import org.jamesframework.gs.simulation.data.PopulationData;
-import org.jamesframework.gs.simulation.obj.eval.AdjustedHEEvaluation;
+import org.jamesframework.gs.simulation.obj.eval.LOGEvaluation;
 
 /**
- * Adjusted HE that only penalizes fixation of unfavourable alleles.
+ * Computes averaged logarithm of favourable allele frequencies to put exponentially
+ * increasing emphasis on low frequency alleles. See Li et al., Selection on multiple
+ * QTL with control of gene diversity and inbreeding for long-term benefit, 2008, J.
+ * Anim. Breed. Genet.
  * 
  * @author <a href="mailto:herman.debeukelaer@ugent.be">Herman De Beukelaer</a>
  */
-public class AdjustedHE extends FrequencyBasedObjective{
+public class LOGFrequency extends FrequencyBasedObjective{
 
     @Override
     public Evaluation evaluate(SubsetSolution solution, PopulationData data) {
         
         // retrieve selection size
         int n = solution.getNumSelectedIDs();
-        // compute average genome
+        // compute allele frequencies
         double[] avgMarkers = computeAlleleFrequencies(solution, data);
         
-        // wrap in adjusted HE evaluation
-        return new AdjustedHEEvaluation(n, avgMarkers, data.getFavourableAlleles());
+        // wrap in LOG evaluation
+        return new LOGEvaluation(n, avgMarkers, data.getFavourableAlleles());
         
     }
     
@@ -35,14 +38,14 @@ public class AdjustedHE extends FrequencyBasedObjective{
         
         // check move type
         if(!(move instanceof SwapMove)){
-            throw new IncompatibleDeltaEvaluationException("Adjusted HE objective should be used in "
+            throw new IncompatibleDeltaEvaluationException("LOG frequency objective should be used in "
                                                          + "combination with neighbourhoods that generate swap moves.");
         }
         // cast move
         SwapMove swapMove = (SwapMove) move;
 
         // initialize new evaluation
-        AdjustedHEEvaluation newEval = new AdjustedHEEvaluation((AdjustedHEEvaluation) curEvaluation);
+        LOGEvaluation newEval = new LOGEvaluation((LOGEvaluation) curEvaluation);
         // update
         updateEvaluation(newEval, swapMove, data);
         

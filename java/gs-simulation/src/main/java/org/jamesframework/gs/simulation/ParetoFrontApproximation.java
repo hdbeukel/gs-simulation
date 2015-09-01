@@ -18,8 +18,10 @@ import org.jamesframework.gs.simulation.api.API;
 import org.jamesframework.gs.simulation.api.NormalizedObjectives;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.data.PopulationReader;
+import org.jamesframework.gs.simulation.obj.AdjustedHE;
 import org.jamesframework.gs.simulation.obj.EntryToNearestEntryDistance;
 import org.jamesframework.gs.simulation.obj.ExpectedProportionOfHeterozygousLoci;
+import org.jamesframework.gs.simulation.obj.LOGFrequency;
 import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
 
 public class ParetoFrontApproximation {
@@ -31,18 +33,23 @@ public class ParetoFrontApproximation {
         // get arguments
         String valueFile = args[0];
         String markerFile = args[1];
-        String divMeasure = args[2].toUpperCase();
-        double weightDelta = Double.parseDouble(args[3]);
-        int subsetSize = Integer.parseInt(args[4]);
-        int repeats = Integer.parseInt(args[5]);
-        int timeWithoutImpr = Integer.parseInt(args[6]);
+        String favAlleleFile = args[2];
+        String divMeasure = args[3].toUpperCase();
+        double weightDelta = Double.parseDouble(args[4]);
+        int subsetSize = Integer.parseInt(args[5]);
+        int repeats = Integer.parseInt(args[6]);
+        int timeWithoutImpr = Integer.parseInt(args[7]);
         // read data
         PopulationReader reader = new PopulationReader();
-        PopulationData data = reader.read(Paths.get(valueFile), Paths.get(markerFile));
+        PopulationData data = reader.read(Paths.get(valueFile), Paths.get(markerFile), Paths.get(favAlleleFile));
 
         // create diversity objective
         Objective<SubsetSolution, PopulationData> divObj;
         switch(divMeasure){
+            case "LOG": divObj = new LOGFrequency();
+                break;
+            case "HEADJ": divObj = new AdjustedHE();
+                break;
             case "HE": divObj = new ExpectedProportionOfHeterozygousLoci();
                 break;
             case "MR": divObj = new EntryToNearestEntryDistance();
@@ -50,7 +57,7 @@ public class ParetoFrontApproximation {
                        data.precomputeDistanceMatrix(new ModifiedRogersDistance());
                 break;
             default: throw new IllegalArgumentException("Unknown diversity measure: " + divMeasure + ". "
-                                                      + "Please specify one of HE or MR.");
+                                                      + "Please specify one of HE, MR, HEadj or LOG.");
         }
         
         // normalize objectives
