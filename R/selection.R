@@ -15,7 +15,7 @@ select.highest.score <- function(n, values, ...){
 }
 
 # select by maximizing weighted index of mean breeding value and diversity
-select.weighted.index <- function(n, values, markers, div.weight, div.measure = c("MR", "HE", "HEadj"), fav.alleles = NULL, ...){
+select.weighted.index <- function(n, values, markers, div.weight, div.measure = c("MR", "HE", "HEadj", "LOG"), fav.alleles = NULL, ...){
   # check input
   if(!is.numeric(n)){
     stop("n should be an integer (selection size)")
@@ -38,8 +38,10 @@ select.weighted.index <- function(n, values, markers, div.weight, div.measure = 
     div.measure <- j.MR.ENE()
   } else if (div.measure == "HE"){
     div.measure <- j.HE()
-  } else {
+  } else if (div.measure == "HEadj"){
     div.measure <- j.adj.HE()
+  } else {
+    div.measure <- j.LOG()
   }
   # run optimization
   selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles)

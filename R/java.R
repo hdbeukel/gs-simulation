@@ -47,6 +47,10 @@ j.adj.HE <- function(){
   .jnew(j.gs("obj/AdjustedHE"))
 }
 
+j.LOG <- function(){
+  .jnew(j.gs("obj/LOGFrequency"))
+}
+
 #############
 # UTILITIES #
 #############

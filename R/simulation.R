@@ -110,7 +110,7 @@ CGS <- function(founders, heritability,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-               div.weight, div.measure = c("MR", "HE", "HEadj"),
+               div.weight, div.measure = c("MR", "HE", "HEadj", "LOG"),
                type = c("index", "split"), ...){
   
   # get selected type
