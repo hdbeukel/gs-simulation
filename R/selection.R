@@ -45,7 +45,7 @@ select.weighted.index <- function(n, values, markers, div.weight,
   } else if (div.measure == "LOG"){
     div.measure <- j.LOG()
   } else {
-    div.measrue <- j.LOG2()
+    div.measure <- j.LOG2()
   }
   # run optimization
   selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles)
