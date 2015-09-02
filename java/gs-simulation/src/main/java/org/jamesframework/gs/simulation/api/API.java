@@ -22,6 +22,7 @@ import org.jamesframework.examples.util.ProgressSearchListener;
 import org.jamesframework.ext.problems.objectives.NormalizedObjective;
 import org.jamesframework.ext.problems.objectives.WeightedIndex;
 import org.jamesframework.gs.simulation.data.PopulationData;
+import org.jamesframework.gs.simulation.obj.LOGFrequency;
 import org.jamesframework.gs.simulation.obj.MeanBreedingValue;
 import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
 
@@ -221,6 +222,19 @@ public class API {
         
         return(index);
         
+    }
+    
+    public LOGFrequency createLOGobjective(){
+        // set value at zero so that diff between 0 and 1 occurrence is 1.0,
+        // which is larger than diff between 1 and 2 occurrences = ln(2) = 0.693
+        return new LOGFrequency((n,m) -> - (Math.log(n) + 1.0));
+    }
+    
+    public LOGFrequency createLOG2objective(){
+        // ensure that the value of a solution in which less favourable alleles
+        // are lost is guaranteed to be higher, compared to a solution in which more
+        // favourable alleles are lost (regardless of the other frequencies)
+        return new LOGFrequency((n,m) -> - (m * Math.log(n) + 1.0));
     }
     
 }

@@ -21,7 +21,6 @@ import org.jamesframework.gs.simulation.data.PopulationReader;
 import org.jamesframework.gs.simulation.obj.AdjustedHE;
 import org.jamesframework.gs.simulation.obj.EntryToNearestEntryDistance;
 import org.jamesframework.gs.simulation.obj.ExpectedProportionOfHeterozygousLoci;
-import org.jamesframework.gs.simulation.obj.LOGFrequency;
 import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
 
 public class ParetoFrontApproximation {
@@ -46,7 +45,11 @@ public class ParetoFrontApproximation {
         // create diversity objective
         Objective<SubsetSolution, PopulationData> divObj;
         switch(divMeasure){
-            case "LOG": divObj = new LOGFrequency();
+            case "LOG":
+                divObj = api.createLOGobjective();
+                break;
+            case "LOG2":
+                divObj = api.createLOG2objective();
                 break;
             case "HEADJ": divObj = new AdjustedHE();
                 break;
@@ -57,7 +60,7 @@ public class ParetoFrontApproximation {
                        data.precomputeDistanceMatrix(new ModifiedRogersDistance());
                 break;
             default: throw new IllegalArgumentException("Unknown diversity measure: " + divMeasure + ". "
-                                                      + "Please specify one of HE, MR, HEadj or LOG.");
+                                                      + "Please specify one of HE, MR, HEadj, LOG or LOG2.");
         }
         
         // normalize objectives

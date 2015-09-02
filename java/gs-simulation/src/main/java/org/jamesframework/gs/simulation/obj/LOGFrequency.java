@@ -2,6 +2,7 @@
 
 package org.jamesframework.gs.simulation.obj;
 
+import java.util.function.BiFunction;
 import org.jamesframework.core.exceptions.IncompatibleDeltaEvaluationException;
 import org.jamesframework.core.problems.objectives.evaluations.Evaluation;
 import org.jamesframework.core.search.neigh.Move;
@@ -20,6 +21,15 @@ import org.jamesframework.gs.simulation.obj.eval.LOGEvaluation;
  */
 public class LOGFrequency extends FrequencyBasedObjective{
 
+    // function used to produce the value at zero:
+    //  - two integer arguments: (1) subset size, (2) number of markers
+    //  - double results (value at zero)
+    private final BiFunction<Integer, Integer, Double> valueAtZeroFunction;
+
+    public LOGFrequency(BiFunction<Integer, Integer, Double> valueAtZeroFunction) {
+        this.valueAtZeroFunction = valueAtZeroFunction;
+    }
+    
     @Override
     public Evaluation evaluate(SubsetSolution solution, PopulationData data) {
         
@@ -29,7 +39,7 @@ public class LOGFrequency extends FrequencyBasedObjective{
         double[] avgMarkers = computeAlleleFrequencies(solution, data);
         
         // wrap in LOG evaluation
-        return new LOGEvaluation(n, avgMarkers, data.getFavourableAlleles());
+        return new LOGEvaluation(n, avgMarkers, data.getFavourableAlleles(), valueAtZeroFunction.apply(n, data.numMarkers()));
         
     }
     

@@ -18,7 +18,7 @@ public class LOGFrequencyTest extends ObjectiveTest {
         System.out.println(" - test delta evaluation");
        
         // create objective
-        LOGFrequency obj = new LOGFrequency();
+        LOGFrequency obj = new LOGFrequency((n,m) -> - (m * Math.log(n) + 1.0));
         
         // sample random subsets
         for (int i=0; i<1000; i++){

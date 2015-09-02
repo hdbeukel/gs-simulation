@@ -5,20 +5,16 @@ package org.jamesframework.gs.simulation.obj.eval;
 
 public class LOGEvaluation extends FavourableAlleleBasedEvaluation {
     
-    private final double truncate;
+    private final double valueAtZero;
     
-    public LOGEvaluation(int subsetSize, double[] alleleFreqs, int[] favAlleles) {
+    public LOGEvaluation(int subsetSize, double[] alleleFreqs, int[] favAlleles, double valueAtZero) {
         super(subsetSize, alleleFreqs, favAlleles);
-        // compute truncation level: set difference
-        // between 0 and 1 occurrence  = 1 > diff between
-        // 1 and 2 occurrences = ln(2) = 0.693
-        double valSingleOcc = -Math.log(subsetSize);
-        truncate = valSingleOcc - 1.0;
+        this.valueAtZero = valueAtZero;
     }
     
     public LOGEvaluation(LOGEvaluation toCopy){
         super(toCopy);
-        this.truncate = toCopy.truncate;
+        this.valueAtZero = toCopy.valueAtZero;
     }
     
     // impose exponentially increasing emphasis on low frequency favourable alleles
@@ -29,9 +25,11 @@ public class LOGEvaluation extends FavourableAlleleBasedEvaluation {
         int numMarkers = alleleFreqs.length;
         for(int m=0; m<numMarkers; m++){
             double p = getFavourableAlleleFreq(m);
-            // truncate at very low value to avoid -infinity from
-            // which a local search might not be able to escape
-            val += Math.max(Math.log(p), truncate);
+            if(p > 0.0){
+                val += Math.log(p);
+            } else {
+                val += valueAtZero;
+            }
         }
         val = 1.0/numMarkers * val;
         return val;

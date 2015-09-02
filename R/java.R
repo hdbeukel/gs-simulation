@@ -48,7 +48,14 @@ j.adj.HE <- function(){
 }
 
 j.LOG <- function(){
-  .jnew(j.gs("obj/LOGFrequency"))
+  .jcall(j.api(),
+         "Lorg/jamesframework/gs/simulation/obj/LOGFrequency;",
+         "createLOGobjective")}
+
+j.LOG2 <- function(){
+  .jcall(j.api(),
+         "Lorg/jamesframework/gs/simulation/obj/LOGFrequency;",
+         "createLOG2objective")
 }
 
 #############
