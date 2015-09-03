@@ -70,8 +70,8 @@ public class ParetoFrontApproximation {
         System.out.println("ID, repeat, divWeight, valueWeight, div, value, div (normalized), value (normalized), weighted (normalized)");
 
         double divWeight = 0.0, valueWeight;
-        int experimentID = 0;
-        while(divWeight <= 1.0){
+        int numExperiments = (int)(Math.round(1/weightDelta)) + 1;
+        for(int experimentID = 0; experimentID < numExperiments; experimentID++){
 
             // set value weight
             valueWeight = 1.0 - divWeight;
@@ -118,7 +118,6 @@ public class ParetoFrontApproximation {
 
             // update diversity weight and ID for next experiment
             divWeight += weightDelta;
-            experimentID++;
 
         }
 
