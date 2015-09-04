@@ -38,18 +38,8 @@ PS = function(founders, heritability,
   
   message("Season 0: Cross & inbreed founders")
   
-  # mate founders to create base population
-  base.pop = mate.founders(founders, F1.size, "bp")
-  # assign QTL (if not yet assigned)
-  if(is.null(base.pop$hypred$realQTL)){
-    base.pop = assign.qtl(base.pop, num.QTL, method = QTL.effects)
-  } else {
-    message("QTL already assigned in founder population, using existing effects")
-  }
-  # infer genetic values
-  base.pop = infer.genetic.values(base.pop)
-  # fix heritability
-  base.pop = set.heritability(base.pop, heritability)
+  # create base population by crossing founders + inbreeding
+  base.pop <- create.base.population(founders, F1.size, heritability, num.QTL, QTL.effects)
   
   # store input/output populations of crossing & inbreeding in season 0
   season.0 = list(cross.inbreed = list(pop.in = founders, pop.out = base.pop))
@@ -191,21 +181,9 @@ GS <- function(founders, heritability,
   
   message("Season 0: Cross & inbreed founders")
   
-  # mate founders to create base population
-  message("|- Cross & inbreed founders: generate base population")
-  base.pop = mate.founders(founders, F1.size, "bp")
-  # assign QTL (if not yet assigned)
-  if(is.null(base.pop$hypred$realQTL)){
-    message("|- Assign QTL")
-    base.pop = assign.qtl(base.pop, num.QTL, method = QTL.effects)
-  } else {
-    message("|- QTL already assigned in founder population, using existing effects")
-  }
-  message("|- Fix heritability to ", heritability)
-  # infer genetic values
-  base.pop = infer.genetic.values(base.pop)
-  # fix heritability (error variation is inferred)
-  base.pop = set.heritability(base.pop, heritability)
+  # create base population by crossing founders + inbreeding
+  base.pop <- create.base.population(founders, F1.size, heritability, num.QTL, QTL.effects)
+  
   # generate additional TP if requested
   if(add.TP > 0){
     message("|- Cross & inbreed founders: generate additional TP")
@@ -335,6 +313,26 @@ GS <- function(founders, heritability,
   }
 }
 
+create.base.population <- function(founders, num.ind, heritability, num.QTL, QTL.effects){
+  # mate founders to create base population
+  message("|- Cross & inbreed founders: generate base population")
+  base.pop <- mate.founders(founders, num.ind, "bp")
+  # assign QTL (if not yet assigned)
+  if(is.null(base.pop$hypred$realQTL)){
+    message("|- Assign QTL")
+    base.pop <- assign.qtl(base.pop, num.QTL, method = QTL.effects)
+  } else {
+    message("|- QTL already assigned in founder population, using existing effects")
+  }
+  message("|- Fix heritability to ", heritability)
+  # infer genetic values
+  base.pop = infer.genetic.values(base.pop)
+  # fix heritability (error variation is inferred)
+  base.pop = set.heritability(base.pop, heritability)
+  
+  return(base.pop)
+}
+
 infer.weights <- function(gp.trained.model, pop){
   Z <- gp.design.matrix(pop)
   # weigh according to favourable allele frequencies (inversely proportional)
@@ -345,13 +343,13 @@ infer.weights <- function(gp.trained.model, pop){
 }
 
 # replicate simulation of any selection strategy
-replicate.simulation = function(num.rep = 100, simulate){
+replicate.simulation <- function(num.rep = 100, simulate){
   # initialize output list
-  replicates = as.list(rep(NA, num.rep))
+  replicates <- as.list(rep(NA, num.rep))
   # run simulations
   for(r in 1:num.rep){
     message("---------------\nReplication ", r, "\n---------------")
-    replicates[[r]] = simulate()
+    replicates[[r]] <- simulate()
   }
   return(replicates)
 }
