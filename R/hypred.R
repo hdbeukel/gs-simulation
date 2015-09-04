@@ -491,6 +491,9 @@ mate.founders <- function(founders, n, name.prefix = "i"){
     offspring$heritability <- offspring$geneticVar / (offspring$geneticVar + offspring$errorVar)
   }
   
+  # mark as DH
+  offspring$isDH <- TRUE
+  
   # erase phenotypes (if any)
   offspring$pheno <- NULL
   

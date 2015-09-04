@@ -710,6 +710,48 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
   
 }
 
+######################################################
+# Multi-dimensional scaling plots of final selection #
+######################################################
+
+# 'simulations' is a list of simulation results for which 
+# the marker matrices of the final selections are compared
+# in an MDS plot
+plot.MDS.pop <- function(simulations){
+  
+  # extract marker matrices
+  marker.matrices <- lapply(simulations, function(sim){
+    return(sim[[length(sim)]]$selection$markers)
+  })
+  
+  # combine all data
+  Z <- Reduce(rbind, marker.matrices)
+  
+  # compute Euclidean distance matrix
+  d <- dist(Z)
+  
+  # fit MDS in 2D
+  fit <- cmdscale(d)
+  
+  # set colors
+  col <- unlist(lapply(1:length(marker.matrices), function(i){
+    rep(i, nrow(marker.matrices[[i]]))
+  }))
+  
+  # plot MDS
+  plot(fit, pch = 24, bg = col, xlab = "Coordinate 1", ylab = "Coordinate 2")
+  title("Selected populations (MDS)")
+  
+}
+
+
+
+
+
+
+
+
+
 
 
 
