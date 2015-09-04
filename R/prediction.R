@@ -61,7 +61,7 @@ enlarge.tp <- function(cur.tp, add, redundancy.thr = 0.02){
     a <- Z.all[i, ]
     dup <- sapply(1:(i-1), function(j){
       b <- Z.all[j, ]
-      return(sum(abs(a-b))/ncol(Z) <= redundancy.thr)
+      return(sum(abs(a-b))/length(a) <= redundancy.thr)
     })
     return(any(dup))
   })

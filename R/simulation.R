@@ -144,7 +144,7 @@ GS <- function(founders, heritability, base.pop = NULL,
   if(missing(founders)){
     stop("founder population is required")
   }
-  if(!missing(heritability) && !is.null(base.pop)){
+  if(!missing(heritability) && !is.null(heritability) && !is.null(base.pop)){
     message("both 'base.pop' and 'heritability' specified, ignoring 'heritability'")
   }
   if(is.null(base.pop) && (missing(heritability)
