@@ -9,7 +9,7 @@
 #  - odd seasons >= 1: evaluate (phenotypes) and select
 #  - even seasons >= 2: randomly mate selected individuals & inbreed (DH)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
-PS = function(founders, heritability,
+PS = function(founders, heritability, base.pop = NULL,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
               F1.size=200, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
@@ -20,12 +20,15 @@ PS = function(founders, heritability,
   if(missing(founders)){
     stop("founder population is required")
   }
-  if(missing(heritability)
-     || is.null(heritability)
-     || !is.double(heritability)
-     || heritability < 0.0
-     || heritability > 1.0){
-    stop("heritability is required (real value in [0,1])")
+  if(!missing(heritability) && !is.null(heritability) && !is.null(base.pop)){
+    message("both 'base.pop' and 'heritability' specified, ignoring 'heritability'")
+  }
+  if(is.null(base.pop) && (missing(heritability)
+                           || is.null(heritability)
+                           || !is.double(heritability)
+                           || heritability < 0.0
+                           || heritability > 1.0)){
+    stop("either 'base.pop' or 'heritability' (real value in [0,1]) is required")
   }
   if(num.seasons < 2 || num.seasons %% 2 != 0){
     stop("number of seasons should be an even number >= 2")
@@ -38,8 +41,10 @@ PS = function(founders, heritability,
   
   message("Season 0: Cross & inbreed founders")
   
-  # create base population by crossing founders + inbreeding
-  base.pop <- create.base.population(founders, F1.size, heritability, num.QTL, QTL.effects)
+  if(is.null(base.pop)){
+    # create base population by crossing founders + inbreeding
+    base.pop <- create.base.population(founders, F1.size, heritability, num.QTL, QTL.effects)
+  }
   
   # store input/output populations of crossing & inbreeding in season 0
   season.0 = list(cross.inbreed = list(pop.in = founders, pop.out = base.pop))
@@ -86,17 +91,17 @@ PS = function(founders, heritability,
   
 }
 
-WGS <- function(founders, heritability,
+WGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                selection.criterion=select.highest.score,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                ...){
-  return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion,
             gp.method, extract.metadata, weighted = TRUE, ...))
 }
-CGS <- function(founders, heritability,
+CGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
@@ -117,7 +122,7 @@ CGS <- function(founders, heritability,
   }
   
   # run GS with combinatorial selection strategy
-  return(GS(founders, heritability, num.QTL, QTL.effects, F1.size,
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion = sel.crit,
             gp.method, extract.metadata, weighted = FALSE, ...))
   
@@ -128,7 +133,7 @@ CGS <- function(founders, heritability,
 #  - season 2: cross, inbreed & select (on predicted values, no model update)
 #  - season >= 3: (1) evaluate previous offspring, update GP model
 #               + (2) cross, inbreed & select (on predicted values)
-GS <- function(founders, heritability,
+GS <- function(founders, heritability, base.pop = NULL,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
@@ -139,12 +144,15 @@ GS <- function(founders, heritability,
   if(missing(founders)){
     stop("founder population is required")
   }
-  if(missing(heritability)
-     || is.null(heritability)
-     || !is.double(heritability)
-     || heritability < 0.0
-     || heritability > 1.0){
-    stop("heritability is required (real value in [0,1])")
+  if(!missing(heritability) && !is.null(base.pop)){
+    message("both 'base.pop' and 'heritability' specified, ignoring 'heritability'")
+  }
+  if(is.null(base.pop) && (missing(heritability)
+                           || is.null(heritability)
+                           || !is.double(heritability)
+                           || heritability < 0.0
+                           || heritability > 1.0)){
+    stop("either 'base.pop' or 'heritability' (real value in [0,1]) is required")
   }
   if(num.seasons < 3){
     stop("number of seasons should be >= 3")
@@ -181,8 +189,10 @@ GS <- function(founders, heritability,
   
   message("Season 0: Cross & inbreed founders")
   
-  # create base population by crossing founders + inbreeding
-  base.pop <- create.base.population(founders, F1.size, heritability, num.QTL, QTL.effects)
+  if(is.null(base.pop)){
+    # create base population by crossing founders + inbreeding
+    base.pop <- create.base.population(founders, F1.size, heritability, num.QTL, QTL.effects)
+  }
   
   # generate additional TP if requested
   if(add.TP > 0){
