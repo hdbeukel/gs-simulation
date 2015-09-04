@@ -484,7 +484,12 @@ extract.metadata <- function(seasons){
       if(!is.null(candidates$estGeneticValues)){
         metadata[[s+1]]$selection$estGeneticValues <- candidates$estGeneticValues[selection.names]
       }
-
+      
+      # 4) store full marker matrix Z of final selection (for MDS plots)
+      if(s == num.seasons){
+        metadata[[s+1]]$selection$markers <- gp.design.matrix(selection)
+      }
+      
     }
     
     ################################
