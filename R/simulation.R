@@ -506,8 +506,10 @@ extract.metadata <- function(seasons){
       
       # 1) estimated marker effects
       metadata[[s+1]]$gp$effects <- gp.get.effects(gp.model)
+      
       # 2) marker favourable allele frequencies in selection candidates
       metadata[[s+1]]$gp$fav.marker.allele.freqs <- get.favourable.allele.frequencies(gp.get.effects(gp.model), Z)
+      
       # 3) marker effect estimation accuracy: computed as correlation between polymorphic QTL effects
       #    and estimated effects of SNP in highest LD, corrected by dividing by average actual LD (in TP)
       QTL.marker.LD <- QTL.marker.highest.LD(gp.tp)
@@ -515,19 +517,24 @@ extract.metadata <- function(seasons){
       # compute mean QTL - marker LD in TP
       mean.LD <- mean(QTL.marker.LD$LD)
       # retrieve polymorphic QTL and corresponding marker effects
-      # (!! based on marker *names*, not indices as the latter
+      # (!! based on marker *names*, *not* indices, as the latter
       #  include dummies for which no effect was estimated)
       all.names <- rownames(gp.tp$map)
       all.marker.effects <- gp.get.effects(gp.model)
       all.qtl.effects <- get.qtl.effects(gp.tp)
-      marker.names <- all.names[QTL.marker.LD$marker.index]
+      marker.names <- all.names[QTL.marker.LD$marker.index] # convert indices to names
       marker.effects <- all.marker.effects[marker.names]
-      qtl.names <- all.names[QTL.marker.LD$QTL.index]
+      qtl.names <- all.names[QTL.marker.LD$QTL.index] # convert indices to names
       qtl.effects <- all.qtl.effects[qtl.names]
       # compute and store accuracy (both plain and corrected)
       plain.acc <- cor(marker.effects, qtl.effects)
       metadata[[s+1]]$gp$effect.estimation.accuracy$plain <- plain.acc
       metadata[[s+1]]$gp$effect.estimation.accuracy$corrected <- plain.acc / mean.LD
+      
+      # 4) ratio of effect sign mismatches
+      sign.diff <- sign(marker.effects) - sign(qtl.effects)
+      sign.mismatches <- sum(sign.diff != 0) / length(marker.effects)
+      metadata[[s+1]]$gp$sign.mismatches <- sign.mismatches
       
     }
     

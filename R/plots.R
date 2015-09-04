@@ -579,6 +579,32 @@ plot.effect.estimation.accuracy <- function(replicates,
   
 }
 
+# plot ratio of effect sign mismatches
+plot.effect.sign.mismatches <- function(replicates,
+                                        ylab = "Ratio of effect sign mismatches",
+                                        ...){
+  
+  # set function to extract mismatches
+  extract.mismatches <- function(seasons){
+    # initialize result vector
+    mismatches <- rep(NA, length(seasons))
+    # extract mismatches for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether a GP model has been trained in this season
+      if(!is.null(season$gp)){
+        # extract and store mismatches
+        mismatches[s] <- season$gp$sign.mismatches
+      }
+    }
+    return(mismatches)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.mismatches, ylab = ylab, ...)
+  
+}
+
 # plot number of favourable QTL lost
 plot.num.fav.QTL.lost <- function(replicates,
                                   ylab = "Number favourable QTL lost",
@@ -683,3 +709,7 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
   plot.simulation.variable(replicates, extract.values =  extract.mean.marker.fav.allele.freq, ylab = ylab, ...)
   
 }
+
+
+
+
