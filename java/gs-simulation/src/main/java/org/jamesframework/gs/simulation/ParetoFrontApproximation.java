@@ -21,6 +21,7 @@ import org.jamesframework.gs.simulation.data.PopulationReader;
 import org.jamesframework.gs.simulation.obj.AdjustedHE;
 import org.jamesframework.gs.simulation.obj.EntryToNearestEntryDistance;
 import org.jamesframework.gs.simulation.obj.ExpectedProportionOfHeterozygousLoci;
+import org.jamesframework.gs.simulation.obj.MeanBreedingValue;
 import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
 
 public class ParetoFrontApproximation {
@@ -38,6 +39,7 @@ public class ParetoFrontApproximation {
         int subsetSize = Integer.parseInt(args[5]);
         int repeats = Integer.parseInt(args[6]);
         int timeWithoutImpr = Integer.parseInt(args[7]);
+        boolean normalized = Boolean.parseBoolean(args[8]);
         // read data
         PopulationReader reader = new PopulationReader();
         PopulationData data = reader.read(Paths.get(valueFile), Paths.get(markerFile), Paths.get(favAlleleFile));
@@ -63,11 +65,19 @@ public class ParetoFrontApproximation {
                                                       + "Please specify one of HE, MR, HEadj, LOG or LOG2.");
         }
         
-        // normalize objectives
-        NormalizedObjectives normObjs = api.getNormalizedObjectives(divObj, data, subsetSize);
+        Objective<SubsetSolution, PopulationData> valObj = new MeanBreedingValue();
+        NormalizedObjectives normObjs = null;
+        if(normalized){
+            // normalize objectives
+            normObjs = api.getNormalizedObjectives(divObj, data, subsetSize);
+        }
 
         // run optimizations with different weighted objectives
-        System.out.println("ID, repeat, divWeight, valueWeight, div, value, div (normalized), value (normalized), weighted (normalized)");
+        if(normalized){
+            System.out.println("ID, repeat, divWeight, valueWeight, div, value, div (normalized), value (normalized), weighted (normalized)");
+        } else {
+            System.out.println("ID, repeat, divWeight, valueWeight, div, value, weighted");
+        }
 
         double divWeight = 0.0, valueWeight;
         int numExperiments = (int)(Math.round(1/weightDelta)) + 1;
@@ -78,8 +88,8 @@ public class ParetoFrontApproximation {
 
             // create weighted index
             List<Objective<SubsetSolution, PopulationData>> objs = Arrays.asList(
-                    normObjs.getDivObj(),
-                    normObjs.getValueObj()
+                    normObjs != null ? normObjs.getDivObj() : divObj,
+                    normObjs != null ? normObjs.getValueObj() : valObj 
             );
             List<Double> weights = Arrays.asList(divWeight, valueWeight);
             WeightedIndex<SubsetSolution, PopulationData> index = api.getWeightedIndex(objs, weights);
@@ -98,20 +108,31 @@ public class ParetoFrontApproximation {
                 // output results
                 SubsetSolution bestSol = search.getBestSolution();
                 Evaluation weightedEval = search.getBestSolutionEvaluation();
-                Evaluation divEval = normObjs.getDivObj().getUnnormalizedObjective().evaluate(bestSol, data);
-                Evaluation valueEval = normObjs.getValueObj().getUnnormalizedObjective().evaluate(bestSol, data);
-                Evaluation divNormEval = normObjs.getDivObj().evaluate(bestSol, data);
-                Evaluation valueNormEval = normObjs.getValueObj().evaluate(bestSol, data);
-                System.out.format("%d, %d, %f, %f, %f, %f, %f, %f, %f\n",
-                                  experimentID,
-                                  r,
-                                  divWeight,
-                                  valueWeight,
-                                  divEval.getValue(),
-                                  valueEval.getValue(),
-                                  divNormEval.getValue(),
-                                  valueNormEval.getValue(),
-                                  weightedEval.getValue());
+                Evaluation divEval = divObj.evaluate(bestSol, data);
+                Evaluation valueEval = valObj.evaluate(bestSol, data);
+                if(normObjs != null){
+                    Evaluation divNormEval = normObjs.getDivObj().evaluate(bestSol, data);
+                    Evaluation valueNormEval = normObjs.getValueObj().evaluate(bestSol, data);
+                    System.out.format("%d, %d, %f, %f, %f, %f, %f, %f, %f\n",
+                                      experimentID,
+                                      r,
+                                      divWeight,
+                                      valueWeight,
+                                      divEval.getValue(),
+                                      valueEval.getValue(),
+                                      divNormEval.getValue(),
+                                      valueNormEval.getValue(),
+                                      weightedEval.getValue());
+                } else {
+                    System.out.format("%d, %d, %f, %f, %f, %f, %f\n",
+                                      experimentID,
+                                      r,
+                                      divWeight,
+                                      valueWeight,
+                                      divEval.getValue(),
+                                      valueEval.getValue(),
+                                      weightedEval.getValue());
+                }
                 // dispose search
                 search.dispose();
             }
