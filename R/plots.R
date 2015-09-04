@@ -35,6 +35,7 @@ get.plot.functions <- function(ylims){
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation", legend = "topright"),
     list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost", legend = "bottomright"),
     list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy", legend = "bottomright"),
+    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches", legend = "bottomright"),
     list(f = function(...){ 
       plot.effect.estimation.accuracy(..., corrected = TRUE) 
     }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy", legend = "bottomright")
@@ -155,7 +156,8 @@ plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE"),
       'inbreeding' = c(0, 0.68),
       'genetic-sd' = c(0, 0.11),
       'fav-QTL-lost' = c(0, 36),
-      'eff-acc' = c(0.35, 0.72),
+      'eff-acc' = c(0.0, 1.0),
+      'sign-mismatches' = c(0.0, 1.0),
       'eff-acc-corrected' = c(0.45, 1.02)
     )
     plot.functions <- get.plot.functions(ylims)
@@ -269,7 +271,8 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", x
     'inbreeding' = c(0, 0.68),
     'genetic-sd' = c(0, 0.075),
     'fav-QTL-lost' = c(0, 36),
-    'eff-acc' = c(0.35, 0.72),
+    'eff-acc' = c(0.0, 1.0),
+    'sign-mismatches' = c(0.0, 1.0),
     'eff-acc-corrected' = c(0.45, 0.97)
   )
   plot.functions <- get.plot.functions(ylims)
@@ -740,7 +743,7 @@ plot.MDS.pop <- function(simulations){
   
   # plot MDS
   plot(fit, pch = 24, bg = col, xlab = "Coordinate 1", ylab = "Coordinate 2")
-  title("Selected populations (MDS)")
+  title("Final selection (MDS)")
   
 }
 
