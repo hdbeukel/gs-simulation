@@ -336,9 +336,9 @@ create.base.population <- function(founders, num.ind, heritability, num.QTL, QTL
   }
   message("|- Fix heritability to ", heritability)
   # infer genetic values
-  base.pop = infer.genetic.values(base.pop)
+  base.pop <- infer.genetic.values(base.pop)
   # fix heritability (error variation is inferred)
-  base.pop = set.heritability(base.pop, heritability)
+  base.pop <- set.heritability(base.pop, heritability)
   
   return(base.pop)
 }
