@@ -84,26 +84,188 @@ create.pdf <- function(file, width, height, plot.fun){
   
 }
 
-get.plot.functions <- function(ylims){
+get.plot.functions <- function(){
   plot.functions <- list(
-    list(f = plot.genetic.gain, name = "gain", title = "Genetic gain", legend = "bottomright"),
-    list(f = plot.ratio.fixed.QTL, name = "QTL-fixed", title = "Ratio of fixed QTL", legend = "bottomright"),
-    list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency", legend = "bottomright"),
-    list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD", legend = "bottomleft"),
-    list(f = plot.mean.inbreeding, name = "inbreeding", title = "Mean inbreeding in selection candidates", legend = "bottomright"),
-    list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation", legend = "topright"),
-    list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost", legend = "bottomright"),
-    list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy", legend = "bottomright"),
-    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches", legend = "topright"),
+    list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
+         legend = "bottomright", ylim =  c(0, 0.7)),
+    list(f = plot.ratio.fixed.QTL, name = "QTL-fixed", title = "Ratio of fixed QTL",
+         legend = "bottomright", ylim = c(0, 1.0)),
+    list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency",
+         legend = "bottomright", ylim = c(0.48, 0.78)),
+    list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
+         legend = "bottomleft", ylim = c(0.3, 0.9)),
+    list(f = plot.mean.inbreeding, name = "inbreeding", title = "Mean inbreeding in selection candidates",
+         legend = "bottomright", ylim = c(0, 0.68)),
+    list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
+         legend = "topright", ylim = c(0, 0.08)),
+    list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost",
+         legend = "bottomright", ylim = c(0, 36)),
+    list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
+         legend = "bottomright", ylim = c(0.2, 0.68)),
+    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
+         legend = "topright", ylim = c(0.2, 0.68)),
     list(f = function(...){ 
       plot.effect.estimation.accuracy(..., corrected = TRUE) 
-    }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy", legend = "bottomright")
+    }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",legend = "bottomright", ylim = c(0.4, 1.0))
   )
-  # set ylims
-  plot.functions <- lapply(plot.functions, function(pf){
-    c(pf, list(ylim = ylims[[pf$name]]))
-  })
   return(plot.functions)
+}
+
+# stores PDF plot in "figures/simulation/CGS";
+# organized into subfolders according to
+#  1) the two included heritabilities
+#  2) the given optimal strategy name
+#  3) whether confidence intervals are included (ci)
+plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
+                         HE.weight = 0.35, HEadj.weight = 0.50, LOG.weight = 0.50,
+                         heritability = c(0.2, 0.5), file.pattern = "*.RDS",
+                         xlim = c(0,30), ci = NA){
+  
+  # check: two heritabilities
+  if(length(heritability) != 2){
+    stop("'heritability' should be a vector of length 2")
+  }
+  # extract low and high heritability
+  low.h <- min(heritability)
+  high.h <- max(heritability)
+  
+  # combine weights
+  div.weights <- c(HE.weight, HEadj.weight, LOG.weight)
+  names(div.weights) <- c("HE", "HEadj", "LOG")
+  div.measure.label.names <- c("HE", "HE'", "LOG")
+  names(div.measure.label.names) <- c("HE", "HEadj", "LOG")
+  
+  fig.dir <- sprintf("figures/simulation/CGS/h2-%.1f-%.1f/%s", low.h, high.h, strategy.name)
+  if(!is.na(ci)){
+    fig.dir <- paste(fig.dir, "with-ci", sep = "-")
+  } else {
+    fig.dir <- paste(fig.dir, "no-ci", sep = "-")
+  }
+  
+  if(!dir.exists(fig.dir)){
+    message(sprintf("|- Create output directory \"%s\"", fig.dir))
+    dir.create(fig.dir, recursive = T)
+  }
+  
+  # heritability/TP settings
+  settings <- list(
+    list(h = low.h, add.tp = 0),
+    list(h = low.h, add.tp = 800),
+    list(h = high.h, add.tp = 0),
+    list(h = high.h, add.tp = 800)
+  )
+  
+  # load data
+  message("|- Load data ...")
+  
+  all.data <- lapply(settings, function(setting){
+    
+    h <- setting$h
+    add.tp <- setting$add.tp
+    tp <- add.tp + 200
+    
+    message(sprintf(" |- Heritability: %.1f, additional TP: %d", h, add.tp))
+    
+    # determine data directory names
+    dir.template <- sprintf("out/%%s/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.tp)
+    # CGS results with various diversity measures and selected weights
+    CGS.dir.template <- paste(sprintf(dir.template, "CGS"), "%s-%.2f/index", sep = "/")
+    CGS.dirs <- sapply(names(div.weights), function(div.measure){
+      sprintf(CGS.dir.template, div.measure, div.weights[div.measure])
+    })
+    # corresponding GS/WGS results
+    GS.dir <- sprintf(dir.template, "GS")
+    WGS.dir <- sprintf(dir.template, "WGS")
+    
+    # load:
+    #      1) GS
+    # 2..n-1) CGS with various diversity measures and selected weights
+    #      n) WGS
+    data <- lapply(c(GS.dir, CGS.dirs, WGS.dir), load.simulation.results, file.pattern)
+    
+    return(list(data = data, h = h, tp = tp))
+    
+  })
+  
+  # set graphical parameters
+  params <- as.list(rep(NA, length(div.weights)+2))
+  
+  # GS
+  params[[1]] <- list(lty = 1, bg = "black", pch = 24)
+  # CGS
+  colors <- gray.colors(length(div.weights), start = 0, end = 1)
+  params[2:(length(params)-1)] <- lapply(colors, function(col){
+    c(list(bg = col), list(lty = 3, pch = 21))
+  })
+  # WGS
+  params[[length(params)]] <- list(lty = 2, bg = "white", pch = 25)
+  
+  # set curve names
+  names <- as.list(rep(NA, length(params)))
+  
+  # GS
+  names[[1]] <- bquote(GS)
+  # CGS
+  names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
+    bquote(CGS ~ (.(div.measure.label.names[div.measure]): alpha == .(sprintf("%.2f", div.weights[div.measure]))))
+  })
+  # WGS
+  names[[length(names)]] <- bquote(WGS)
+  # convert to expressions
+  names <- as.expression(names)
+  
+  # setup plot functions
+  plot.functions <- get.plot.functions()
+  # init function to extend plot title
+  make.title <- function(title, h, tp){
+    h.formatted <- sprintf("%.1f", h)
+    bquote(.(title) ~ (.(substitute(list(h^2 == .h2, TP == .tp), list(.h2 = h.formatted, .tp = tp)))))
+  }
+  
+  # create plots
+  message("|- Create plots ...")
+  
+  for(plot.fun in plot.functions){
+    
+    file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+    
+    create.pdf(file, width = 16, height = 12,  function(){
+      
+      # combine plots for different heritabilities and TP sizes
+      par(mfrow = c(2,2))
+      
+      for(data in all.data){
+        # plot
+        plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+        # extend title (include heritability and TP size)
+        title(make.title(plot.fun$title, data$h, data$tp))
+        add.legend(names, params, pos = plot.fun$legend) 
+      }
+      
+    })
+    
+  }
+  
+}
+
+plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", xlim = c(0,30), ci = NA){
+  
+  # optimal strategies
+  opt.strategies <- list(
+    # short-term gain at least as high as Jannink's WGS
+    list(name = "OPT-high-short-term-gain", HE.weight = 0.35, HEadj.weight = 0.5, LOG.weight = 0.5),
+    # moderate short-term gain (at least that of GS in previous generation)
+    list(name = "OPT-moderate-short-term-gain", HE.weight = 0.45, HEadj.weight = 0.7, LOG.weight = 0.7),
+    # maximum long-term gain
+    list(name = "OPT-max-long-term-gain", HE.weight = 0.5, HEadj.weight = 0.8, LOG.weight = 0.8)
+  )
+  
+  for(strat in opt.strategies){
+    message("Strategy: ", strat$name)
+    plot.CGS.opt(strat$name, strat$HE.weight, strat$HEadj.weight, strat$LOG.weight,
+                 heritability, file.pattern, xlim, ci)
+  }
+  
 }
 
 # stores PDF plots in "figures/simulation/CGS";
@@ -196,19 +358,7 @@ plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HE", 
       names <- as.expression(names)
       
       # setup plot functions
-      ylims <- list(
-        'gain' = c(0, 0.75),
-        'QTL-fixed' = c(0, 1.1),
-        'QTL-fav-allele-freq' = c(0.48, 0.81),
-        'LD' = c(0.1, 0.9),
-        'inbreeding' = c(0, 0.68),
-        'genetic-sd' = c(0, 0.11),
-        'fav-QTL-lost' = c(0, 36),
-        'eff-acc' = c(0.2, 0.65),
-        'sign-mismatches' = c(0.2, 0.65),
-        'eff-acc-corrected' = c(0.45, 1.02)
-      )
-      plot.functions <- get.plot.functions(ylims)
+      plot.functions <- get.plot.functions()
       # init function to extend plot title
       make.title <- function(title, h, tp){
         h.formatted <- sprintf("%.1f", h)
@@ -312,19 +462,7 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", x
   message("Create plots ...")
   
   # setup plot functions
-  ylims <- list(
-    'gain' = c(0, 0.7),
-    'QTL-fixed' = c(0, 1),
-    'QTL-fav-allele-freq' = c(0.48, 0.78),
-    'LD' = c(0.1, 0.9),
-    'inbreeding' = c(0, 0.68),
-    'genetic-sd' = c(0, 0.075),
-    'fav-QTL-lost' = c(0, 36),
-    'eff-acc' = c(0.2, 0.65),
-    'sign-mismatches' = c(0.2, 0.65),
-    'eff-acc-corrected' = c(0.4, 0.9)
-  )
-  plot.functions <- get.plot.functions(ylims)
+  plot.functions <- get.plot.functions()
 
   # create plots
   for(plot.fun in plot.functions){
@@ -366,7 +504,7 @@ add.legend <- function(names, param.list = list(), pos = "bottomright", inset = 
   legend(x = pos, inset = inset, legend = names, lty = lty, pch = pch, pt.bg = bg)
 }
 
-plot.multi <- function(simulations, plot.function, param.list = list(), xlim, ylim, same.plot = TRUE){
+plot.multi <- function(simulations, plot.function, param.list = list(), xlim, ylim, ci, same.plot = TRUE){
   for(s in 1:length(simulations)){
     # retrieve plot function parameters (cyclically reused)
     p <- ((s-1) %% length(param.list)) + 1
@@ -385,6 +523,10 @@ plot.multi <- function(simulations, plot.function, param.list = list(), xlim, yl
     if(!missing(xlim)){
       params$xlim <- xlim
     }
+    # add ci to params if set
+    if(!missing(ci)){
+      params$ci <- ci
+    }
     # plot simulation results
     do.call(plot.function, params)
   }
@@ -394,6 +536,7 @@ plot.multi <- function(simulations, plot.function, param.list = list(), xlim, yl
 #  --> input:   list of replicates (each replicate is a list of simulated seasons)
 #  --> plotted: values of variable extracted with the given function 'extract.values',
 #               averaged over all replicates, with Wald confidence intervals (by default 95%)
+#               (if 'ci' is set to 'NA', no confidence intervals are included)
 # the function 'extract.values' should take a single argument, i.e. the list of seasons
 # produced from a single simulation run, and return a vector with one extracted value per season
 # (for seasons where the value is not reported, NA should be returned)
@@ -440,25 +583,38 @@ plot.simulation.variable <- function(replicates,
   # compute averages and standard error + CI across replicates
   value.avg <- colMeans(values, na.rm = TRUE)
   value.std.err <- apply(values, 2, sd, na.rm = TRUE)/sqrt(num.rep)
-  value.ci.halfwidth <- qt(ci+(1-ci)/2, df = num.rep-1) * value.std.err
-  value.ci.top <- value.avg + value.ci.halfwidth
-  value.ci.bottom <- value.avg - value.ci.halfwidth
+  if(!is.na(ci)){
+    value.ci.halfwidth <- qt(ci+(1-ci)/2, df = num.rep-1) * value.std.err
+    value.ci.top <- value.avg + value.ci.halfwidth
+    value.ci.bottom <- value.avg - value.ci.halfwidth
+  }
   # plot non NA values only
   non.na <- !is.na(value.avg)
   value.avg <- value.avg[non.na]
-  value.ci.top <- value.ci.top[non.na]
-  value.ci.bottom <- value.ci.bottom[non.na]
+  if(!is.na(ci)){
+    value.ci.top <- value.ci.top[non.na]
+    value.ci.bottom <- value.ci.bottom[non.na]
+  }
   x <- (0:num.seasons)[non.na]
   # set x-axis label
   xlab <- ifelse(type == "generations", "Generation", "Season")
   # first plot CI bars (points and lines are plotted on top)
-  final.value <- ceil(value.avg[length(value.avg)])
-  errbar(x, value.avg, value.ci.top, value.ci.bottom, type="n",
-         xlab=xlab, ylab=ylab,
-         xaxp=c(0,num.seasons,num.seasons/2),
-         add=add,
-         ...)
-  points(x, value.avg, type="o", pch=pch, bg=bg, lty=lty)
+  if(!is.na(ci)){
+    errbar(x, value.avg, value.ci.top, value.ci.bottom, type="n",
+           xlab=xlab, ylab=ylab,
+           xaxp=c(0,num.seasons,num.seasons/2),
+           add=add,
+           ...)
+    points(x, value.avg, type="o", pch=pch, bg=bg, lty=lty)
+  } else {
+    if(add){
+      plot.fun <- points
+    } else {
+      plot.fun <- plot
+    }
+    plot.fun(x, value.avg, type="o", xlab=xlab, ylab=ylab, xaxp=c(0,num.seasons,num.seasons/2),
+             pch=pch, bg=bg, lty=lty, ...)
+  }
   
 }
 
