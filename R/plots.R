@@ -13,6 +13,65 @@ load.simulation.results <- function(dir, file.pattern = "*.RDS") {
   return(breeding.cycles)
 }
 
+##########################################
+# INFER FINAL GAIN OF VARIOUS STRATEGIES #
+##########################################
+
+# averaged over all replicates and all combinationsn of h2 + additional TP
+infer.avg.final.gain <- function(type = c("GS", "WGS", "CGS"),
+                                 # ignored for type GS/WGS
+                                 div.measure = c("HE", "HEadj", "LOG"), div.weight){
+  
+  # process arguments
+  type <- match.arg(type)
+  div.measure <- match.arg(div.measure)
+  
+  # list data directories
+  if(type == "CGS"){
+    # CGS
+    dirs <- Sys.glob(sprintf("out/CGS/30-seasons/h2-*/addTP-*/normal-effects/BRR/%s-%.2f/index", div.measure, div.weight))
+  } else {
+    # GS/WGS
+    dirs <- Sys.glob(sprintf("out/%s/30-seasons/h2-*/addTP-*/normal-effects/BRR", type))
+  }
+  
+  # load data and extract final gains
+  final.gains <- sapply(dirs, function(dir){
+    simulations <- load.simulation.results(dir)
+    sim.final.gains <- sapply(simulations, function(simulation){
+      general <- simulation[[1]]$general
+      base.pop <- simulation[[1]]$candidates
+      initial.value <- normalize.genetic.values(mean(base.pop$geneticValues), general$qtl.effects)
+      final.selection <- simulation[[length(simulation)]]$selection
+      final.value <- normalize.genetic.values(mean(final.selection$geneticValues), general$qtl.effects)
+      final.gain <- final.value - initial.value
+      return(final.gain)
+    })
+    sim.avg.final.gain <- mean(sim.final.gains)
+    return(sim.avg.final.gain)
+  })
+  # average over all replicates and h2/TP settings
+  avg.final.gain <- mean(final.gains)
+  
+  return(avg.final.gain)
+  
+}
+
+infer.CGS.avg.final.gains <- function(div.measure = c("HE", "HEadj", "LOG"), div.weights = seq(0.35, 1.0, 0.05)){
+  
+  # process arguments
+  div.measure <- match.arg(div.measure)
+  
+  avg.final.gains <- sapply(div.weights, function(w){
+    message("Processing weight ", w, " ...")
+    return(infer.avg.final.gain(type = "CGS", div.measure = div.measure, div.weight = w))
+  })
+  names(avg.final.gains) <- div.weights
+  
+  return(avg.final.gains)
+  
+}
+
 #############################
 # AUTOMATED PLOT GENERATION #
 #############################
