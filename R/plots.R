@@ -35,7 +35,7 @@ get.plot.functions <- function(ylims){
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation", legend = "topright"),
     list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost", legend = "bottomright"),
     list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy", legend = "bottomright"),
-    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches", legend = "bottomright"),
+    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches", legend = "topright"),
     list(f = function(...){ 
       plot.effect.estimation.accuracy(..., corrected = TRUE) 
     }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy", legend = "bottomright")
@@ -50,9 +50,8 @@ get.plot.functions <- function(ylims){
 # stores PDF plots in "figures/simulation/CGS";
 # organized into subfolders according to
 #  1) the two included heritabilities
-#  2) the applied diversity measure (HE, MR)
-#     and range of diversity weights
-plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE"),
+#  2) the applied diversity measure and weight (each combination of the given measures and weights)
+plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HE", "HEadj", "LOG"),
                      heritability = c(0.2, 0.5), file.pattern = "*.RDS", xlim = c(0,30)){
   
   # check: two heritabilities
@@ -64,133 +63,124 @@ plot.CGS <- function(div.weights = c(0.25, 0.50, 0.75), div.measures = c("HE"),
   high.h <- max(heritability)
   
   fig.dir <- sprintf("figures/simulation/CGS/h2-%.1f-%.1f", low.h, high.h)
-  
-  min.w <- min(div.weights)
-  max.w <- max(div.weights)
 
-  # create plots for each diversity measure
+  # create plots for each combination of diversity measure and weight
   for(div in div.measures){
-    
-    message("Diversity measure: ", div)
-    
-    fig.subdir <- sprintf("%s/%s-%.2f-%.2f", fig.dir, div, min.w, max.w)
-    
-    if(!dir.exists(fig.subdir)){
-      message(sprintf("|- Create output directory \"%s\"", fig.subdir))
-      dir.create(fig.subdir, recursive = T)
-    }
-    
-    # heritability/TP settings
-    settings <- list(
-      list(h = low.h, add.tp = 0),
-      list(h = low.h, add.tp = 800),
-      list(h = high.h, add.tp = 0),
-      list(h = high.h, add.tp = 800)
-    )
-    
-    # load data
-    message("|- Load data ...")
-    
-    all.data <- lapply(settings, function(setting){
+    for(w in div.weights){
+     
+      message("Diversity measure: ", div, " (weight: ", w, ")")
       
-      h <- setting$h
-      add.tp <- setting$add.tp
-      tp <- add.tp + 200
+      fig.subdir <- sprintf("%s/%s-%.2f", fig.dir, div, w)
       
-      message(sprintf(" |- Heritability: %.1f, additional TP: %d", h, add.tp))
+      if(!dir.exists(fig.subdir)){
+        message(sprintf("|- Create output directory \"%s\"", fig.subdir))
+        dir.create(fig.subdir, recursive = T)
+      }
       
-      # determine data directory names
-      dir.template <- sprintf("out/%%s/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.tp)
-      # CGS results with specified diversity weights
-      CGS.dir.template <- paste(sprintf(dir.template, "CGS"), sprintf("%s-%%.2f/index", div), sep = "/")
-      CGS.dirs <- sapply(div.weights, function(w){
-        sprintf(CGS.dir.template, w)
-      })
-      # corresponding GS/WGS results
-      GS.dir <- sprintf(dir.template, "GS")
-      WGS.dir <- sprintf(dir.template, "WGS")
+      # heritability/TP settings
+      settings <- list(
+        list(h = low.h, add.tp = 0),
+        list(h = low.h, add.tp = 800),
+        list(h = high.h, add.tp = 0),
+        list(h = high.h, add.tp = 800)
+      )
       
-      # load:
-      #      1) GS
-      # 2..n-1) CGS with specified series of weights
-      #      n) WGS
-      data <- lapply(c(GS.dir, CGS.dirs, WGS.dir), load.simulation.results, file.pattern)
+      # load data
+      message("|- Load data ...")
       
-      return(list(data = data, h = h, tp = tp))
-      
-    })
-    
-    # set graphical parameters
-    params <- as.list(rep(NA, length(div.weights)+2))
-    
-    # GS
-    params[[1]] <- list(lty = 1, bg = "black", pch = 24)
-    # CGS
-    colors <- gray.colors(length(div.weights), start = 0.5, end = 0.9)
-    params[2:(length(params)-1)] <- lapply(colors, function(col){
-      c(list(bg = col), list(lty = 1, pch = 21))
-    })
-    # WGS
-    params[[length(params)]] <- list(lty = 2, bg = "white", pch = 25)
-    
-    # set curve names
-    names <- as.list(rep(NA, length(params)))
-    
-    # GS
-    names[[1]] <- bquote(GS)
-    # CGS
-    names[2:(length(names)-1)] <- sapply(div.weights, function(w){
-      bquote(CGS ~ (alpha == .(sprintf("%.2f", w))))
-    })
-    # WGS
-    names[[length(names)]] <- bquote(WGS)
-    # convert to expressions
-    names <- as.expression(names)
-    
-    # setup plot functions
-    ylims <- list(
-      'gain' = c(0, 0.75),
-      'QTL-fixed' = c(0, 1.1),
-      'QTL-fav-allele-freq' = c(0.48, 0.81),
-      'LD' = c(0.1, 0.9),
-      'inbreeding' = c(0, 0.68),
-      'genetic-sd' = c(0, 0.11),
-      'fav-QTL-lost' = c(0, 36),
-      'eff-acc' = c(0.0, 1.0),
-      'sign-mismatches' = c(0.0, 1.0),
-      'eff-acc-corrected' = c(0.45, 1.02)
-    )
-    plot.functions <- get.plot.functions(ylims)
-    # init function to extend plot title
-    make.title <- function(title, h, tp){
-      h.formatted <- sprintf("%.1f", h)
-      bquote(.(title) ~ (.(substitute(list(.div, h^2 == .h2, TP == .tp), list(.div = div, .h2 = h.formatted, .tp = tp)))))
-    }
-    
-    # create plots
-    message("|- Create plots ...")
-    
-    for(plot.fun in plot.functions){
-      
-      file <- sprintf("%s/%s.pdf", fig.subdir, plot.fun$name)
-
-      create.pdf(file, width = 16, height = 12,  function(){
+      all.data <- lapply(settings, function(setting){
         
-        # combine plots for different heritabilities and TP sizes
-        par(mfrow = c(2,2))
+        h <- setting$h
+        add.tp <- setting$add.tp
+        tp <- add.tp + 200
         
-        for(data in all.data){
-          # plot
-          plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim)
-          # extend title (include heritability and TP size)
-          title(make.title(plot.fun$title, data$h, data$tp))
-          add.legend(names, params, pos = plot.fun$legend) 
-        }
+        message(sprintf(" |- Heritability: %.1f, additional TP: %d", h, add.tp))
+        
+        # determine data directory names
+        dir.template <- sprintf("out/%%s/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.tp)
+        # CGS results with specified diversity weight
+        CGS.dir <- paste(sprintf(dir.template, "CGS"), sprintf("%s-%.2f/index", div, w), sep = "/")
+        # corresponding GS/WGS results
+        GS.dir <- sprintf(dir.template, "GS")
+        WGS.dir <- sprintf(dir.template, "WGS")
+        
+        # load:
+        # 1) GS
+        # 2) CGS with specified weight
+        # 3) WGS
+        data <- lapply(c(GS.dir, CGS.dir, WGS.dir), load.simulation.results, file.pattern)
+        
+        return(list(data = data, h = h, tp = tp))
         
       })
       
+      # set graphical parameters
+      params <- as.list(rep(NA, 3))
+      
+      # GS
+      params[[1]] <- list(lty = 1, bg = "black", pch = 24)
+      # CGS
+      params[[2]] <- list(lty = 1, bg = "grey", pch = 21)
+      # WGS
+      params[[3]] <- list(lty = 2, bg = "white", pch = 25)
+      
+      # set curve names
+      names <- as.list(rep(NA, length(params)))
+      
+      # GS
+      names[[1]] <- bquote(GS)
+      # CGS
+      names[[2]] <- bquote(CGS ~ (alpha == .(sprintf("%.2f", w))))
+      # WGS
+      names[[3]] <- bquote(WGS)
+      # convert to expressions
+      names <- as.expression(names)
+      
+      # setup plot functions
+      ylims <- list(
+        'gain' = c(0, 0.75),
+        'QTL-fixed' = c(0, 1.1),
+        'QTL-fav-allele-freq' = c(0.48, 0.81),
+        'LD' = c(0.1, 0.9),
+        'inbreeding' = c(0, 0.68),
+        'genetic-sd' = c(0, 0.11),
+        'fav-QTL-lost' = c(0, 36),
+        'eff-acc' = c(0.2, 0.65),
+        'sign-mismatches' = c(0.2, 0.65),
+        'eff-acc-corrected' = c(0.45, 1.02)
+      )
+      plot.functions <- get.plot.functions(ylims)
+      # init function to extend plot title
+      make.title <- function(title, h, tp){
+        h.formatted <- sprintf("%.1f", h)
+        bquote(.(title) ~ (.(substitute(list(.div, h^2 == .h2, TP == .tp), list(.div = div, .h2 = h.formatted, .tp = tp)))))
+      }
+      
+      # create plots
+      message("|- Create plots ...")
+      
+      for(plot.fun in plot.functions){
+        
+        file <- sprintf("%s/%s.pdf", fig.subdir, plot.fun$name)
+        
+        create.pdf(file, width = 16, height = 12,  function(){
+          
+          # combine plots for different heritabilities and TP sizes
+          par(mfrow = c(2,2))
+          
+          for(data in all.data){
+            # plot
+            plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim)
+            # extend title (include heritability and TP size)
+            title(make.title(plot.fun$title, data$h, data$tp))
+            add.legend(names, params, pos = plot.fun$legend) 
+          }
+          
+        })
+        
+      }
+       
     }
-    
   }
   
 }
@@ -271,9 +261,9 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", x
     'inbreeding' = c(0, 0.68),
     'genetic-sd' = c(0, 0.075),
     'fav-QTL-lost' = c(0, 36),
-    'eff-acc' = c(0.0, 1.0),
-    'sign-mismatches' = c(0.0, 1.0),
-    'eff-acc-corrected' = c(0.45, 0.97)
+    'eff-acc' = c(0.2, 0.65),
+    'sign-mismatches' = c(0.2, 0.65),
+    'eff-acc-corrected' = c(0.4, 0.9)
   )
   plot.functions <- get.plot.functions(ylims)
 
