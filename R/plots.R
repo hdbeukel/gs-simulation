@@ -255,7 +255,7 @@ plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS",
     # short-term gain at least as high as Jannink's WGS
     list(name = "OPT-high-short-term-gain", HE.weight = 0.35, HEadj.weight = 0.5, LOG.weight = 0.5),
     # moderate short-term gain (at least that of GS in previous generation)
-    list(name = "OPT-moderate-short-term-gain", HE.weight = 0.45, HEadj.weight = 0.7, LOG.weight = 0.7),
+    list(name = "OPT-moderate-short-term-gain", HE.weight = 0.45, HEadj.weight = 0.65, LOG.weight = 0.65),
     # maximum long-term gain
     list(name = "OPT-max-long-term-gain", HE.weight = 0.5, HEadj.weight = 0.8, LOG.weight = 0.8)
   )
