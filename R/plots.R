@@ -104,6 +104,8 @@ get.plot.functions <- function(){
          legend = "bottomright", ylim = c(0.2, 0.68)),
     list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
          legend = "topright", ylim = c(0.2, 0.68)),
+    list(f = plot.tp.size, name = "tp-size", title = "Training population size",
+         legend = "bottomright", ylim = c(200, 7000)),
     list(f = function(...){ 
       plot.effect.estimation.accuracy(..., corrected = TRUE) 
     }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",legend = "bottomright", ylim = c(0.4, 1.0))
@@ -545,6 +547,7 @@ plot.simulation.variable <- function(replicates,
                                      ylab, type = c("generations", "seasons"),
                                      ci=0.95, add=FALSE, pch=23,
                                      bg="black", lty=2,
+                                     shift=0,
                                      ...){
   
   # check input
@@ -596,6 +599,13 @@ plot.simulation.variable <- function(replicates,
     value.ci.bottom <- value.ci.bottom[non.na]
   }
   x <- (0:num.seasons)[non.na]
+  # shift if requested
+  if(shift > 0){
+    x <- c(0:(shift-1), x+shift)
+    value.avg <- c(rep(NA, shift), value.avg)
+    value.ci.top <- c(rep(NA, shift), value.ci.top)
+    value.ci.bottom <- c(rep(NA, shift), value.ci.bottom)
+  }
   # set x-axis label
   xlab <- ifelse(type == "generations", "Generation", "Season")
   # first plot CI bars (points and lines are plotted on top)
@@ -783,7 +793,7 @@ plot.effect.estimation.accuracy <- function(replicates,
   }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values =  extract.accuracy, ylab = ylab, ...)
+  plot.simulation.variable(replicates, extract.values =  extract.accuracy, ylab = ylab, shift = 1, ...)
   
 }
 
@@ -809,7 +819,33 @@ plot.effect.sign.mismatches <- function(replicates,
   }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values =  extract.mismatches, ylab = ylab, ...)
+  plot.simulation.variable(replicates, extract.values =  extract.mismatches, ylab = ylab, shift = 1, ...)
+  
+}
+
+# plot TP size (after filtering)
+plot.tp.size <- function(replicates,
+                        ylab = "Training population size",
+                        ...){
+  
+  # set function to extract TP size
+  extract.tp.size <- function(seasons){
+    # initialize result vector
+    tp.sizes <- rep(NA, length(seasons))
+    # extract TP size for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether a GP model has been trained in this season
+      if(!is.null(season$gp)){
+        # extract and store TP size
+        tp.sizes[s] <- season$gp$tp.size
+      }
+    }
+    return(tp.sizes)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.tp.size, ylab = ylab, shift = 1, ...)
   
 }
 
@@ -914,7 +950,7 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
   }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values =  extract.mean.marker.fav.allele.freq, ylab = ylab, ...)
+  plot.simulation.variable(replicates, extract.values =  extract.mean.marker.fav.allele.freq, ylab = ylab, shift = 1, ...)
   
 }
 
