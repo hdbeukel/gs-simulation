@@ -14,6 +14,7 @@ PS <- function(founders, heritability, base.pop = NULL,
                F1.size=200, num.select=20, num.seasons=30,
                selection.criterion=select.highest.score,
                extract.metadata = TRUE,
+               store.all.pops = FALSE,
                ...){
   
   # check input
@@ -83,7 +84,7 @@ PS <- function(founders, heritability, base.pop = NULL,
   
   if(extract.metadata){
     # return simulated seasons metadata
-    return(extract.metadata(seasons))
+    return(extract.metadata(seasons, store.all.pops))
   } else {
     # return full data
     return(seasons)
@@ -96,16 +97,17 @@ WGS <- function(founders, heritability, base.pop = NULL,
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                selection.criterion=select.highest.score,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-               ...){
+               store.all.pops = FALSE, ...){
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion,
-            gp.method, extract.metadata, weighted = TRUE, ...))
+            gp.method, extract.metadata, store.all.pops, weighted = TRUE, ...))
 }
 CGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-               div.weight, div.measure = c("MR", "HE", "HEadj", "LOG", "LOG2"),
+               store.all.pops = FALSE, div.weight,
+               div.measure = c("MR", "HE", "HEadj", "LOG", "LOG2"),
                type = c("index", "split"), ...){
   
   # get selected type
@@ -124,7 +126,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
   # run GS with combinatorial selection strategy
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion = sel.crit,
-            gp.method, extract.metadata, weighted = FALSE, ...))
+            gp.method, extract.metadata, store.all.pops, weighted = FALSE, ...))
   
 }
 # simulate genomic selection (possibly weighted by favourable allele frequencies)
@@ -138,7 +140,7 @@ GS <- function(founders, heritability, base.pop = NULL,
               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
               selection.criterion=select.highest.score,
               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-              weighted = FALSE, ...){
+              store.all.pops = FALSE, weighted = FALSE, ...){
   
   # check input
   if(missing(founders)){
@@ -210,8 +212,8 @@ GS <- function(founders, heritability, base.pop = NULL,
   }
   
   # store season
-  season.0 = list(cross.inbreed = list(pop.in = founders, pop.out = base.pop))
-  seasons[[1]] = season.0
+  season.0 <- list(cross.inbreed = list(pop.in = founders, pop.out = base.pop))
+  seasons[[1]] <- season.0
   
   # SEASON 1: evaluate base population (and additional TP, if any)
   
@@ -316,7 +318,7 @@ GS <- function(founders, heritability, base.pop = NULL,
   
   if(extract.metadata){
     # return simulated seasons metadata
-    return(extract.metadata(seasons))
+    return(extract.metadata(seasons, store.all.pops))
   } else {
     # return full data
     return(seasons)
@@ -368,7 +370,7 @@ replicate.simulation <- function(num.rep = 100, simulate){
 # EXTRACT SIMULATION METADATA FROM FULL OUTPUT DATA #
 #####################################################
 
-extract.metadata <- function(seasons){
+extract.metadata <- function(seasons, store.all.pops = FALSE){
   
   message("Extracting metadata ...")
   
@@ -458,6 +460,11 @@ extract.metadata <- function(seasons){
       num.lost <- sum(get.favourable.qtl.allele.frequencies(candidates) == 0)
       metadata[[s+1]]$candidates$num.fav.QTL.lost <- num.lost
       
+      # 8) store full marker matrix Z (only if requested to store all populations)
+      if(store.all.pops){
+        metadata[[s+1]]$candidates$markers <- gp.design.matrix(candidates)
+      }
+      
     }
     
     #############################################################
@@ -493,8 +500,8 @@ extract.metadata <- function(seasons){
         metadata[[s+1]]$selection$estGeneticValues <- candidates$estGeneticValues[selection.names]
       }
       
-      # 4) store full marker matrix Z of final selection (for MDS plots)
-      if(s == num.seasons){
+      # 4) store full marker matrix Z of final selection (for MDS plots) or of all selections if requested
+      if(store.all.pops || s == num.seasons){
         metadata[[s+1]]$selection$markers <- gp.design.matrix(selection)
       }
       

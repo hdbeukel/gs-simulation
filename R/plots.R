@@ -954,37 +954,81 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
   
 }
 
-######################################################
-# Multi-dimensional scaling plots of final selection #
-######################################################
+###################################
+# Multi-dimensional scaling plots #
+###################################
 
 # 'simulations' is a list of simulation results for which 
-# the marker matrices of the final selections are compared
-# in an MDS plot
-plot.MDS.pop <- function(simulations){
+# the marker matrices of the selections at several generations
+# are compared in an MDS plot, possibly including the base population
+# in the background (only possible if all simulations started from
+# the same base population; else, an error is produced)
+plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
+                                 flip.x = c(), flip.y = c(),
+                                 include.base.pop = TRUE){
   
-  # extract marker matrices
-  marker.matrices <- lapply(simulations, function(sim){
-    return(sim[[length(sim)]]$selection$markers)
-  })
+  bp <- simulations[[1]][[1]]$candidates$markers
+  if(include.base.pop && length(simulations) >= 2){
+    # check that all simulations started from the same base population
+    for(s in 2:length(simulations)){
+      bp2 <- simulations[[s]][[1]]$candidates$markers
+      if(!isTRUE(all.equal(bp, bp2))){
+        stop("base population not equal for all simulations: 'include.base.pop = TRUE' not allowed")
+      }
+    }
+  }
   
-  # combine all data
-  Z <- Reduce(rbind, marker.matrices)
-  
-  # compute Euclidean distance matrix
-  d <- dist(Z)
-  
-  # fit MDS in 2D
-  fit <- cmdscale(d)
-  
-  # set colors
-  col <- unlist(lapply(1:length(marker.matrices), function(i){
-    rep(i, nrow(marker.matrices[[i]]))
-  }))
-  
-  # plot MDS
-  plot(fit, pch = 24, bg = col, xlab = "Coordinate 1", ylab = "Coordinate 2")
-  title("Final selection (MDS)")
+  for(i in 1:length(generations)){
+    
+    g <- generations[i]
+    
+    # extract marker matrices of selected population at generation g in each simulation
+    marker.matrices <- lapply(simulations, function(sim){
+      sim[[1+g]]$selection$markers
+    })
+    
+    # include base population if requested
+    if(include.base.pop){
+      marker.matrices <- c(list(bp), marker.matrices)
+    }
+    
+    # combine all data
+    combined <- Reduce(rbind, marker.matrices)
+    
+    # compute Euclidean distance matrix
+    d <- dist(combined)
+    
+    # fit 2D MDS
+    mds <- cmdscale(d)
+    # flip x and/or y if requested
+    if(i %in% flip.x){
+      mds[, 1] <- -mds[, 1]
+    }
+    if(i %in% flip.y){
+      mds[, 2] <- -mds[, 2]
+    }
+    
+    # set background and border colors
+    bg <- rep(NA, nrow(combined))
+    col <- rep('black', nrow(combined))
+    # base pop (white background, grey border)
+    bg[1:nrow(bp)] <- 0
+    col[1:nrow(bp)] <- '#999999'
+    # selections
+    bg[(nrow(bp)+1):nrow(combined)] <- unlist(lapply(2:length(marker.matrices), function(i){
+      rep(i, nrow(marker.matrices[[i]]))
+    }))
+    
+    # set pch
+    pch <- rep(23, nrow(combined))
+    # base pop
+    pch[1:nrow(bp)] <- 21
+    
+    # plot MDS
+    par(mar = c(1,1,1,1))
+    plot(mds, col = col, bg = bg, pch = pch, xlab = "", ylab = "", xaxt = 'n', yaxt = 'n', asp = 1)
+
+  }
   
 }
 
