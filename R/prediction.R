@@ -42,15 +42,23 @@ gp.restrict.design.matrix = function(names, G){
   return(GDesign)
 }
 
-###############################
-# ENLARGE TRAINING POPULATION #
-###############################
+####################################
+# INIT/ENLARGE TRAINING POPULATION #
+####################################
+
+init.tp <- function(pop, redundancy.thr = 0.02){
+  enlarge.tp(cur.tp = NULL, pop, redundancy.thr)
+}
 
 enlarge.tp <- function(cur.tp, add, redundancy.thr = 0.02){
   
-  # get design matrices
-  Z.cur <- gp.design.matrix(cur.tp)
+  # get and combine design matrices
   Z.add <- gp.design.matrix(add)
+  if(is.null(cur.tp)){
+    Z.cur <- matrix(nrow = 0, ncol = ncol(Z.add))
+  } else {
+    Z.cur <- gp.design.matrix(cur.tp)
+  }
   Z.all <- rbind(Z.cur, Z.add)
   
   # get rid of redundancy (very similar individuals)
@@ -69,9 +77,13 @@ enlarge.tp <- function(cur.tp, add, redundancy.thr = 0.02){
   non.redundant <- add.names[!redundant]
   add <- restrict.population(add, non.redundant)
   
-  # enlarge TP
-  enlarged.tp <- merge.populations(cur.tp, add)
-  return(enlarged.tp)
+  # compose and return TP
+  if(is.null(cur.tp)){
+    tp <- add
+  } else {
+    tp <- merge.populations(cur.tp, add)
+  }
+  return(tp)
   
 }
 

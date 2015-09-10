@@ -9,12 +9,12 @@
 #  - odd seasons >= 1: evaluate (phenotypes) and select
 #  - even seasons >= 2: randomly mate selected individuals & inbreed (DH)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
-PS = function(founders, heritability, base.pop = NULL,
-              num.QTL=100, QTL.effects = c("normal", "jannink"),
-              F1.size=200, num.select=20, num.seasons=30,
-              selection.criterion=select.highest.score,
-              extract.metadata = TRUE,
-              ...){
+PS <- function(founders, heritability, base.pop = NULL,
+               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               F1.size=200, num.select=20, num.seasons=30,
+               selection.criterion=select.highest.score,
+               extract.metadata = TRUE,
+               ...){
   
   # check input
   if(missing(founders)){
@@ -35,7 +35,7 @@ PS = function(founders, heritability, base.pop = NULL,
   }
   
   # initialize results list (one entry per season 0-n)
-  seasons = as.list(rep(NA, num.seasons+1))
+  seasons <- as.list(rep(NA, num.seasons+1))
   
   # SEASON 0
   
@@ -47,37 +47,37 @@ PS = function(founders, heritability, base.pop = NULL,
   }
   
   # store input/output populations of crossing & inbreeding in season 0
-  season.0 = list(cross.inbreed = list(pop.in = founders, pop.out = base.pop))
-  seasons[[1]] = season.0
+  season.0 <- list(cross.inbreed = list(pop.in = founders, pop.out = base.pop))
+  seasons[[1]] <- season.0
       
   # simulate subsequent seasons (1-N)
   for(s in 1:num.seasons){
-    start.time = Sys.time()
+    start.time <- Sys.time()
     if(s %% 2 == 0){
       # even season: cross & inbreed
       message(paste("Season ", s, ": Cross & inbreed selected population", sep=""))
-      parents = seasons[[s]]$select$pop.out
-      offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
+      parents <- seasons[[s]]$select$pop.out
+      offspring <- mate.dh(parents, F1.size, paste("s", s, sep=""))
       # store
-      new.season = list(cross.inbreed = list(pop.in = parents, pop.out = offspring))
-      seasons[[s+1]] = new.season
+      new.season <- list(cross.inbreed = list(pop.in = parents, pop.out = offspring))
+      seasons[[s+1]] <- new.season
     } else {
       # odd season: evaluate & select
       message(paste("Season ", s, ": Evaluate & select", sep=""))
-      pop = seasons[[s]]$cross.inbreed$pop.out
+      pop <- seasons[[s]]$cross.inbreed$pop.out
       # evaluate (phenotypes)
-      evaluated.pop = infer.phenotypes(pop)
+      evaluated.pop <- infer.phenotypes(pop)
       # select
-      selected.names = selection.criterion(n = num.select,
+      selected.names <- selection.criterion(n = num.select,
                                            values = evaluated.pop$pheno)
-      selected.pop = restrict.population(evaluated.pop, selected.names)
+      selected.pop <- restrict.population(evaluated.pop, selected.names)
       # store
-      new.season = list(evaluate = list(pop = evaluated.pop),
+      new.season <- list(evaluate = list(pop = evaluated.pop),
                         select = list(pop.in = evaluated.pop, pop.out = selected.pop))
-      seasons[[s+1]] = new.season
+      seasons[[s+1]] <- new.season
     }
-    stop.time = Sys.time()
-    time = as.numeric(stop.time - start.time, units = "secs")
+    stop.time <- Sys.time()
+    time <- as.numeric(stop.time - start.time, units = "secs")
     message("|- ", time, " seconds elapsed")
   }
   
@@ -183,7 +183,7 @@ GS <- function(founders, heritability, base.pop = NULL,
   }
   
   # initialize results list (one entry per season 0-n)
-  seasons = as.list(rep(NA, num.seasons+1))
+  seasons <- as.list(rep(NA, num.seasons+1))
   
   # SEASON 0: mate founders to create base population (+ additional training population, if requested)
   
@@ -198,15 +198,15 @@ GS <- function(founders, heritability, base.pop = NULL,
   if(add.TP > 0){
     message("|- Cross & inbreed founders: generate additional TP")
     # cross founders
-    add.TP.pop = mate.founders(founders, add.TP, "add-tp")
+    add.TP.pop <- mate.founders(founders, add.TP, "add-tp")
     # set same QTL effects as in base population
-    add.TP.pop$hypred = base.pop$hypred
+    add.TP.pop$hypred <- base.pop$hypred
     # infer genetic values
-    add.TP.pop = infer.genetic.values(add.TP.pop)
+    add.TP.pop <- infer.genetic.values(add.TP.pop)
     # set same error variance as base population
-    add.TP.pop = set.error.variance(add.TP.pop, base.pop$errorVar)
+    add.TP.pop <- set.error.variance(add.TP.pop, base.pop$errorVar)
   } else {
-    add.TP.pop = NULL
+    add.TP.pop <- NULL
   }
   
   # store season
@@ -219,37 +219,37 @@ GS <- function(founders, heritability, base.pop = NULL,
   
   message("|- Evaluate base population")
   # evaluate base population
-  evaluated.base.pop = infer.phenotypes(base.pop)
-  # evaluate additional TP, if any
+  evaluated.base.pop <- infer.phenotypes(base.pop)
+  # init TP from base population
+  tp <- init.tp(evaluated.base.pop)
+  # evaluate and add additional TP, if any
   if(!is.null(add.TP.pop)){
     message("|- Evaluate additional TP")
-    evaluated.add.TP.pop = infer.phenotypes(add.TP.pop)
+    evaluated.add.TP.pop <- infer.phenotypes(add.TP.pop)
     # combine all training data
-    tp = enlarge.tp(evaluated.base.pop, evaluated.add.TP.pop)
+    tp <- enlarge.tp(tp, evaluated.add.TP.pop)
   } else {
-    evaluated.add.TP.pop = NULL
-    # only base population itself serves as TP
-    tp = evaluated.base.pop
+    evaluated.add.TP.pop <- NULL
   }
   
   # train GP
   message("|- Train GP model")
-  gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
+  gp.trained.model <- gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
   
   # select based on estimated values
   message("|- Select")
-  evaluated.base.pop = predict.values(gp.trained.model, evaluated.base.pop)
-  selected.names = selection.criterion(n = num.select,
+  evaluated.base.pop <- predict.values(gp.trained.model, evaluated.base.pop)
+  selected.names <- selection.criterion(n = num.select,
                                        values = evaluated.base.pop$estGeneticValues,
                                        markers = gp.design.matrix(evaluated.base.pop),
                                        fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
-  selected.pop = restrict.population(evaluated.base.pop, selected.names)
+  selected.pop <- restrict.population(evaluated.base.pop, selected.names)
 
   # store season
-  season.1 = list(evaluate = list(pop = evaluated.base.pop, add.tp = evaluated.add.TP.pop),
+  season.1 <- list(evaluate = list(pop = evaluated.base.pop, add.tp = evaluated.add.TP.pop),
                   select = list(pop.in = evaluated.base.pop, pop.out = selected.pop),
                   gp = list(model = gp.trained.model, tp = tp))
-  seasons[[2]] = season.1
+  seasons[[2]] <- season.1
   
   # SEASON 2: cross & inbreed selected population, select (based on predictions, no model update)
   
@@ -257,60 +257,60 @@ GS <- function(founders, heritability, base.pop = NULL,
   
   # cross & inbreed
   message("|- Cross & inbreed")
-  offspring = mate.dh(selected.pop, F1.size, "s2")
+  offspring <- mate.dh(selected.pop, F1.size, "s2")
 
   # select based on estimated values
   message("|- Select (no model update)")
-  offspring = predict.values(gp.trained.model, offspring)
-  selected.names = selection.criterion(n = num.select,
+  offspring <- predict.values(gp.trained.model, offspring)
+  selected.names <- selection.criterion(n = num.select,
                                        values = offspring$estGeneticValues,
                                        markers = gp.design.matrix(offspring),
                                        fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
-  selected.offspring = restrict.population(offspring, selected.names)
+  selected.offspring <- restrict.population(offspring, selected.names)
   
   # store season
-  season.2 = list(cross.inbreed = list(pop.in = selected.pop, pop.out = offspring),
+  season.2 <- list(cross.inbreed = list(pop.in = selected.pop, pop.out = offspring),
                   select = list(pop.in = offspring, pop.out = selected.offspring),
                   gp = list(model = gp.trained.model, tp = tp)) # GP model was not updated in season 2
-  seasons[[3]] = season.2
+  seasons[[3]] <- season.2
   
   # iterate over subsequent seasons (3-N)
   for(s in 3:num.seasons){
     # record start time
-    start.time = Sys.time()
+    start.time <- Sys.time()
     message("Season ", s, ": Evaluate (previous) + Cross, inbreed & select")
     # evaluate offspring from previous season
     message("|- Evaluate selection candidates from previous generation")
-    prev.offspring = seasons[[s]]$cross.inbreed$pop.out
-    evaluated.prev.offspring = infer.phenotypes(prev.offspring)
+    prev.offspring <- seasons[[s]]$cross.inbreed$pop.out
+    evaluated.prev.offspring <- infer.phenotypes(prev.offspring)
     # add evaluated population to TP
     message("|- Enlarge TP")
-    tp = enlarge.tp(tp, evaluated.prev.offspring)
+    tp <- enlarge.tp(tp, evaluated.prev.offspring)
     # update GP model
     message("|- Update GP model")
-    gp.trained.model = gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
+    gp.trained.model <- gp.train(pheno = tp$pheno, Z = gp.design.matrix(tp), method = gp.method)
     # cross & inbreed selection from previous offspring
     message("|- Cross & inbreed parents selected in previous generation")
-    parents = seasons[[s]]$select$pop.out
-    offspring = mate.dh(parents, F1.size, paste("s", s, sep=""))
+    parents <- seasons[[s]]$select$pop.out
+    offspring <- mate.dh(parents, F1.size, paste("s", s, sep=""))
     # select from offspring based on estimated values using updated GP model
     message("|- Select")
-    offspring = predict.values(gp.trained.model, offspring)
-    selected.names = selection.criterion(n = num.select,
+    offspring <- predict.values(gp.trained.model, offspring)
+    selected.names <- selection.criterion(n = num.select,
                                          values = offspring$estGeneticValues,
                                          markers = gp.design.matrix(offspring),
                                          fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
-    selected.offspring = restrict.population(offspring, selected.names)
+    selected.offspring <- restrict.population(offspring, selected.names)
     # store season
-    new.season = list(evaluate = list(pop = evaluated.prev.offspring),
+    new.season <- list(evaluate = list(pop = evaluated.prev.offspring),
                       cross.inbreed = list(pop.in = parents, pop.out = offspring),
                       select = list(pop.in = offspring, pop.out = selected.offspring),
                       gp = list(model = gp.trained.model, tp = tp)) # updated GP model from enlarged TP
-    seasons[[s+1]] = new.season
+    seasons[[s+1]] <- new.season
     # record stop time
-    stop.time = Sys.time()
+    stop.time <- Sys.time()
     # print time spent on this generation
-    time = as.numeric(stop.time - start.time, units = "secs")
+    time <- as.numeric(stop.time - start.time, units = "secs")
     message("|- ", time, " seconds elapsed")
   }
   
@@ -548,6 +548,9 @@ extract.metadata <- function(seasons){
       sign.diff <- sign(marker.effects) - sign(qtl.effects)
       sign.mismatches <- sum(sign.diff != 0) / length(marker.effects)
       metadata[[s+1]]$gp$sign.mismatches <- sign.mismatches
+      
+      # 3) TP size (after redundancy filtering)
+      metadata[[s+1]]$gp$tp.size <- gp.tp$numGenotypes
       
     }
     
