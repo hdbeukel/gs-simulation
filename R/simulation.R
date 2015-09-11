@@ -202,8 +202,6 @@ GS <- function(founders, heritability, base.pop = NULL,
     add.TP.pop$hypred <- base.pop$hypred
     # infer genetic values
     add.TP.pop <- infer.genetic.values(add.TP.pop)
-    # set same error variance as base population
-    add.TP.pop <- set.error.variance(add.TP.pop, base.pop$errorVar)
   } else {
     add.TP.pop <- NULL
   }
@@ -228,6 +226,9 @@ GS <- function(founders, heritability, base.pop = NULL,
   # evaluate and add additional TP, if any
   if(!is.null(add.TP.pop)){
     message("|- Evaluate additional TP")
+    # set same error variance as base population
+    add.TP.pop <- set.error.variance(add.TP.pop, base.pop$errorVar)
+    # simulate phenotypes
     evaluated.add.TP.pop <- infer.phenotypes(add.TP.pop)
     # combine all training data
     tp <- enlarge.tp(tp, evaluated.add.TP.pop)
