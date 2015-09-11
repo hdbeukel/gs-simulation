@@ -965,15 +965,15 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
 # the same base population; else, an error is produced)
 plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
                                  flip.x = c(), flip.y = c(),
-                                 include.base.pop = TRUE){
+                                 axes = FALSE, include.base.pop = TRUE){
   
   bp <- simulations[[1]][[1]]$candidates$markers
-  if(include.base.pop && length(simulations) >= 2){
-    # check that all simulations started from the same base population
+  # check that all simulations started from the same base population
+  if(length(simulations) >= 2){
     for(s in 2:length(simulations)){
       bp2 <- simulations[[s]][[1]]$candidates$markers
       if(!isTRUE(all.equal(bp, bp2))){
-        stop("base population not equal for all simulations: 'include.base.pop = TRUE' not allowed")
+        stop("base population should be equal for all simulations")
       }
     }
   }
@@ -986,6 +986,9 @@ plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
     marker.matrices <- lapply(simulations, function(sim){
       sim[[1+g]]$selection$markers
     })
+    if(any(sapply(marker.matrices, is.null))){
+      stop("intermediate marker data not available in simulation results")
+    }
     
     # include base population if requested
     if(include.base.pop){
@@ -1011,8 +1014,8 @@ plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
     # set background and border colors
     bg <- rep(NA, nrow(combined))
     col <- rep('black', nrow(combined))
-    # base pop (white background, grey border)
-    bg[1:nrow(bp)] <- 0
+    # base pop (grey)
+    bg[1:nrow(bp)] <- '#999999'
     col[1:nrow(bp)] <- '#999999'
     # selections
     bg[(nrow(bp)+1):nrow(combined)] <- unlist(lapply(2:length(marker.matrices), function(i){
@@ -1022,11 +1025,17 @@ plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
     # set pch
     pch <- rep(23, nrow(combined))
     # base pop
-    pch[1:nrow(bp)] <- 21
+    pch[1:nrow(bp)] <- 20
     
     # plot MDS
-    par(mar = c(1,1,1,1))
-    plot(mds, col = col, bg = bg, pch = pch, xlab = "", ylab = "", xaxt = 'n', yaxt = 'n', asp = 1)
+    if(axes){
+      par(mar = rep(2, 4))
+      plot.fun <- plot
+    } else {
+      par(mar = rep(0.5, 4))
+      plot.fun <- function(...){ plot(..., xaxt = 'n', yaxt = 'n') }
+    }
+    plot.fun(mds, col = col, bg = bg, pch = pch, xlab = "", ylab = "", asp = 1)
 
   }
   
