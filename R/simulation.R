@@ -146,15 +146,12 @@ GS <- function(founders, heritability, base.pop = NULL,
   if(missing(founders)){
     stop("founder population is required")
   }
-  if(!missing(heritability) && !is.null(heritability) && !is.null(base.pop)){
-    message("both 'base.pop' and 'heritability' specified, ignoring 'heritability'")
-  }
-  if(is.null(base.pop) && (missing(heritability)
-                           || is.null(heritability)
-                           || !is.double(heritability)
-                           || heritability < 0.0
-                           || heritability > 1.0)){
-    stop("either 'base.pop' or 'heritability' (real value in [0,1]) is required")
+  if(missing(heritability)
+       || is.null(heritability)
+       || !is.double(heritability)
+       || heritability < 0.0
+       || heritability > 1.0){
+    stop("'heritability' is required (real value in [0,1])")
   }
   if(num.seasons < 3){
     stop("number of seasons should be >= 3")
@@ -221,6 +218,10 @@ GS <- function(founders, heritability, base.pop = NULL,
   
   message("|- Evaluate base population")
   # evaluate base population
+  message("|- Fix heritability to ", heritability)
+  # fix heritability (error variation is inferred)
+  base.pop <- set.heritability(base.pop, heritability)
+  # simulate phenotypes
   evaluated.base.pop <- infer.phenotypes(base.pop)
   # init TP from base population
   tp <- init.tp(evaluated.base.pop)
@@ -325,7 +326,7 @@ GS <- function(founders, heritability, base.pop = NULL,
   }
 }
 
-create.base.population <- function(founders, num.ind, heritability, num.QTL, QTL.effects){
+create.base.population <- function(founders, num.ind, num.QTL, QTL.effects){
   # mate founders to create base population
   message("|- Cross & inbreed founders: generate base population")
   base.pop <- mate.founders(founders, num.ind, "bp")
@@ -336,12 +337,8 @@ create.base.population <- function(founders, num.ind, heritability, num.QTL, QTL
   } else {
     message("|- QTL already assigned in founder population, using existing effects")
   }
-  message("|- Fix heritability to ", heritability)
   # infer genetic values
   base.pop <- infer.genetic.values(base.pop)
-  # fix heritability (error variation is inferred)
-  base.pop <- set.heritability(base.pop, heritability)
-  
   return(base.pop)
 }
 
