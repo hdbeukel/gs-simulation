@@ -4,7 +4,7 @@
 
 # create list containing simulated breeding cycles, read from all
 # files found in the given directory that match the given file pattern
-load.simulation.results <- function(dir, file.pattern = "*.RDS") {
+load.simulation.results <- function(dir, file.pattern = "bp-*.RDS") {
   # get file paths
   files <- Sys.glob(sprintf("%s/%s", dir, file.pattern))
   # load list of simulated breeding cycles
@@ -76,7 +76,7 @@ infer.CGS.avg.final.gains <- function(div.measure = c("HE", "HEadj", "LOG"), div
 # AUTOMATED PLOT GENERATION #
 #############################
 
-create.pdf <- function(file, width, height, plot.fun){
+create.pdf <- function(file, plot.fun, width = 16, height = 12){
   
   pdf(file, width = width, height = height)
   plot.fun()
@@ -104,11 +104,12 @@ get.plot.functions <- function(){
          legend = "bottomright", ylim = c(0.2, 0.68)),
     list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
          legend = "topright", ylim = c(0.2, 0.68)),
-    list(f = plot.tp.size, name = "tp-size", title = "Training population size",
-         legend = "bottomright", ylim = c(200, 7000)),
+    #list(f = plot.tp.size, name = "tp-size", title = "Training population size",
+    #     legend = "bottomright", ylim = c(200, 7000)),
     list(f = function(...){ 
       plot.effect.estimation.accuracy(..., corrected = TRUE) 
-    }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",legend = "bottomright", ylim = c(0.4, 1.0))
+    }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
+       legend = "bottomright", ylim = c(0.4, 1.0))
   )
   return(plot.functions)
 }
@@ -120,7 +121,7 @@ get.plot.functions <- function(){
 #  3) whether confidence intervals are included (ci)
 plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
                          HE.weight = 0.35, HEadj.weight = 0.50, LOG.weight = 0.50,
-                         heritability = c(0.2, 0.5), file.pattern = "*.RDS",
+                         heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
                          xlim = c(0,30), ci = NA){
   
   # check: two heritabilities
@@ -231,7 +232,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     
     file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
     
-    create.pdf(file, width = 16, height = 12,  function(){
+    create.pdf(file, function(){
       
       # combine plots for different heritabilities and TP sizes
       par(mfrow = c(2,2))
@@ -248,9 +249,29 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     
   }
   
+  # MDs plots
+  file <- sprintf("%s/%s.pdf", fig.dir, "mds-methods")
+  
+  create.pdf(file, function(){
+    
+    # combine plots for different heritabilities and TP sizes
+    par(mfrow = c(2,2))
+    
+    for(data in all.data){
+      # shorten names
+      names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
+        bquote(.(div.measure.label.names[div.measure]))
+      })
+      # plot
+      plot.MDS.methods(data$data, names, cex = 1.5)
+      title(make.title("Similarity of final selection", data$h, data$tp))
+    }
+    
+  })
+  
 }
 
-plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", xlim = c(0,30), ci = NA){
+plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
   
   # optimal strategies
   opt.strategies <- list(
@@ -275,7 +296,7 @@ plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS",
 #  1) the two included heritabilities
 #  2) the applied diversity measure and weight (each combination of the given measures and weights)
 plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HE", "HEadj", "LOG"),
-                     heritability = c(0.2, 0.5), file.pattern = "*.RDS", xlim = c(0,30)){
+                     heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30)){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -374,7 +395,7 @@ plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HE", 
         
         file <- sprintf("%s/%s.pdf", fig.subdir, plot.fun$name)
         
-        create.pdf(file, width = 16, height = 12,  function(){
+        create.pdf(file, function(){
           
           # combine plots for different heritabilities and TP sizes
           par(mfrow = c(2,2))
@@ -398,7 +419,7 @@ plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HE", 
 
 # stores PDF plots in "figures/simulation/GS-WGS",
 # within a subfolder according to the two included heritabilities
-plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", xlim = c(0,30)){
+plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30)){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -471,7 +492,7 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", x
   
     file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
 
-    create.pdf(file, width = 16, height = 6, function(){
+    create.pdf(file, function(){
       # combine small/large TP plots
       par(mfrow = c(1,2))
       for(res in results){
@@ -479,7 +500,7 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "*.RDS", x
         title(sprintf("%s %s", plot.fun$title, res$title.suffix))
         add.legend(names, params, pos = plot.fun$legend)
       }
-    })
+    }, height = 6)
       
   }
   
@@ -544,10 +565,11 @@ plot.multi <- function(simulations, plot.function, param.list = list(), xlim, yl
 # (for seasons where the value is not reported, NA should be returned)
 plot.simulation.variable <- function(replicates,
                                      extract.values,
-                                     ylab, type = c("generations", "seasons"),
-                                     ci=0.95, add=FALSE, pch=23,
+                                     ylab, shift = 0,
+                                     ci = 0.95,
+                                     type = c("generations", "seasons"),
+                                     add=FALSE, pch=23,
                                      bg="black", lty=2,
-                                     shift=0,
                                      ...){
   
   # check input
@@ -603,8 +625,10 @@ plot.simulation.variable <- function(replicates,
   if(shift > 0){
     x <- c(0:(shift-1), x+shift)
     value.avg <- c(rep(NA, shift), value.avg)
-    value.ci.top <- c(rep(NA, shift), value.ci.top)
-    value.ci.bottom <- c(rep(NA, shift), value.ci.bottom)
+    if(!is.na(ci)){
+      value.ci.top <- c(rep(NA, shift), value.ci.top)
+      value.ci.bottom <- c(rep(NA, shift), value.ci.bottom)
+    }
   }
   # set x-axis label
   xlab <- ifelse(type == "generations", "Generation", "Season")
@@ -793,7 +817,7 @@ plot.effect.estimation.accuracy <- function(replicates,
   }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values =  extract.accuracy, ylab = ylab, shift = 1, ...)
+  plot.simulation.variable(replicates, extract.values = extract.accuracy, ylab = ylab, shift = 1, ...)
   
 }
 
@@ -958,25 +982,76 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
 # Multi-dimensional scaling plots #
 ###################################
 
+# 'simulations' is a list of which each element consist of a series of simulation replicates.
+# 'names' contains the names of the selection strategies used in the respective simulations.
+# It is required that the respective replicates of all simulations have been started from
+# the same base population; else, an error is produced. For each base population, the final
+# selection obtained with each strategy (i.e., in each simulation) is retrieved and inter-cluster
+# distances are computed (avg pairwise distance). The latter are averaged over all base populations
+# (replicates) and used to create an MDS plot showing the differences between the strategies.
+plot.MDS.methods <- function(simulations, names, ...){
+  
+  # initialize average distance matrix
+  num.methods <- length(simulations)
+  d <- matrix(0, nrow = num.methods, ncol = num.methods)
+  
+  # infer number of base pops (number of replicates)
+  num.bp <- length(simulations[[1]])
+  # process results for each BP
+  for(bp in 1:num.bp){
+    
+    # extract respective replicate of each method
+    method.results <- lapply(simulations, function(simulation){
+      simulation[[bp]]
+    })
+    # check: same base population
+    check.same.bp(method.results)
+    
+    # extract final selection for each method
+    final.selections <- lapply(method.results, function(method){
+      method[[length(method)]]$selection$markers
+    })
+    # compute inter-cluster distances
+    for(m1 in 1:num.methods){
+      for(m2 in 1:num.methods){
+        if(m1 != m2){
+          m1.sel <- final.selections[[m1]]
+          m2.sel <- final.selections[[m2]]
+          # average pairwise distance
+          all <- rbind(m1.sel, m2.sel)
+          el.dist <- as.matrix(dist(all))
+          clust.dist <- mean(el.dist[(nrow(m1.sel)+1):nrow(all), 1:nrow(m1.sel)])
+          # increment overall inter-cluster distance sum
+          d[m1, m2] <- d[m1, m2] + clust.dist
+          d[m2, m1] <- d[m1, m2]
+        }
+      }
+    }
+    
+  }
+  
+  # average
+  d <- d/num.bp
+  
+  # MDS plot
+  mds <- cmdscale(d)
+  par(mar = c(2.1,2.1,4.1,2.1))
+  plot(mds, xlab = "", ylab = "", xaxt = "n", yaxt = "n", type = "n", ...)
+  text(mds, names, ...)
+  
+}
+
 # 'simulations' is a list of simulation results for which 
 # the marker matrices of the selections at several generations
 # are compared in an MDS plot, possibly including the base population
-# in the background (only possible if all simulations started from
-# the same base population; else, an error is produced)
+# in the background (for this plot, all simulations should have been
+# started from the same base population; else, an error is produced)
 plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
                                  flip.x = c(), flip.y = c(),
                                  axes = FALSE, include.base.pop = TRUE){
   
-  bp <- simulations[[1]][[1]]$candidates$markers
-  # check that all simulations started from the same base population
-  if(length(simulations) >= 2){
-    for(s in 2:length(simulations)){
-      bp2 <- simulations[[s]][[1]]$candidates$markers
-      if(!isTRUE(all.equal(bp, bp2))){
-        stop("base population should be equal for all simulations")
-      }
-    }
-  }
+  # check that all simulations were started from same base population
+  check.same.bp(simulations)
   
   for(i in 1:length(generations)){
     
@@ -1037,6 +1112,21 @@ plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
     }
     plot.fun(mds, col = col, bg = bg, pch = pch, xlab = "", ylab = "", asp = 1)
 
+  }
+  
+}
+
+check.same.bp <- function(simulations){
+  
+  bp <- simulations[[1]][[1]]$candidates$markers
+  # check that all simulations started from the same base population
+  if(length(simulations) >= 2){
+    for(s in 2:length(simulations)){
+      bp2 <- simulations[[s]][[1]]$candidates$markers
+      if(!isTRUE(all.equal(bp, bp2))){
+        stop("base population should be equal for all simulations")
+      }
+    }
   }
   
 }
