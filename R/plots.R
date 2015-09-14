@@ -249,7 +249,9 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     
   }
   
-  # MDs plots
+  # MDS plots
+  
+  # comparison of different methods, averaged over several BP
   file <- sprintf("%s/%s.pdf", fig.dir, "mds-methods")
   
   create.pdf(file, function(){
@@ -268,6 +270,20 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     }
     
   })
+  
+  # detailed view for BP 1 (snapshots of selection)
+  file <- sprintf("%s/%s.pdf", fig.dir, "mds-detail-h2-0.5-addTP-800-BP-1")
+  
+  create.pdf(file, function(){
+    
+    flip.y <- switch(sprintf("%.2f", HE.weight),
+                     "0.35" = c(3,6,8),
+                     "0.45" = c(4,6),
+                     "0.50" = 3:7)
+    
+    plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, flip.y = flip.y)
+    
+  }, width = 12, height = 12)
   
 }
 
@@ -1036,7 +1052,7 @@ plot.MDS.methods <- function(simulations, names, ...){
   # MDS plot
   mds <- cmdscale(d)
   par(mar = c(2.1,2.1,4.1,2.1))
-  plot(mds, xlab = "", ylab = "", xaxt = "n", yaxt = "n", type = "n", ...)
+  plot(mds, xlab = "", ylab = "", xaxt = "n", yaxt = "n", type = "n", asp = 1, ...)
   text(mds, names, ...)
   
 }
@@ -1046,12 +1062,12 @@ plot.MDS.methods <- function(simulations, names, ...){
 # are compared in an MDS plot, possibly including the base population
 # in the background (for this plot, all simulations should have been
 # started from the same base population; else, an error is produced)
-plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
+plot.MDS.populations <- function(simulations, generations,
                                  flip.x = c(), flip.y = c(),
                                  axes = FALSE, include.base.pop = TRUE){
   
   # check that all simulations were started from same base population
-  check.same.bp(simulations)
+  bp <- check.same.bp(simulations)
   
   for(i in 1:length(generations)){
     
@@ -1104,15 +1120,53 @@ plot.MDS.populations <- function(simulations, generations = seq(1, 30, 2),
     
     # plot MDS
     if(axes){
-      par(mar = rep(2, 4))
+      par(mar = c(2, 2, 4.1, 2))
       plot.fun <- plot
     } else {
-      par(mar = rep(0.5, 4))
+      par(mar = c(0.5, 0.5, 4.1, 0.5))
       plot.fun <- function(...){ plot(..., xaxt = 'n', yaxt = 'n') }
     }
     plot.fun(mds, col = col, bg = bg, pch = pch, xlab = "", ylab = "", asp = 1)
+    title(sprintf("Generation %d", g))
 
   }
+  
+}
+
+plot.MDS.populations.CGS.opt <- function(HE.weight, HEadj.weight, LOG.weight, flip.x = c(), flip.y = c()){
+  
+  # load data
+  message("Load data ...")
+  # GS/WGS
+  GS.data <- readRDS("out/GS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/bp-1-1.RDS")
+  WGS.data <- readRDS("out/WGS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/bp-1-1.RDS")
+  # CGS
+  CGS.HE.data <- readRDS(
+                    sprintf("out/CGS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/HE-%.2f/index/bp-1-1.RDS", HE.weight)
+                 )
+  CGS.HEadj.data <- readRDS(
+                      sprintf("out/CGS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/HEadj-%.2f/index/bp-1-1.RDS", HEadj.weight)
+                    )
+  CGS.LOG.data <- readRDS(
+                    sprintf("out/CGS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/LOG-%.2f/index/bp-1-1.RDS", LOG.weight)
+                  )
+  
+  # plot
+  message("Create plots ...")
+  
+  par(mfrow = c(3,3))
+  plot.MDS.populations(
+    list(GS.data, WGS.data, CGS.HE.data, CGS.HEadj.data, CGS.LOG.data),
+    generations = c(1, seq(2, 30, 4)), flip.x = flip.x, flip.y = flip.y
+  )
+  
+  # legend
+  legend(
+    x = "topright",
+    legend = c("GS", "WGS", "HE", "HE'", "LOG"),
+    pch = 23,
+    pt.bg = (1:5)+1
+  )
   
 }
 
@@ -1128,6 +1182,8 @@ check.same.bp <- function(simulations){
       }
     }
   }
+  
+  return(bp)
   
 }
 
