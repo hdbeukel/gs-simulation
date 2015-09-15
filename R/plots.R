@@ -265,7 +265,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
         bquote(.(div.measure.label.names[div.measure]))
       })
       # plot
-      plot.MDS.methods(data$data, names, cex = 1.5)
+      plot.MDS.methods(data$data, names, exclude = 3, cex = 1.5)
       title(make.title("Similarity of final selection", data$h, data$tp))
     }
     
@@ -296,7 +296,7 @@ plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RD
     # moderate short-term gain (at least that of GS in previous generation)
     list(name = "OPT-moderate-short-term-gain", HE.weight = 0.45, HEadj.weight = 0.65, LOG.weight = 0.65),
     # maximum long-term gain
-    list(name = "OPT-max-long-term-gain", HE.weight = 0.5, HEadj.weight = 0.8, LOG.weight = 0.8)
+    list(name = "OPT-max-long-term-gain", HE.weight = 0.5, HEadj.weight = 0.75, LOG.weight = 0.75)
   )
   
   for(strat in opt.strategies){
@@ -1005,7 +1005,7 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
 # selection obtained with each strategy (i.e., in each simulation) is retrieved and inter-cluster
 # distances are computed (avg pairwise distance). The latter are averaged over all base populations
 # (replicates) and used to create an MDS plot showing the differences between the strategies.
-plot.MDS.methods <- function(simulations, names, ...){
+plot.MDS.methods <- function(simulations, names, exclude = c(), ...){
   
   # initialize average distance matrix
   num.methods <- length(simulations)
@@ -1049,8 +1049,14 @@ plot.MDS.methods <- function(simulations, names, ...){
   # average
   d <- d/num.bp
   
-  # MDS plot
+  # MDS
   mds <- cmdscale(d)
+  # exclude some methods if requested
+  if(length(exclude) > 0){
+    mds <- mds[-exclude, ]
+    names <- names[-exclude]
+  }
+  # plot
   par(mar = c(2.1,2.1,4.1,2.1))
   plot(mds, xlab = "", ylab = "", xaxt = "n", yaxt = "n", type = "n", asp = 1, ...)
   text(mds, names, ...)
