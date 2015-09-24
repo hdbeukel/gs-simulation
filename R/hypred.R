@@ -369,6 +369,15 @@ get.qtl.effects <- function(pop){
   return(real.QTL.effects)
 }
 
+get.qtl.allele.matrix <- function(pop){
+  # assert: DH population
+  if(is.null(pop$dh)){
+    stop("pop should be a DH population")
+  }
+  Q <- pop$dh[, pop$hypred$realQTL]
+  return(Q)
+}
+
 # get favourable QTL alleles (*real* QTL only)
 get.favourable.qtl.alleles <- function(pop){
   # get effects
@@ -391,8 +400,8 @@ get.favourable.qtl.allele.frequencies <- function(pop){
   }
   # get favourable alleles
   fav.alleles <- get.favourable.qtl.alleles(pop)
-  # get QTL states
-  Q <- pop$dh[, pop$hypred$realQTL]
+  # get QTL allele matrix
+  Q <- get.qtl.allele.matrix(pop)
   # compute frequencies
   n <- nrow(Q)
   m <- ncol(Q)

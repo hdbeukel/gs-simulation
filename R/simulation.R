@@ -458,9 +458,10 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       num.lost <- sum(get.favourable.qtl.allele.frequencies(candidates) == 0)
       metadata[[s+1]]$candidates$num.fav.QTL.lost <- num.lost
       
-      # 8) store full marker matrix Z (only if requested to store all populations)
+      # 8) store full marker data (only if requested to store all populations)
       if(store.all.pops){
         metadata[[s+1]]$candidates$markers <- gp.design.matrix(candidates)
+        metadata[[s+1]]$candidates$qtl <- get.qtl.allele.matrix(candidates)
       }
       
     }
@@ -498,9 +499,10 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
         metadata[[s+1]]$selection$estGeneticValues <- candidates$estGeneticValues[selection.names]
       }
       
-      # 4) store full marker matrix Z of final selection (for MDS plots) or of all selections if requested
+      # 4) store full marker data final selection (or of all selections if requested)
       if(store.all.pops || s == num.seasons){
         metadata[[s+1]]$selection$markers <- gp.design.matrix(selection)
+        metadata[[s+1]]$selection$qtl <- get.qtl.allele.matrix(selection)
       }
       
     }
