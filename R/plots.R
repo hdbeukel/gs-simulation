@@ -256,20 +256,15 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   
   create.pdf(file, function(){
     
-    # combine plots for different heritabilities and TP sizes
-    par(mfrow = c(2,2))
+    # shorten names
+    names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
+      bquote(.(div.measure.label.names[div.measure]))
+    })
+    # plot
+    plot.MDS.methods(all.data, names, cex = 1.5)
+    title("Similarity of final selections")
     
-    for(data in all.data){
-      # shorten names
-      names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
-        bquote(.(div.measure.label.names[div.measure]))
-      })
-      # plot
-      plot.MDS.methods(data$data, names, exclude = 3, cex = 1.5)
-      title(make.title("Similarity of final selection", data$h, data$tp))
-    }
-    
-  })
+  }, width = 8, height = 6)
   
   # detailed view for BP 1 (snapshots of selection)
   file <- sprintf("%s/%s.pdf", fig.dir, "mds-detail-h2-0.5-addTP-800-BP-1")
@@ -998,48 +993,41 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
 # Multi-dimensional scaling plots #
 ###################################
 
-# 'simulations' is a list of which each element consist of a series of simulation replicates.
-# 'names' contains the names of the selection strategies used in the respective simulations.
-# It is required that the respective replicates of all simulations have been started from
-# the same base population; else, an error is produced. For each base population, the final
-# selection obtained with each strategy (i.e., in each simulation) is retrieved and inter-cluster
-# distances are computed (avg pairwise distance). The latter are averaged over all base populations
-# (replicates) and used to create an MDS plot showing the differences between the strategies.
-plot.MDS.methods <- function(simulations, names, exclude = c(), ...){
-  
-  # initialize average distance matrix
-  num.methods <- length(simulations)
-  d <- matrix(0, nrow = num.methods, ncol = num.methods)
+plot.MDS.methods <- function(settings, names, ...){
+
+  # initialize distance matrix
+  num.points <- length(settings) * length(names)
+  d <- matrix(0, nrow = num.points, ncol = num.points)
+  settings.ind <- rep(1:length(settings), each = length(names))
+  method.ind <- rep(1:length(names), times = length(settings))
   
   # infer number of base pops (number of replicates)
-  num.bp <- length(simulations[[1]])
-  # process results for each BP
+  num.bp <- length(settings[[1]]$data[[1]])
+  
+  # fill distance matrix
   for(bp in 1:num.bp){
     
-    # extract respective replicate of each method
-    method.results <- lapply(simulations, function(simulation){
-      simulation[[bp]]
-    })
-    # check: same base population
-    check.same.bp(method.results)
-    
-    # extract final selection for each method
-    final.selections <- lapply(method.results, function(method){
-      method[[length(method)]]$selection$markers
-    })
-    # compute inter-cluster distances
-    for(m1 in 1:num.methods){
-      for(m2 in 1:num.methods){
-        if(m1 != m2){
-          m1.sel <- final.selections[[m1]]
-          m2.sel <- final.selections[[m2]]
-          # average pairwise distance
-          all <- rbind(m1.sel, m2.sel)
+    for(i in 1:num.points){
+      for(j in 1:num.points){
+        if(i < j){
+          
+          # extract final selections
+          final.sel <- lapply(c(i,j), function(k){
+            s <- settings.ind[k]
+            m <- method.ind[k]
+            generations <- settings[[s]]$data[[m]][[bp]]
+            final.sel <- generations[[length(generations)]]$selection$markers
+            return(final.sel)
+          })
+          
+          # compute cluster distance (average pairwise distance)
+          all <- rbind(final.sel[[1]], final.sel[[2]])
           el.dist <- as.matrix(dist(all))
-          clust.dist <- mean(el.dist[(nrow(m1.sel)+1):nrow(all), 1:nrow(m1.sel)])
+          clust.dist <- mean(el.dist[(nrow(final.sel[[1]])+1):nrow(all), 1:nrow(final.sel[[1]])])
           # increment overall inter-cluster distance sum
-          d[m1, m2] <- d[m1, m2] + clust.dist
-          d[m2, m1] <- d[m1, m2]
+          d[i, j] <- d[i, j] + clust.dist
+          d[j, i] <- d[i, j]
+          
         }
       }
     }
@@ -1048,20 +1036,83 @@ plot.MDS.methods <- function(simulations, names, exclude = c(), ...){
   
   # average
   d <- d/num.bp
-  
+
   # MDS
   mds <- cmdscale(d)
-  # exclude some methods if requested
-  if(length(exclude) > 0){
-    mds <- mds[-exclude, ]
-    names <- names[-exclude]
-  }
+
   # plot
+  col <- settings.ind + 1
+  pch <- method.ind + 20
   par(mar = c(2.1,2.1,4.1,2.1))
-  plot(mds, xlab = "", ylab = "", xaxt = "n", yaxt = "n", type = "n", asp = 1, ...)
-  text(mds, names, ...)
+  plot(mds, col = col, bg = col, pch = pch, xlab = "", ylab = "", xaxt = "n", yaxt = "n", asp = 1, ...)
   
+  # legends
+  legend("bottomleft", legend = names, pch = (1:length(names)) + 20)
+  setting.names <- lapply(settings, function(setting){
+    h.formatted <- sprintf("%.1f", setting$h)
+    bquote(.(substitute(list(h^2 == .h2, TP == .tp), list(.h2 = h.formatted, .tp = setting$tp))))
+  })
+  setting.names <- as.expression(setting.names)
+  legend("topleft", legend = setting.names, pch = 20, col = (1:length(settings)) + 1)
+
 }
+
+# plot.MDS.methods <- function(simulations, names, ...){
+#   
+#   # infer number of base pops (number of replicates)
+#   num.bp <- length(simulations[[1]])
+#   # check that respective replicates have same BP
+#   for(bp in 1:num.bp){
+#     # extract respective replicate of each method
+#     method.results <- lapply(simulations, function(simulation){
+#       simulation[[bp]]
+#     })
+#     # check: same base population
+#     check.same.bp(method.results)
+#   }
+#   
+#   # extract final selections
+#   final.sel <- unlist(lapply(simulations, function(simulation){
+#     lapply(simulation, function(replicate){
+#       replicate[[length(replicate)]]$selection$markers
+#     })
+#   }), recursive = FALSE)
+#   
+#   # compute inter-cluster distances
+#   d <- matrix(0, nrow = length(final.sel), ncol = length(final.sel))
+#   for(i in 1:nrow(d)){
+#     for(j in 1:nrow(d)){
+#       if(i < j){
+#         # retrieve selected populations
+#         sel1 <- final.sel[[i]]
+#         sel2 <- final.sel[[j]]
+#         # compute centroids
+#         centroid1 <- colMeans(sel1)
+#         centroid2 <- colMeans(sel2)
+#         # centroid distance (Euclidean)
+#         clust.dist <- as.numeric(dist(rbind(centroid1, centroid2)))
+#         # increment overall inter-cluster distance sum
+#         d[i, j] <- clust.dist
+#         d[j, i] <- clust.dist
+#       }
+#     }
+#   }
+#   
+#   # MDS
+#   mds <- cmdscale(d)
+# 
+#   # set color codes
+#   col <- unlist(lapply(1:length(simulations), function(i){
+#     rep(i, length(simulations[[i]]))
+#   }))
+#   
+#   # plot
+#   par(mar = c(2.1,2.1,4.1,2.1))
+#   plot(mds, col = col, pch = 18, xlab = "", ylab = "", xaxt = "n", yaxt = "n", asp = 1, ...)
+#   # add legend
+#   legend("bottomright", legend = names, col = 1:length(simulations), pch = 18)
+#   
+# }
 
 # 'simulations' is a list of simulation results for which 
 # the marker matrices of the selections at several generations
