@@ -1057,63 +1057,6 @@ plot.MDS.methods <- function(settings, names, ...){
 
 }
 
-# plot.MDS.methods <- function(simulations, names, ...){
-#   
-#   # infer number of base pops (number of replicates)
-#   num.bp <- length(simulations[[1]])
-#   # check that respective replicates have same BP
-#   for(bp in 1:num.bp){
-#     # extract respective replicate of each method
-#     method.results <- lapply(simulations, function(simulation){
-#       simulation[[bp]]
-#     })
-#     # check: same base population
-#     check.same.bp(method.results)
-#   }
-#   
-#   # extract final selections
-#   final.sel <- unlist(lapply(simulations, function(simulation){
-#     lapply(simulation, function(replicate){
-#       replicate[[length(replicate)]]$selection$markers
-#     })
-#   }), recursive = FALSE)
-#   
-#   # compute inter-cluster distances
-#   d <- matrix(0, nrow = length(final.sel), ncol = length(final.sel))
-#   for(i in 1:nrow(d)){
-#     for(j in 1:nrow(d)){
-#       if(i < j){
-#         # retrieve selected populations
-#         sel1 <- final.sel[[i]]
-#         sel2 <- final.sel[[j]]
-#         # compute centroids
-#         centroid1 <- colMeans(sel1)
-#         centroid2 <- colMeans(sel2)
-#         # centroid distance (Euclidean)
-#         clust.dist <- as.numeric(dist(rbind(centroid1, centroid2)))
-#         # increment overall inter-cluster distance sum
-#         d[i, j] <- clust.dist
-#         d[j, i] <- clust.dist
-#       }
-#     }
-#   }
-#   
-#   # MDS
-#   mds <- cmdscale(d)
-# 
-#   # set color codes
-#   col <- unlist(lapply(1:length(simulations), function(i){
-#     rep(i, length(simulations[[i]]))
-#   }))
-#   
-#   # plot
-#   par(mar = c(2.1,2.1,4.1,2.1))
-#   plot(mds, col = col, pch = 18, xlab = "", ylab = "", xaxt = "n", yaxt = "n", asp = 1, ...)
-#   # add legend
-#   legend("bottomright", legend = names, col = 1:length(simulations), pch = 18)
-#   
-# }
-
 # 'simulations' is a list of simulation results for which 
 # the marker matrices of the selections at several generations
 # are compared in an MDS plot, possibly including the base population
