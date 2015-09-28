@@ -302,7 +302,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   
 }
 
-plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
+plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA, MDS.pops = FALSE){
   
   # optimal strategies
   opt.strategies <- list(
@@ -317,7 +317,7 @@ plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RD
   for(strat in opt.strategies){
     message("Strategy: ", strat$name)
     plot.CGS.opt(strat$name, strat$HE.weight, strat$HEadj.weight, strat$LOG.weight,
-                 heritability, file.pattern, xlim, ci)
+                 heritability, file.pattern, xlim, ci, MDS.pops)
   }
   
 }
