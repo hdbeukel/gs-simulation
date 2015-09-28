@@ -1,3 +1,6 @@
+library(scales)
+library(animation)
+
 ################
 # LOAD RESULTS #
 ################
@@ -122,7 +125,7 @@ get.plot.functions <- function(){
 plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
                          HE.weight = 0.35, HEadj.weight = 0.50, LOG.weight = 0.50,
                          heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
-                         xlim = c(0,30), ci = NA){
+                         xlim = c(0,30), ci = NA, MDS.pops = FALSE){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -250,7 +253,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   }
   
   # MDS plots
-  
+    
   # comparison of different methods, averaged over several BP
   file <- sprintf("%s/%s.pdf", fig.dir, "mds-methods")
   
@@ -265,20 +268,37 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     title("Similarity of final selections")
     
   }, width = 8, height = 6)
-  
-  # detailed view for BP 1 (snapshots of selection)
-  file <- sprintf("%s/%s.pdf", fig.dir, "mds-detail-h2-0.5-addTP-800-BP-1")
-  
-  create.pdf(file, function(){
     
-    flip.y <- switch(sprintf("%.2f", HE.weight),
-                     "0.35" = c(3,6,8),
-                     "0.45" = c(4,6),
-                     "0.50" = 3:7)
+  # detailed populations
+  if(MDS.pops){
     
-    plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, flip.y = flip.y)
+    # plots
+    message("|- Detailed MDS: plots")
     
-  }, width = 12, height = 12)
+    file <- sprintf("%s/%s.pdf", fig.dir, "mds-detail-h2-0.5-addTP-800-BP-1")
+    
+    create.pdf(file, function(){
+      
+      par(mfrow = c(3,3))
+      gen <- c(1, seq(2, 30, 4))
+      plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, gen)
+      
+    }, width = 12, height = 12)
+    
+    # movie
+    message("|- Detailed MDS: movies")
+    
+    file <- sprintf("%s/%s.mp4", fig.dir, "mds-detail-h2-0.5-addTP-800-BP-1")
+    
+    saveVideo({
+      
+      ani.options(interval = 0.5)
+      gen <- 1:30
+      plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, gen)
+      
+    }, video.name = file)
+    
+  }
   
 }
 
@@ -993,6 +1013,9 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
 # Multi-dimensional scaling plots #
 ###################################
 
+# for this plot, respective replicates of simulations with a different
+# selection method and or h2/TP setting should have been started from
+# the same base population
 plot.MDS.methods <- function(settings, names, ...){
 
   # initialize distance matrix
@@ -1004,12 +1027,17 @@ plot.MDS.methods <- function(settings, names, ...){
   # infer number of base pops (number of replicates)
   num.bp <- length(settings[[1]]$data[[1]])
   
+  #message("Num BP: ", num.bp)
   # fill distance matrix
   for(bp in 1:num.bp){
+    
+    #message("|- BP: ", bp)
     
     for(i in 1:num.points){
       for(j in 1:num.points){
         if(i < j){
+          
+          #message("|-- (i,j) = (", i, ",", j, ")")
           
           # extract final selections
           final.sel <- lapply(c(i,j), function(k){
@@ -1041,99 +1069,112 @@ plot.MDS.methods <- function(settings, names, ...){
   mds <- cmdscale(d)
 
   # plot
-  col <- settings.ind + 1
+  col <- settings.ind
   pch <- method.ind + 20
   par(mar = c(2.1,2.1,4.1,2.1))
   plot(mds, col = col, bg = col, pch = pch, xlab = "", ylab = "", xaxt = "n", yaxt = "n", asp = 1, ...)
   
   # legends
-  legend("bottomleft", legend = names, pch = (1:length(names)) + 20)
+  legend("bottom", legend = names, pch = (1:length(names)) + 20)
   setting.names <- lapply(settings, function(setting){
     h.formatted <- sprintf("%.1f", setting$h)
     bquote(.(substitute(list(h^2 == .h2, TP == .tp), list(.h2 = h.formatted, .tp = setting$tp))))
   })
   setting.names <- as.expression(setting.names)
-  legend("topleft", legend = setting.names, pch = 20, col = (1:length(settings)) + 1)
+  legend("top", legend = setting.names, pch = 20, col = 1:length(settings))
 
 }
 
-# 'simulations' is a list of simulation results for which 
-# the marker matrices of the selections at several generations
-# are compared in an MDS plot, possibly including the base population
-# in the background (for this plot, all simulations should have been
-# started from the same base population; else, an error is produced)
-plot.MDS.populations <- function(simulations, generations,
-                                 flip.x = c(), flip.y = c(),
-                                 axes = FALSE, include.base.pop = TRUE){
+# for this plot, the simulations with each method should have been
+# started from the same base population, and full marker data should
+# be available for the selection candidates and selection in each generation
+plot.MDS.populations <- function(simulations, generations, method.names){
   
   # check that all simulations were started from same base population
   bp <- check.same.bp(simulations)
   
-  for(i in 1:length(generations)){
-    
-    g <- generations[i]
-    
-    # extract marker matrices of selected population at generation g in each simulation
-    marker.matrices <- lapply(simulations, function(sim){
-      sim[[1+g]]$selection$markers
+  # extract marker matrices of selection candidates and selection at each generation
+  selection.candidates <- unlist(lapply(1:length(generations), function(g.i){
+    g <- generations[g.i]
+    methods.selection.candidates <- lapply(1:length(simulations), function(m.i){
+      sim <- simulations[[m.i]]
+      markers <- sim[[1+g]]$candidates$markers
+      if(is.null(markers)){
+        # special case where crossing + inbreeding does not
+        # take place in the same (but previous) generation as selection
+        markers <- sim[[g]]$candidates$markers
+      }
+      cbind(g.i, m.i, markers)
     })
-    if(any(sapply(marker.matrices, is.null))){
-      stop("intermediate marker data not available in simulation results")
+  }), recursive = FALSE)
+  
+  selection <- unlist(lapply(1:length(generations), function(g.i){
+    g <- generations[g.i]
+    methods.selection <- lapply(1:length(simulations), function(m.i){
+      sim <- simulations[[m.i]]
+      cbind(g.i, m.i, sim[[1+g]]$selection$markers)
+    })
+  }), recursive = FALSE)
+  
+  # combine all data
+  selection.candidates <- Reduce(rbind, selection.candidates)
+  selection <- Reduce(rbind, selection)
+  all <- rbind(selection.candidates, selection)
+  
+  # MDS
+  d <- dist(all[, 3:ncol(all)])
+  mds <- cmdscale(d)
+  # get bounds
+  xlim <- c(min(mds[, 1]), max(mds[, 1]))
+  ylim <- c(min(mds[, 2]), max(mds[, 2]))
+  # split
+  mds.cand <- mds[1:nrow(selection.candidates), ]
+  mds.sel <- mds[(nrow(selection.candidates)+1):nrow(mds), ]
+  
+  # split across plots (1 per generation)
+  for(g.i in 1:length(generations)){
+    
+    g <- generations[g.i]
+
+    # graphical settings
+    par(mar = c(0.5, 0.5, 4.1, 0.5))
+    sel.col <- (1:length(method.names)) + 1
+    cand.col <- sapply(sel.col, function(c){
+      alpha(c, 0.15)
+    })
+    
+    # init plot
+    plot(NULL, type = "n", xlim = xlim, ylim = ylim,
+         xlab = "", ylab = "", xaxt = 'n', yaxt = 'n')
+    
+    # 1) plot candidates
+    for(m.i in 1:length(method.names)){
+      m.cand <- mds.cand[selection.candidates[, 1] == g.i & selection.candidates[, 2] == m.i, ]
+      points(m.cand, pch = 20, col = cand.col[m.i])
     }
     
-    # include base population if requested
-    if(include.base.pop){
-      marker.matrices <- c(list(bp), marker.matrices)
+    # 2) plot selections
+    for(m.i in 1:length(method.names)){
+      m.sel <- mds.sel[selection[, 1] == g.i & selection[, 2] == m.i, ]
+      points(m.sel, pch = 23, bg = sel.col[m.i], col = sel.col[m.i])
     }
     
-    # combine all data
-    combined <- Reduce(rbind, marker.matrices)
-    
-    # compute Euclidean distance matrix
-    d <- dist(combined)
-    
-    # fit 2D MDS
-    mds <- cmdscale(d)
-    # flip x and/or y if requested
-    if(i %in% flip.x){
-      mds[, 1] <- -mds[, 1]
-    }
-    if(i %in% flip.y){
-      mds[, 2] <- -mds[, 2]
-    }
-    
-    # set background and border colors
-    bg <- rep(NA, nrow(combined))
-    col <- rep('black', nrow(combined))
-    # base pop (grey)
-    bg[1:nrow(bp)] <- '#999999'
-    col[1:nrow(bp)] <- '#999999'
-    # selections
-    bg[(nrow(bp)+1):nrow(combined)] <- unlist(lapply(2:length(marker.matrices), function(i){
-      rep(i, nrow(marker.matrices[[i]]))
-    }))
-    
-    # set pch
-    pch <- rep(23, nrow(combined))
-    # base pop
-    pch[1:nrow(bp)] <- 20
-    
-    # plot MDS
-    if(axes){
-      par(mar = c(2, 2, 4.1, 2))
-      plot.fun <- plot
-    } else {
-      par(mar = c(0.5, 0.5, 4.1, 0.5))
-      plot.fun <- function(...){ plot(..., xaxt = 'n', yaxt = 'n') }
-    }
-    plot.fun(mds, col = col, bg = bg, pch = pch, xlab = "", ylab = "", asp = 1)
+    # add title
     title(sprintf("Generation %d", g))
+    # add legend
+    legend(
+      x = "topright",
+      legend = method.names,
+      pch = 23,
+      col = sel.col,
+      pt.bg = sel.col
+    )
 
   }
   
 }
 
-plot.MDS.populations.CGS.opt <- function(HE.weight, HEadj.weight, LOG.weight, flip.x = c(), flip.y = c()){
+plot.MDS.populations.CGS.opt <- function(HE.weight, HEadj.weight, LOG.weight, generations){
   
   # load data
   message("Load data ...")
@@ -1152,20 +1193,11 @@ plot.MDS.populations.CGS.opt <- function(HE.weight, HEadj.weight, LOG.weight, fl
                   )
   
   # plot
-  message("Create plots ...")
+  message("Create plots/movie ...")
   
-  par(mfrow = c(3,3))
   plot.MDS.populations(
     list(GS.data, WGS.data, CGS.HE.data, CGS.HEadj.data, CGS.LOG.data),
-    generations = c(1, seq(2, 30, 4)), flip.x = flip.x, flip.y = flip.y
-  )
-  
-  # legend
-  legend(
-    x = "topright",
-    legend = c("GS", "WGS", "HE", "HE'", "LOG"),
-    pch = 23,
-    pt.bg = (1:5)+1
+    generations = generations, method.names = c("GS", "WGS", "HE", "HE'", "LOG")
   )
   
 }
