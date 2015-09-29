@@ -278,38 +278,38 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     )
     
     for(setting in settings){
-      for(bp in 1:5){
-        
-        name <- sprintf("mds-detail-h2-%.1f-addTP-%d-BP-%d", setting$h2, setting$addTP, bp)
-        
-        # plots
-        message("|- Detailed MDS: plots")
-        
-        file <- sprintf("%s/%s.pdf", fig.dir, name)
-        
-        create.pdf(file, function(){
+      for(type in c("markers", "qtl")){
+        for(bp in 1:5){
           
-          par(mfrow = c(3,3))
-          #gen <- c(1, seq(2, 30, 4))
-          gen <- c(1,30)
-          plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
+          name <- sprintf("mds-detail-h2-%.1f-addTP-%d-BP-%d-%s", setting$h2, setting$addTP, bp, type)
           
-        }, width = 12, height = 12)
-        
-        # movie
-        message("|- Detailed MDS: movies")
-        
-        file <- sprintf("%s/%s.mp4", fig.dir, name)
-        
-        saveVideo({
+          # plots
+          message("|- Detailed MDS: plots")
           
-          ani.options(interval = 0.5)
-          #gen <- 1:30
-          gen <- c(1,30)
-          plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
+          file <- sprintf("%s/%s.pdf", fig.dir, name)
           
-        }, video.name = file)
-        
+          create.pdf(file, function(){
+            
+            par(mfrow = c(3,3))
+            gen <- c(1, seq(2, 30, 4))
+            plot.MDS.populations.CGS.opt(type, HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
+            
+          }, width = 12, height = 12)
+          
+          # movie
+          message("|- Detailed MDS: movies")
+          
+          file <- sprintf("%s/%s.mp4", fig.dir, name)
+          
+          saveVideo({
+            
+            ani.options(interval = 0.5)
+            gen <- 1:30
+            plot.MDS.populations.CGS.opt(type, HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
+            
+          }, video.name = file)
+          
+        }
       }
     }
 
@@ -1103,23 +1103,32 @@ plot.MDS.methods <- function(settings, names, ...){
 # for this plot, the simulations with each method should have been
 # started from the same base population, and full marker data should
 # be available for the selection candidates and selection in each generation
-plot.MDS.populations <- function(simulations, generations, method.names){
+plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, generations, method.names){
+  
+  type <- match.arg(type)
   
   # check that all simulations were started from same base population
   bp <- check.same.bp(simulations)
   
-  # extract marker matrices of selection candidates and selection at each generation
+  # extract marker/qtl matrices of selection candidates and selection at each generation
   selection.candidates <- unlist(lapply(1:length(generations), function(g.i){
     g <- generations[g.i]
     methods.selection.candidates <- lapply(1:length(simulations), function(m.i){
       sim <- simulations[[m.i]]
-      markers <- sim[[1+g]]$candidates$markers
-      if(is.null(markers)){
-        # special case where crossing + inbreeding does not
-        # take place in the same (but previous) generation as selection
-        markers <- sim[[g]]$candidates$markers
+      if(type == "markers"){
+        Z <- sim[[1+g]]$candidates$markers
+        if(is.null(Z)){
+          # special case where crossing + inbreeding does not
+          # take place in the same (but previous) generation as selection
+          Z <- sim[[g]]$candidates$markers
+        }
+      } else {
+        Z <- sim[[1+g]]$candidates$qtl
+        if(is.null(Z)){
+          Z <- sim[[g]]$candidates$qtl
+        }
       }
-      cbind(g.i, m.i, markers)
+      cbind(g.i, m.i, Z)
     })
   }), recursive = FALSE)
   
@@ -1127,7 +1136,12 @@ plot.MDS.populations <- function(simulations, generations, method.names){
     g <- generations[g.i]
     methods.selection <- lapply(1:length(simulations), function(m.i){
       sim <- simulations[[m.i]]
-      cbind(g.i, m.i, sim[[1+g]]$selection$markers)
+      if(type == "markers"){
+        Z <- sim[[1+g]]$selection$markers
+      } else {
+        Z <- sim[[1+g]]$selection$qtl
+      }
+      cbind(g.i, m.i, Z)
     })
   }), recursive = FALSE)
   
@@ -1189,7 +1203,11 @@ plot.MDS.populations <- function(simulations, generations, method.names){
   
 }
 
-plot.MDS.populations.CGS.opt <- function(HE.weight, HEadj.weight, LOG.weight, generations, bp, h2, addTP){
+plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
+                                         HE.weight, HEadj.weight, LOG.weight,
+                                         generations, bp, h2, addTP){
+  
+  type <- match.arg(type)
   
   # load data
   message("Load data ...")
@@ -1215,6 +1233,7 @@ plot.MDS.populations.CGS.opt <- function(HE.weight, HEadj.weight, LOG.weight, ge
   message("Create plots/movie ...")
   
   plot.MDS.populations(
+    type = type,
     list(GS.data, WGS.data, CGS.HE.data, CGS.HEadj.data, CGS.LOG.data),
     generations = generations, method.names = c("GS", "WGS", "HE", "HE'", "LOG")
   )
