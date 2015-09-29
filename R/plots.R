@@ -272,32 +272,47 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   # detailed populations
   if(MDS.pops){
     
-    # plots
-    message("|- Detailed MDS: plots")
+    settings <- list(
+      list(h2 = 0.2, addTP = 0),
+      list(h2 = 0.5, addTP = 800)
+    )
     
-    file <- sprintf("%s/%s.pdf", fig.dir, "mds-detail-h2-0.5-addTP-800-BP-1")
-    
-    create.pdf(file, function(){
-      
-      par(mfrow = c(3,3))
-      gen <- c(1, seq(2, 30, 4))
-      plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, gen)
-      
-    }, width = 12, height = 12)
-    
-    # movie
-    message("|- Detailed MDS: movies")
-    
-    file <- sprintf("%s/%s.mp4", fig.dir, "mds-detail-h2-0.5-addTP-800-BP-1")
-    
-    saveVideo({
-      
-      ani.options(interval = 0.5)
-      gen <- 1:30
-      plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, gen)
-      
-    }, video.name = file)
-    
+    for(setting in settings){
+      for(bp in 1:5){
+        
+        name <- sprintf("mds-detail-h2-%.1f-addTP-%d-BP-%d", setting$h2, setting$addTP, bp)
+        
+        # plots
+        message("|- Detailed MDS: plots")
+        
+        file <- sprintf("%s/%s.pdf", fig.dir, name)
+        
+        create.pdf(file, function(){
+          
+          par(mfrow = c(3,3))
+          #gen <- c(1, seq(2, 30, 4))
+          gen <- c(1,30)
+          plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
+          
+        }, width = 12, height = 12)
+        
+        # movie
+        message("|- Detailed MDS: movies")
+        
+        file <- sprintf("%s/%s.mp4", fig.dir, name)
+        
+        saveVideo({
+          
+          ani.options(interval = 0.5)
+          #gen <- 1:30
+          gen <- c(1,30)
+          plot.MDS.populations.CGS.opt(HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
+          
+        }, video.name = file)
+        
+      }
+    }
+
   }
   
 }
@@ -1163,7 +1178,7 @@ plot.MDS.populations <- function(simulations, generations, method.names){
     title(sprintf("Generation %d", g))
     # add legend
     legend(
-      x = "topright",
+      x = "topleft",
       legend = method.names,
       pch = 23,
       col = sel.col,
@@ -1174,23 +1189,27 @@ plot.MDS.populations <- function(simulations, generations, method.names){
   
 }
 
-plot.MDS.populations.CGS.opt <- function(HE.weight, HEadj.weight, LOG.weight, generations){
+plot.MDS.populations.CGS.opt <- function(HE.weight, HEadj.weight, LOG.weight, generations, bp, h2, addTP){
   
   # load data
   message("Load data ...")
   # GS/WGS
-  GS.data <- readRDS("out/GS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/bp-1-1.RDS")
-  WGS.data <- readRDS("out/WGS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/bp-1-1.RDS")
+  GS.data <- readRDS(
+    sprintf("out/GS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
+  )
+  WGS.data <- readRDS(
+    sprintf("out/WGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
+  )
   # CGS
   CGS.HE.data <- readRDS(
-                    sprintf("out/CGS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/HE-%.2f/index/bp-1-1.RDS", HE.weight)
-                 )
+    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HE-%.2f/index/bp-%d-1.RDS", h2, addTP, HE.weight, bp)
+  )
   CGS.HEadj.data <- readRDS(
-                      sprintf("out/CGS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/HEadj-%.2f/index/bp-1-1.RDS", HEadj.weight)
-                    )
+    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HEadj-%.2f/index/bp-%d-1.RDS", h2, addTP, HEadj.weight, bp)
+  )
   CGS.LOG.data <- readRDS(
-                    sprintf("out/CGS/30-seasons/h2-0.5/addTP-800/normal-effects/BRR/LOG-%.2f/index/bp-1-1.RDS", LOG.weight)
-                  )
+    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOG-%.2f/index/bp-%d-1.RDS", h2, addTP, LOG.weight, bp)
+  )
   
   # plot
   message("Create plots/movie ...")
