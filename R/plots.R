@@ -79,7 +79,7 @@ infer.CGS.avg.final.gains <- function(div.measure = c("HE", "HEadj", "LOG"), div
 # AUTOMATED PLOT GENERATION #
 #############################
 
-create.pdf <- function(file, plot.fun, width = 16, height = 12){
+create.pdf <- function(file, plot.fun, width = 14, height = 10.5){
   
   pdf(file, width = width, height = height)
   plot.fun()
