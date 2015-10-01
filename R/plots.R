@@ -125,7 +125,7 @@ get.plot.functions <- function(){
 plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
                          HE.weight = 0.35, HEadj.weight = 0.50, LOG.weight = 0.50,
                          heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
-                         xlim = c(0,30), ci = NA, MDS.pops = FALSE){
+                         xlim = c(0,30), ci = NA, MDS.methods = FALSE, MDS.pops = FALSE){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -253,32 +253,42 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   }
   
   # MDS plots
-    
-  # comparison of different methods, averaged over several BP
-  file <- sprintf("%s/%s.pdf", fig.dir, "mds-methods")
   
-  create.pdf(file, function(){
+  if(MDS.methods){
     
-    # shorten names
-    names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
-      bquote(.(div.measure.label.names[div.measure]))
-    })
-    # plot
-    plot.MDS.methods(all.data, names, cex = 1.5)
-    title("Similarity of final selections")
+    # comparison of different methods, averaged over several BP
+    file <- sprintf("%s/%s.pdf", fig.dir, "mds-methods")
     
-  }, width = 8, height = 6)
+    create.pdf(file, function(){
+      
+      # shorten names
+      names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
+        bquote(.(div.measure.label.names[div.measure]))
+      })
+      # plot
+      plot.MDS.methods(all.data, names, cex = 1.5)
+      title("Similarity of final selections")
+      
+    }, width = 8, height = 6)
+    
+  }
     
   # detailed populations
   if(MDS.pops){
     
     settings <- list(
-      list(h2 = 0.2, addTP = 0),
-      list(h2 = 0.5, addTP = 800)
+      #list(h2 = 0.2, addTP = 0),
+      #list(h2 = 0.5, addTP = 800),
+      list(h2 = 0.2, addTP = 800)
+    )
+    
+    types <- list(
+      #"qtl",
+      "markers"
     )
     
     for(setting in settings){
-      for(type in c("markers", "qtl")){
+      for(type in types){
         for(bp in 1:5){
           
           name <- sprintf("mds-detail-h2-%.1f-addTP-%d-BP-%d-%s", setting$h2, setting$addTP, bp, type)
@@ -291,7 +301,8 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           create.pdf(file, function(){
             
             par(mfrow = c(3,3))
-            gen <- c(1, seq(2, 30, 4))
+            #gen <- c(1, seq(2, 30, 4))
+            gen <- c(1,30)
             plot.MDS.populations.CGS.opt(type, HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
             
           }, width = 12, height = 12)
@@ -303,8 +314,9 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           
           saveVideo({
             
-            ani.options(interval = 0.5)
-            gen <- 1:30
+            ani.options(interval = 0.5, autobrowse = FALSE)
+            #gen <- 1:30
+            gen <- c(1,30)
             plot.MDS.populations.CGS.opt(type, HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
             
           }, video.name = file)
@@ -1110,6 +1122,9 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
   # check that all simulations were started from same base population
   bp <- check.same.bp(simulations)
   
+  # color-blind friendly palette
+  cbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#F0E442", "#0072B2", "#D55E00")
+  
   # extract marker/qtl matrices of selection candidates and selection at each generation
   selection.candidates <- unlist(lapply(1:length(generations), function(g.i){
     g <- generations[g.i]
@@ -1167,10 +1182,11 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
 
     # graphical settings
     par(mar = c(0.5, 0.5, 4.1, 0.5))
-    sel.col <- (1:length(method.names)) + 1
+    sel.col <- cbPalette[1:length(method.names)]
     cand.col <- sapply(sel.col, function(c){
       alpha(c, 0.15)
     })
+    sel.pch <- 20 + (1:length(method.names))
     
     # init plot
     plot(NULL, type = "n", xlim = xlim, ylim = ylim,
@@ -1185,7 +1201,7 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
     # 2) plot selections
     for(m.i in 1:length(method.names)){
       m.sel <- mds.sel[selection[, 1] == g.i & selection[, 2] == m.i, ]
-      points(m.sel, pch = 23, bg = sel.col[m.i], col = sel.col[m.i])
+      points(m.sel, pch = sel.pch[m.i], bg = sel.col[m.i], col = sel.col[m.i])
     }
     
     # add title
@@ -1194,7 +1210,7 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
     legend(
       x = "topleft",
       legend = method.names,
-      pch = 23,
+      pch = sel.pch,
       col = sel.col,
       pt.bg = sel.col
     )
