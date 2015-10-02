@@ -125,7 +125,8 @@ get.plot.functions <- function(){
 plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
                          HE.weight = 0.35, HEadj.weight = 0.50, LOG.weight = 0.50,
                          heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
-                         xlim = c(0,30), ci = NA, MDS.methods = FALSE, MDS.pops = FALSE){
+                         xlim = c(0,30), ci = NA, main.plots = TRUE, MDS.methods = FALSE,
+                         MDS.pops = FALSE){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -231,25 +232,27 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   # create plots
   message("|- Create plots ...")
   
-  for(plot.fun in plot.functions){
-    
-    file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
-    
-    create.pdf(file, function(){
+  if(main.plots){
+    for(plot.fun in plot.functions){
       
-      # combine plots for different heritabilities and TP sizes
-      par(mfrow = c(2,2))
+      file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
       
-      for(data in all.data){
-        # plot
-        plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
-        # extend title (include heritability and TP size)
-        title(make.title(plot.fun$title, data$h, data$tp))
-        add.legend(names, params, pos = plot.fun$legend) 
-      }
+      create.pdf(file, function(){
+        
+        # combine plots for different heritabilities and TP sizes
+        par(mfrow = c(2,2))
+        
+        for(data in all.data){
+          # plot
+          plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+          # extend title (include heritability and TP size)
+          title(make.title(plot.fun$title, data$h, data$tp))
+          add.legend(names, params, pos = plot.fun$legend) 
+        }
+        
+      })
       
-    })
-    
+    }
   }
   
   # MDS plots
@@ -301,8 +304,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           create.pdf(file, function(){
             
             par(mfrow = c(3,3))
-            #gen <- c(1, seq(2, 30, 4))
-            gen <- c(1,30)
+            gen <- c(1, seq(2, 30, 4))
             plot.MDS.populations.CGS.opt(type, HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
             
           }, width = 12, height = 12)
@@ -315,8 +317,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           saveVideo({
             
             ani.options(interval = 0.5, autobrowse = FALSE)
-            #gen <- 1:30
-            gen <- c(1,30)
+            gen <- 1:30
             plot.MDS.populations.CGS.opt(type, HE.weight, HEadj.weight, LOG.weight, gen, bp, setting$h2, setting$addTP)
             
           }, video.name = file)
@@ -329,7 +330,8 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   
 }
 
-plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA, MDS.pops = FALSE){
+plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
+                             main.plots = TRUE, MDS.methods = FALSE, MDS.pops = FALSE){
   
   # optimal strategies
   opt.strategies <- list(
@@ -344,7 +346,7 @@ plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RD
   for(strat in opt.strategies){
     message("Strategy: ", strat$name)
     plot.CGS.opt(strat$name, strat$HE.weight, strat$HEadj.weight, strat$LOG.weight,
-                 heritability, file.pattern, xlim, ci, MDS.pops)
+                 heritability, file.pattern, xlim, ci, main.plots, MDS.methods, MDS.pops)
   }
   
 }
