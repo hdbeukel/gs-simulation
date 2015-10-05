@@ -235,6 +235,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   if(main.plots){
     for(plot.fun in plot.functions){
       
+      # plot with all four settings
       file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
       
       create.pdf(file, function(){
@@ -251,6 +252,24 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
         }
         
       })
+      
+      # plot with 2 extreme settings only
+      file <- sprintf("%s/%s-extremes.pdf", fig.dir, plot.fun$name)
+      
+      create.pdf(file, function(){
+        
+        # combine plots for different heritabilities and TP sizes
+        par(mfrow = c(1,2))
+        
+        for(data in all.data[c(1,4)]){
+          # plot
+          plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+          # extend title (include heritability and TP size)
+          title(make.title(plot.fun$title, data$h, data$tp))
+          add.legend(names, params, pos = plot.fun$legend) 
+        }
+        
+      }, height = 5.25)
       
     }
   }
