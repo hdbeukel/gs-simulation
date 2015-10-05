@@ -97,7 +97,7 @@ get.plot.functions <- function(){
          legend = "bottomright", ylim = c(0.48, 0.78)),
     list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
          legend = "bottomleft", ylim = c(0.3, 0.9)),
-    list(f = plot.mean.inbreeding, name = "inbreeding", title = "Mean inbreeding in selection candidates",
+    list(f = plot.mean.inbreeding, name = "inbreeding", title = "Mean inbreeding",
          legend = "bottomright", ylim = c(0, 0.68)),
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
          legend = "topright", ylim = c(0, 0.08)),
