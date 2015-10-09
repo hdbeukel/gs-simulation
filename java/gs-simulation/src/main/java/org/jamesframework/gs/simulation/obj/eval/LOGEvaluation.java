@@ -3,13 +3,13 @@
 package org.jamesframework.gs.simulation.obj.eval;
 
 
-public class LOGEvaluation extends FavourableAlleleBasedEvaluation {
+public abstract class LOGEvaluation extends FrequencyBasedEvaluation {
     
     private final double valueAtZero;
     
-    public LOGEvaluation(int subsetSize, double[] alleleFreqs, int[] favAlleles, double valueAtZero) {
+    public LOGEvaluation(int subsetSize, double[] alleleFreqs, int[] favAlleles) {
         super(subsetSize, alleleFreqs, favAlleles);
-        this.valueAtZero = valueAtZero;
+        this.valueAtZero = -(Math.log(subsetSize) + 1.0);
     }
     
     public LOGEvaluation(LOGEvaluation toCopy){
@@ -17,22 +17,26 @@ public class LOGEvaluation extends FavourableAlleleBasedEvaluation {
         this.valueAtZero = toCopy.valueAtZero;
     }
     
-    // impose exponentially increasing emphasis on low frequency favourable alleles
+    // impose exponentially increasing emphasis on rare (favourable) alleles
     @Override
     public double getValue() {
-        double[] alleleFreqs = getAlleleFreqs();
         double val = 0.0;
-        int numMarkers = alleleFreqs.length;
-        for(int m=0; m<numMarkers; m++){
-            double p = getFavourableAlleleFreq(m);
+        int numMarkers = getNumMarkers();
+        for(int m = 0; m < numMarkers; m++){
+            double p = getFrequency(m);
             if(p > 0.0){
                 val += Math.log(p);
             } else {
                 val += valueAtZero;
             }
         }
-        val = 1.0/numMarkers * val;
+        val = val / numMarkers;
         return val;
     }
+    
+    // returns frequency on which evaluation is based
+    // (MAF, favourable allele frequency, ...); depending
+    // on implementation in sub-class
+    abstract protected double getFrequency(int m);
     
 }

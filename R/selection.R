@@ -16,7 +16,7 @@ select.highest.score <- function(n, values, ...){
 
 # select by maximizing weighted index of mean breeding value and diversity
 select.weighted.index <- function(n, values, markers, div.weight,
-                                  div.measure = c("MR", "HE", "HEadj", "LOG", "LOG2"),
+                                  div.measure = c("HEall", "HEfav", "LOGall", "LOGfav"),
                                   fav.alleles = NULL, ...){
   # check input
   if(!is.numeric(n)){
@@ -36,49 +36,18 @@ select.weighted.index <- function(n, values, markers, div.weight,
   }
   # get selected diversity measure
   div.measure <- match.arg(div.measure)
-  if(div.measure == "MR"){
-    div.measure <- j.MR.ENE()
-  } else if (div.measure == "HE"){
-    div.measure <- j.HE()
-  } else if (div.measure == "HEadj"){
-    div.measure <- j.adj.HE()
-  } else if (div.measure == "LOG"){
-    div.measure <- j.LOG()
+  if (div.measure == "HEall"){
+    div.measure <- j.HE.all()
+  } else if (div.measure == "HEfav"){
+    div.measure <- j.HE.fav()
+  } else if (div.measure == "LOGall"){
+    div.measure <- j.LOG.all()
   } else {
-    div.measure <- j.LOG2()
+    div.measure <- j.LOG.fav()
   }
   # run optimization
   selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles)
   return(selected.names)
-}
-
-####################
-# DIVERSITY SCORES #
-####################
-
-# for DH population (0/1)
-HE <- function(Z, sel){
-  
-  # compute average genome of selection
-  freqs <- colMeans(Z[sel, ])
-
-  # compute HE from p
-  he <- sum(sapply(freqs, function(p){
-    p * (1-p)
-  }))
-  he <- 2*he/ncol(Z)
-  
-  return(he)
-    
-}
-
-# for DH individuals (0/1)
-MR <- function(ind1, ind2){
-  if(length(ind1) != length(ind2)){
-    stop("marker vector of both individuals should be of same size")
-  }
-  d <- sqrt(sum(abs(ind1 - ind2))/length(ind1))
-  return(d)
 }
 
 ####################################
@@ -129,7 +98,7 @@ plot.pareto.front <- function(file, title = "Pareto front", xlab = "Diversity"){
   
 }
 
-plot.pareto.fronts <- function(dir, div.measure = c("MR", "HE", "HEadj", "LOG", "LOG2")){
+plot.pareto.fronts <- function(dir, div.measure = c("HEall", "HEfav", "LOGall", "LOGfav")){
   
   div.measure <- match.arg(div.measure)
   dir <- sprintf("%s/%s", dir, div.measure)

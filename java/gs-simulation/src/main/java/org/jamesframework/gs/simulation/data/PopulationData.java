@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.jamesframework.core.problems.datatypes.IntegerIdentifiedData;
-import org.jamesframework.gs.simulation.obj.GeneticDistanceFunction;
 
 /**
  * Population data consisting of (1) accession names, (2) accession values,
@@ -23,9 +22,6 @@ public class PopulationData implements IntegerIdentifiedData {
     private final int[] favourable;
         
     private final Set<Integer> ids;
-    
-    // inter-accession distance matrix
-    private double[][] dist;
 
     public PopulationData(String[] names, double[] values, int[][] markers, int[] favourable) {
         // check sizes
@@ -56,26 +52,6 @@ public class PopulationData implements IntegerIdentifiedData {
     @Override
     public Set<Integer> getIDs() {
         return ids;
-    }
-    
-    // note: overwrites any previously computed distance matrix
-    public void precomputeDistanceMatrix(GeneticDistanceFunction f){
-        
-        // initialize distance matrix
-        dist = new double[numAccessions()][numAccessions()];
-        // fill distance matrix
-        for(int i=0; i<numAccessions(); i++){
-            for(int j=0; j<i; j++){
-                double d = f.computeDistance(markers[i], markers[j]);
-                dist[i][j] = dist[j][i] = d;
-            }
-        }
-        
-    }
-    
-    // note: returns null if not precomputed
-    public double[][] getDistanceMatrix(){
-        return dist;
     }
     
     public String getName(int id){

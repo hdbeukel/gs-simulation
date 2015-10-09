@@ -8,7 +8,7 @@ import org.jamesframework.core.util.SetUtilities;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class EntryToNearestEntryDistanceTest extends ObjectiveTest {
+public class HEallTest extends ObjectiveTest {
     
     /**
      * Test delta evaluation.
@@ -18,7 +18,7 @@ public class EntryToNearestEntryDistanceTest extends ObjectiveTest {
         System.out.println(" - test delta evaluation");
        
         // create objective
-        EntryToNearestEntryDistance obj = new EntryToNearestEntryDistance();
+        HEall obj = new HEall();
         
         // sample random subsets
         for (int i=0; i<1000; i++){

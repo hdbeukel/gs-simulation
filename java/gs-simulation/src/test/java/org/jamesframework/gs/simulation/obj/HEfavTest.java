@@ -8,7 +8,7 @@ import org.jamesframework.core.util.SetUtilities;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class AdjustedHETest extends ObjectiveTest {
+public class HEfavTest extends ObjectiveTest {
     
     /**
      * Test delta evaluation.
@@ -18,7 +18,7 @@ public class AdjustedHETest extends ObjectiveTest {
         System.out.println(" - test delta evaluation");
        
         // create objective
-        AdjustedHE obj = new AdjustedHE();
+        HEfav obj = new HEfav();
         
         // sample random subsets
         for (int i=0; i<1000; i++){

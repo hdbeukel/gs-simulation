@@ -8,7 +8,7 @@ import org.jamesframework.core.util.SetUtilities;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class LOGFrequencyTest extends ObjectiveTest {
+public class LOGfavTest extends ObjectiveTest {
     
     /**
      * Test delta evaluation.
@@ -18,7 +18,7 @@ public class LOGFrequencyTest extends ObjectiveTest {
         System.out.println(" - test delta evaluation");
        
         // create objective
-        LOGFrequency obj = new LOGFrequency((n,m) -> - (m * Math.log(n) + 1.0));
+        LOGfav obj = new LOGfav();
         
         // sample random subsets
         for (int i=0; i<1000; i++){

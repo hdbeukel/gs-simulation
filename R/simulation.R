@@ -107,7 +107,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, div.weight,
-               div.measure = c("MR", "HE", "HEadj", "LOG", "LOG2"),
+               div.measure = c("HEall", "HEfav", "LOGall", "LOGfav"),
                type = c("index", "split"), ...){
   
   # get selected type

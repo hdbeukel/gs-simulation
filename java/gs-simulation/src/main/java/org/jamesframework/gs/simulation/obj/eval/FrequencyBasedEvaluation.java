@@ -16,15 +16,19 @@ public abstract class FrequencyBasedEvaluation implements Evaluation {
     private final int subsetSize;
     // allele frequencies (ratio of 1-alleles)
     private final double[] alleleFreqs;
+    // indicates which allele is favourable
+    private final int[] favAlleles;
 
-    public FrequencyBasedEvaluation(int subsetSize, double[] alleleFreqs) {
+    public FrequencyBasedEvaluation(int subsetSize, double[] alleleFreqs, int[] favAlleles) {
         this.subsetSize = subsetSize;
         this.alleleFreqs = alleleFreqs;
+        this.favAlleles = favAlleles;
     }
     
     public FrequencyBasedEvaluation(FrequencyBasedEvaluation toCopy){
         this.subsetSize = toCopy.subsetSize;
         this.alleleFreqs = Arrays.copyOf(toCopy.alleleFreqs, toCopy.alleleFreqs.length);
+        this.favAlleles = toCopy.favAlleles; // no deep copy (doesn't change across selections!)
     }
     
     // update allel frequencies when swapping an item in the selection
@@ -41,9 +45,33 @@ public abstract class FrequencyBasedEvaluation implements Evaluation {
     public int getSubsetSize() {
         return subsetSize;
     }
+    
+    public int getNumMarkers(){
+        return alleleFreqs.length;
+    }
 
-    public double[] getAlleleFreqs() {
-        return alleleFreqs;
+    public double getAlleleFreq(int m) {
+        return alleleFreqs[m];
+    }
+    
+    public double getMinorAllelFreq(int m){
+        double p = getAlleleFreq(m);
+        double maf = Math.min(p, 1.0 - p);
+        return maf;
+    }
+    
+    public double getFavourableAlleleFreq(int m){
+        // get frequency of 1-allele at marker m
+        double freq = getAlleleFreq(m);
+        // flip if 0-allele is favourable
+        if(favAlleles[m] == 0){
+            freq = 1.0 - freq;
+        }
+        return freq;
+    }
+    
+    public double getUnfavourableAlleleFreq(int m){
+        return 1.0 - getFavourableAlleleFreq(m);
     }
     
 }

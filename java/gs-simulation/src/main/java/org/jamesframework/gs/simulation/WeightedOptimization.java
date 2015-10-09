@@ -10,10 +10,10 @@ import org.jamesframework.core.subset.SubsetSolution;
 import org.jamesframework.gs.simulation.api.API;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.data.PopulationReader;
-import org.jamesframework.gs.simulation.obj.AdjustedHE;
-import org.jamesframework.gs.simulation.obj.EntryToNearestEntryDistance;
-import org.jamesframework.gs.simulation.obj.ExpectedProportionOfHeterozygousLoci;
-import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
+import org.jamesframework.gs.simulation.obj.HEfav;
+import org.jamesframework.gs.simulation.obj.HEall;
+import org.jamesframework.gs.simulation.obj.LOGall;
+import org.jamesframework.gs.simulation.obj.LOGfav;
 
 public class WeightedOptimization {
 
@@ -37,20 +37,16 @@ public class WeightedOptimization {
         System.out.println("Diversity measure: " + divMeasure);
         Objective<SubsetSolution, PopulationData> divObj;
         switch(divMeasure){
-            case "LOG": divObj = api.createLOGobjective();
+            case "HEALL": divObj = new HEall();
                 break;
-            case "LOG2": divObj = api.createLOG2objective();
+            case "HEFAV": divObj = new HEfav();
                 break;
-            case "HEADJ": divObj = new AdjustedHE();
+            case "LOGALL": divObj = new LOGall();
                 break;
-            case "HE": divObj = new ExpectedProportionOfHeterozygousLoci();
-                break;
-            case "MR": divObj = new EntryToNearestEntryDistance();
-                       // precompute MR distance matrix
-                       data.precomputeDistanceMatrix(new ModifiedRogersDistance());
+            case "LOGFAV": divObj = new LOGfav();
                 break;
             default: throw new IllegalArgumentException("Unknown diversity measure: " + divMeasure + ". "
-                                                      + "Please specify one of HE, MR, HEadj, LOG or LOG2.");
+                                                      + "Please specify one of HEall, HEfav, LOGall or LOGfav.");
         }
 
         String[] selectedNames = api.selectWeighted(subsetSize, data, divWeight, divObj, timeWithoutImpr);

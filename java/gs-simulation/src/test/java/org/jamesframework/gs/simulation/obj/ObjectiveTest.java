@@ -35,7 +35,6 @@ public class ObjectiveTest {
         }
         
         DATA = new PopulationData(names, values, markerdata, favAlleles);
-        DATA.precomputeDistanceMatrix(new ModifiedRogersDistance());
         
     }
     

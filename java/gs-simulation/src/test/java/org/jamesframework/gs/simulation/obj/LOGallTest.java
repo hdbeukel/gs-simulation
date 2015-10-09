@@ -8,7 +8,7 @@ import org.jamesframework.core.util.SetUtilities;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class ExpectedProportionOfHeterozygousLociTest extends ObjectiveTest {
+public class LOGallTest extends ObjectiveTest {
     
     /**
      * Test delta evaluation.
@@ -18,7 +18,7 @@ public class ExpectedProportionOfHeterozygousLociTest extends ObjectiveTest {
         System.out.println(" - test delta evaluation");
        
         // create objective
-        ExpectedProportionOfHeterozygousLoci obj = new ExpectedProportionOfHeterozygousLoci();
+        LOGall obj = new LOGall();
         
         // sample random subsets
         for (int i=0; i<1000; i++){

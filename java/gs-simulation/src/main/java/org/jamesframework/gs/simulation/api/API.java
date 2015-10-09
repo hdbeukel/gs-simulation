@@ -22,9 +22,8 @@ import org.jamesframework.examples.util.ProgressSearchListener;
 import org.jamesframework.ext.problems.objectives.NormalizedObjective;
 import org.jamesframework.ext.problems.objectives.WeightedIndex;
 import org.jamesframework.gs.simulation.data.PopulationData;
-import org.jamesframework.gs.simulation.obj.LOGFrequency;
+import org.jamesframework.gs.simulation.obj.LOGfav;
 import org.jamesframework.gs.simulation.obj.MeanBreedingValue;
-import org.jamesframework.gs.simulation.obj.ModifiedRogersDistance;
 
 public class API {
     
@@ -54,7 +53,7 @@ public class API {
      * @param markers marker matrix Z (0/1)
      * @param favAlleles favourable alleles (0/1) -- can be null for diversity measures HE and MR-ENE
      * @param divWeight weight of the diversity component (real number in [0,1])
-     * @param divObj diversity objective (MR-ENE or HE)
+     * @param divObj diversity objective
      * @param secondsWithoutImprovement number of seconds without improvement after which the search stops
      * @return array of selected individuals (names)
      */
@@ -76,9 +75,7 @@ public class API {
         message("############################");
         message("# WEIGHTED INDEX SELECTION #");
         message("############################");
-        
-        // precompute distance matrix
-        data.precomputeDistanceMatrix(new ModifiedRogersDistance());
+
         // set value weight
         double valueWeight = 1.0 - divWeight;
         message("Diversity weight: " + divWeight);
@@ -222,19 +219,6 @@ public class API {
         
         return(index);
         
-    }
-    
-    public LOGFrequency createLOGobjective(){
-        // set value at zero so that diff between 0 and 1 occurrence is 1.0,
-        // which is larger than diff between 1 and 2 occurrences = ln(2) = 0.693
-        return new LOGFrequency((n,m) -> - (Math.log(n) + 1.0));
-    }
-    
-    public LOGFrequency createLOG2objective(){
-        // ensure that the value of a solution in which less favourable alleles
-        // are lost is guaranteed to be higher, compared to a solution in which more
-        // favourable alleles are lost (regardless of the other frequencies)
-        return new LOGFrequency((n,m) -> - (m * Math.log(n) + 1.0));
     }
     
 }

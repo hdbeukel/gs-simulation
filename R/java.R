@@ -35,27 +35,20 @@ j.max.index <- function(n, names, values, markers, div.weight, div.measure, fav.
 # DIVERSITY MEASURES #
 ######################
 
-j.MR.ENE <- function(){
-  .jnew(j.gs("obj/EntryToNearestEntryDistance"))
+j.HE.all <- function(){
+  .jnew(j.gs("obj/HEall"))
 }
 
-j.HE <- function(){
-  .jnew(j.gs("obj/ExpectedProportionOfHeterozygousLoci"))
+j.HE.fav <- function(){
+  .jnew(j.gs("obj/HEfav"))
 }
 
-j.adj.HE <- function(){
-  .jnew(j.gs("obj/AdjustedHE"))
+j.LOG.all <- function(){
+  .jnew(j.gs("obj/LOGall"))
 }
 
-j.LOG <- function(){
-  .jcall(j.api(),
-         "Lorg/jamesframework/gs/simulation/obj/LOGFrequency;",
-         "createLOGobjective")}
-
-j.LOG2 <- function(){
-  .jcall(j.api(),
-         "Lorg/jamesframework/gs/simulation/obj/LOGFrequency;",
-         "createLOG2objective")
+j.LOG.fav <- function(){
+  .jnew(j.gs("obj/LOGfav"))
 }
 
 #############
