@@ -140,8 +140,10 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   # combine weights
   div.weights <- c(HE.all.weight, HE.fav.weight, LOG.fav.weight)
   names(div.weights) <- c("HEall", "HEfav", "LOGfav")
-  div.measure.label.names <- c("HE[all]", "HE[fav]", "LOG[fav]")
-  names(div.measure.label.names) <- names(div.weights)
+  div.measure.labels.main <- c("HE", "HE", "LOG")
+  names(div.measure.labels.main) <- names(div.weights)
+  div.measure.labels.subscript <- c("all", "fav", "fav")
+  names(div.measure.labels.subscript) <- names(div.weights)
   
   fig.dir <- sprintf("figures/simulation/CGS/h2-%.1f-%.1f/%s", low.h, high.h, strategy.name)
   if(!is.na(ci)){
@@ -215,7 +217,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   names[[1]] <- bquote(GS)
   # CGS
   names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
-    bquote(CGS ~ (.(div.measure.label.names[div.measure]): alpha == .(sprintf("%.2f", div.weights[div.measure]))))
+    bquote(CGS ~ (.(div.measure.labels.main[div.measure])[.(div.measure.labels.subscript[div.measure])]: alpha == .(sprintf("%.2f", div.weights[div.measure]))))
   })
   # WGS
   names[[length(names)]] <- bquote(WGS)
@@ -286,7 +288,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
       
       # shorten names
       names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
-        bquote(.(div.measure.label.names[div.measure]))
+        bquote(.(div.measure.labels.main[div.measure])[.(div.measure.labels.subscript[div.measure])])
       })
       # plot
       plot.MDS.methods(all.data, names, cex = 1.5)
