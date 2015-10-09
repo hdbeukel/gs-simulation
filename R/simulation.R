@@ -44,7 +44,7 @@ PS <- function(founders, heritability, base.pop = NULL,
   
   if(is.null(base.pop)){
     # create base population by crossing founders + inbreeding
-    base.pop <- create.base.population(founders, F1.size, heritability, num.QTL, QTL.effects)
+    base.pop <- create.base.population(founders, F1.size, num.QTL, QTL.effects)
   }
   
   # store input/output populations of crossing & inbreeding in season 0
@@ -190,7 +190,7 @@ GS <- function(founders, heritability, base.pop = NULL,
   
   if(is.null(base.pop)){
     # create base population by crossing founders + inbreeding
-    base.pop <- create.base.population(founders, F1.size, heritability, num.QTL, QTL.effects)
+    base.pop <- create.base.population(founders, F1.size, num.QTL, QTL.effects)
   }
   
   # generate additional TP if requested
