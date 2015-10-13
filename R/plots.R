@@ -124,7 +124,7 @@ get.plot.functions <- function(){
 #  2) the given optimal strategy name
 #  3) whether confidence intervals are included (ci)
 plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
-                         HE.all.weight = 0.35, HE.fav.weight = 0.50, LOG.fav.weight = 0.50,
+                         HE.all.weight = 0.35, HE.fav.weight = 0.50, LOG.all.weight = 0.35, LOG.fav.weight = 0.50,
                          heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
                          xlim = c(0,30), ci = NA, main.plots = TRUE, MDS.methods = FALSE,
                          MDS.pops = FALSE){
@@ -138,11 +138,11 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   high.h <- max(heritability)
   
   # combine weights
-  div.weights <- c(HE.all.weight, HE.fav.weight, LOG.fav.weight)
-  names(div.weights) <- c("HEall", "HEfav", "LOGfav")
-  div.measure.labels.main <- c("HE", "HE", "LOG")
+  div.weights <- c(HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight)
+  names(div.weights) <- c("HEall", "HEfav", "LOGall", "LOGfav")
+  div.measure.labels.main <- c("HE", "HE", "LOG", "LOG")
   names(div.measure.labels.main) <- names(div.weights)
-  div.measure.labels.subscript <- c("all", "fav", "fav")
+  div.measure.labels.subscript <- c("all", "fav", "all", "fav")
   names(div.measure.labels.subscript) <- names(div.weights)
   
   fig.dir <- sprintf("figures/simulation/CGS/h2-%.1f-%.1f/%s", low.h, high.h, strategy.name)
@@ -188,9 +188,9 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     WGS.dir <- sprintf(dir.template, "WGS")
     
     # load:
-    #      1) GS
-    # 2..n-1) CGS with various diversity measures and selected weights
-    #      n) WGS
+    #    1) GS
+    # 2..5) CGS with various diversity measures and selected weights
+    #    6) WGS
     data <- lapply(c(GS.dir, CGS.dirs, WGS.dir), load.simulation.results, file.pattern)
     
     return(list(data = data, h = h, tp = tp))
@@ -198,17 +198,14 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   })
   
   # set graphical parameters
-  params <- as.list(rep(NA, length(div.weights)+2))
-  
-  # GS
-  params[[1]] <- list(lty = 1, bg = "black", pch = 24)
-  # CGS
-  colors <- gray.colors(length(div.weights), start = 0, end = 1)
-  params[2:(length(params)-1)] <- lapply(colors, function(col){
-    c(list(bg = col), list(lty = 3, pch = 21))
-  })
-  # WGS
-  params[[length(params)]] <- list(lty = 2, bg = "white", pch = 25)
+  params <- list(
+    list(lty = 1, bg = "black", pch = 24), # GS
+    list(lty = 3, bg = "black", pch = 21), # CGS: HEall
+    list(lty = 3, bg = "white", pch = 21), # CGS: HEfav
+    list(lty = 4, bg = "black", pch = 23), # CGS: LOGall
+    list(lty = 4, bg = "white", pch = 23), # CGS: LOGfav
+    list(lty = 2, bg = "white", pch = 25)  # WGS
+  )
   
   # set curve names
   names <- as.list(rep(NA, length(params)))
@@ -327,7 +324,9 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
             
             par(mfrow = c(3,3))
             gen <- c(1, seq(2, 30, 4))
-            plot.MDS.populations.CGS.opt(type, HE.all.weight, HE.fav.weight, LOG.fav.weight, gen, bp, setting$h2, setting$addTP)
+            plot.MDS.populations.CGS.opt(type,
+                                         HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight,
+                                         gen, bp, setting$h2, setting$addTP)
             
           }, width = 12, height = 12)
           
@@ -340,7 +339,9 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
             
             ani.options(interval = 0.5, autobrowse = FALSE)
             gen <- 1:30
-            plot.MDS.populations.CGS.opt(type, HE.all.weight, HE.fav.weight, LOG.fav.weight, gen, bp, setting$h2, setting$addTP)
+            plot.MDS.populations.CGS.opt(type,
+                                         HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight,
+                                         gen, bp, setting$h2, setting$addTP)
             
           }, video.name = file)
           
@@ -358,16 +359,17 @@ plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RD
   # optimal strategies
   opt.strategies <- list(
     # short-term gain at least as high as Jannink's WGS
-    list(name = "OPT-high-short-term-gain", HE.all.weight = 0.35, HE.fav.weight = 0.5, LOG.fav.weight = 0.5),
+    list(name = "OPT-high-short-term-gain", HE.all.weight = 0.35, HE.fav.weight = 0.5, LOG.all.weight = 0.35, LOG.fav.weight = 0.5),
     # moderate short-term gain (at least that of GS in previous generation)
-    list(name = "OPT-moderate-short-term-gain", HE.all.weight = 0.45, HE.fav.weight = 0.65, LOG.fav.weight = 0.65),
+    list(name = "OPT-moderate-short-term-gain", HE.all.weight = 0.45, HE.fav.weight = 0.65, LOG.all.weight = 0.45, LOG.fav.weight = 0.65),
     # maximum long-term gain
-    list(name = "OPT-max-long-term-gain", HE.all.weight = 0.5, HE.fav.weight = 0.75, LOG.fav.weight = 0.75)
+    list(name = "OPT-max-long-term-gain", HE.all.weight = 0.5, HE.fav.weight = 0.75, LOG.all.weight = 0.50, LOG.fav.weight = 0.75)
   )
   
   for(strat in opt.strategies){
     message("Strategy: ", strat$name)
-    plot.CGS.opt(strat$name, strat$HE.all.weight, strat$HE.fav.weight, strat$LOG.fav.weight,
+    plot.CGS.opt(strat$name,
+                 strat$HE.all.weight, strat$HE.fav.weight, strat$LOG.all.weight, strat$LOG.fav.weight,
                  heritability, file.pattern, xlim, ci, main.plots, MDS.methods, MDS.pops)
   }
   
@@ -377,7 +379,7 @@ plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RD
 # organized into subfolders according to
 #  1) the two included heritabilities
 #  2) the applied diversity measure and weight (each combination of the given measures and weights)
-plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HEall", "HEfav", "LOGfav"),
+plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HEall", "HEfav", "LOGall", "LOGfav"),
                      heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30)){
   
   # check: two heritabilities
@@ -1244,7 +1246,7 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
 }
 
 plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
-                                         HE.all.weight, HE.fav.weight, LOG.fav.weight,
+                                         HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight,
                                          generations, bp, h2, addTP){
   
   type <- match.arg(type)
@@ -1265,6 +1267,9 @@ plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
   CGS.HE.fav.data <- readRDS(
     sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HEfav-%.2f/index/bp-%d-1.RDS", h2, addTP, HE.fav.weight, bp)
   )
+  CGS.LOG.all.data <- readRDS(
+    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index/bp-%d-1.RDS", h2, addTP, LOG.all.weight, bp)
+  )
   CGS.LOG.fav.data <- readRDS(
     sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGfav-%.2f/index/bp-%d-1.RDS", h2, addTP, LOG.fav.weight, bp)
   )
@@ -1274,12 +1279,13 @@ plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
   
   plot.MDS.populations(
     type = type,
-    list(GS.data, WGS.data, CGS.HE.all.data, CGS.HE.fav.data, CGS.LOG.fav.data),
+    list(GS.data, WGS.data, CGS.HE.all.data, CGS.HE.fav.data, CGS.LOG.all.data, CGS.LOG.fav.data),
     generations = generations, method.names = c(
       expression(GS),
       expression(WGS),
       expression(HE[all]),
       expression(HE[fav]),
+      expression(LOG[all]),
       expression(LOG[fav])
     )
   )
