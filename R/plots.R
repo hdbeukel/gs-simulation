@@ -105,9 +105,9 @@ get.plot.functions <- function(){
     list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost",
          legend = "bottomright", ylim = c(0, 36)),
     list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
-         legend = "bottomright", ylim = c(0.2, 0.68)),
+         legend = "bottomright", ylim = c(0.3, 0.68)),
     list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
-         legend = "topright", ylim = c(0.2, 0.68)),
+         legend = "topright", ylim = c(0.2, 0.5)),
     #list(f = plot.tp.size, name = "tp-size", title = "Training population size",
     #     legend = "bottomright", ylim = c(200, 7000)),
     list(f = function(...){ 
@@ -199,12 +199,12 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   
   # set graphical parameters
   params <- list(
-    list(lty = 1, bg = "black", pch = 24), # GS
-    list(lty = 3, bg = "black", pch = 21), # CGS: HEall
-    list(lty = 3, bg = "white", pch = 21), # CGS: HEfav
-    list(lty = 4, bg = "black", pch = 23), # CGS: LOGall
-    list(lty = 4, bg = "white", pch = 23), # CGS: LOGfav
-    list(lty = 2, bg = "white", pch = 25)  # WGS
+    list(lty = 1, bg = "black", pch = 23), # GS
+    list(lty = 3, bg = "black", pch = 24), # CGS: HEall
+    list(lty = 3, bg = "white", pch = 24), # CGS: HEfav
+    list(lty = 4, bg = "black", pch = 25), # CGS: LOGall
+    list(lty = 4, bg = "white", pch = 25), # CGS: LOGfav
+    list(lty = 2, bg = "white", pch = 21)  # WGS
   )
   
   # set curve names
@@ -756,7 +756,7 @@ plot.simulation.variable <- function(replicates,
            xaxp=c(0,num.seasons,num.seasons/2),
            add=add,
            ...)
-    points(x, value.avg, type="o", pch=pch, bg=bg, lty=lty)
+    points(x, value.avg, type="o", pch=pch, bg=bg, lty=lty, cex = 0.85)
   } else {
     if(add){
       plot.fun <- points
@@ -764,7 +764,7 @@ plot.simulation.variable <- function(replicates,
       plot.fun <- plot
     }
     plot.fun(x, value.avg, type="o", xlab=xlab, ylab=ylab, xaxp=c(0,num.seasons,num.seasons/2),
-             pch=pch, bg=bg, lty=lty, ...)
+             pch=pch, bg=bg, lty=lty, cex = 0.85, ...)
   }
   
 }
