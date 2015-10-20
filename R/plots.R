@@ -756,7 +756,7 @@ plot.simulation.variable <- function(replicates,
            xaxp=c(0,num.seasons,num.seasons/2),
            add=add,
            ...)
-    points(x, value.avg, type="o", pch=pch, bg=bg, lty=lty, cex = 0.85)
+    points(x, value.avg, type="o", pch=pch, bg=bg, lty=lty, cex = 0.75)
   } else {
     if(add){
       plot.fun <- points
@@ -764,7 +764,7 @@ plot.simulation.variable <- function(replicates,
       plot.fun <- plot
     }
     plot.fun(x, value.avg, type="o", xlab=xlab, ylab=ylab, xaxp=c(0,num.seasons,num.seasons/2),
-             pch=pch, bg=bg, lty=lty, cex = 0.85, ...)
+             pch=pch, bg=bg, lty=lty, cex = 0.75, ...)
   }
   
 }
