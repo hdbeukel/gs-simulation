@@ -941,6 +941,7 @@ plot.effect.estimation.accuracy <- function(replicates,
 # plot ratio of effect sign mismatches
 plot.effect.sign.mismatches <- function(replicates,
                                         ylab = "Ratio of effect sign mismatches",
+                                        max.maf = 0.5, eff.quantile = 0.0,
                                         ...){
   
   # set function to extract mismatches
@@ -952,8 +953,25 @@ plot.effect.sign.mismatches <- function(replicates,
       season <- seasons[[s]]
       # check whether a GP model has been trained in this season
       if(!is.null(season$gp)){
-        # extract and store mismatches
-        mismatches[s] <- season$gp$sign.mismatches
+        # extract QTL-marker LD table
+        QTL.marker.LD <- season$gp$qtl.marker.ld
+        # infer MAFs from favourable allele freqs
+        # NOTE: restrict to considered markers only
+        #       based on *names* (indices include QTL and dummies)
+        fav.freqs <- season$gp$fav.marker.allele.freqs
+        fav.freqs <- fav.freqs[QTL.marker.LD$marker.name]
+        mafs <- pmin(fav.freqs, 1 - fav.freqs)
+        # infer effect quantile
+        marker.effects <- QTL.marker.LD$marker.effect
+        quant <- quantile(marker.effects, eff.quantile)
+        # restrict markers
+        res <- marker.effects >= quant & mafs <= max.maf
+        marker.effects <- marker.effects[res]
+        qtl.effects <- QTL.marker.LD$QTL.effect[res]
+        # compute and store ratio of sign mismatches
+        sign.diff <- sign(marker.effects) - sign(qtl.effects)
+        sign.mismatches <- sum(sign.diff != 0) / length(marker.effects)
+        mismatches[s] <- sign.mismatches
       }
     }
     return(mismatches)

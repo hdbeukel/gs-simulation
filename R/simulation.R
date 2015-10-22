@@ -538,7 +538,7 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       mean.LD <- mean(QTL.marker.LD$LD)
       # retrieve polymorphic QTL and corresponding marker effects
       # (!! based on marker *names*, *not* indices, as the latter
-      #  include dummies for which no effect was estimated)
+      #  include QTL and dummies which were dropped fro GP analysis)
       all.names <- rownames(gp.tp$map)
       all.marker.effects <- gp.get.effects(gp.model)
       all.qtl.effects <- get.qtl.effects(gp.tp)
@@ -546,6 +546,13 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       marker.effects <- all.marker.effects[marker.names]
       qtl.names <- all.names[QTL.marker.LD$QTL.index] # convert indices to names
       qtl.effects <- all.qtl.effects[qtl.names]
+      # extend QTL-marker LD table with effects and names
+      QTL.marker.LD$QTL.name <- qtl.names
+      QTL.marker.LD$marker.name <- marker.names
+      QTL.marker.LD$QTL.effect <- qtl.effects
+      QTL.marker.LD$marker.effect <- marker.effects
+      # store QTL-marker LD table
+      metadata[[s+1]]$gp$qtl.marker.ld <- QTL.marker.LD
       # compute and store accuracy (both plain and corrected)
       plain.acc <- cor(marker.effects, qtl.effects)
       metadata[[s+1]]$gp$effect.estimation.accuracy$plain <- plain.acc
