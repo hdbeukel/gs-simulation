@@ -108,12 +108,36 @@ get.plot.functions <- function(){
          legend = "bottomright", ylim = c(0.3, 0.68)),
     list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
          legend = "topright", ylim = c(0.2, 0.5)),
-    #list(f = plot.tp.size, name = "tp-size", title = "Training population size",
-    #     legend = "bottomright", ylim = c(200, 7000)),
-    list(f = function(...){ 
-      plot.effect.estimation.accuracy(..., corrected = TRUE) 
-    }, name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
-       legend = "bottomright", ylim = c(0.4, 1.0))
+    list(
+      f = function(...){ 
+        plot.effect.sign.mismatches(..., max.maf = 0.10) 
+      },
+      name = "sign-mismatches-maf-0.10", title = "Ratio of effect sign mismatches",
+      legend = "topright", ylim = c(0.2, 0.5)
+    ),
+    list(
+      f = function(...){ 
+        plot.effect.sign.mismatches(..., max.maf = 0.05) 
+      },
+      name = "sign-mismatches-maf-0.05", title = "Ratio of effect sign mismatches",
+      legend = "topright", ylim = c(0.2, 0.5)
+    ),
+    list(
+      f = function(...){ 
+        plot.effect.sign.mismatches(..., eff.quantile = 0.25) 
+      },
+      name = "sign-mismatches-eff-quant-0.25", title = "Ratio of effect sign mismatches",
+      legend = "topright", ylim = c(0.2, 0.5)
+    ),
+    list(f = plot.tp.size, name = "tp-size", title = "Training population size",
+         legend = "bottomright", ylim = c(200, 7000)),
+    list(
+      f = function(...){ 
+        plot.effect.estimation.accuracy(..., corrected = TRUE) 
+      },
+      name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
+      legend = "bottomright", ylim = c(0.4, 1.0)
+    )
   )
   return(plot.functions)
 }
