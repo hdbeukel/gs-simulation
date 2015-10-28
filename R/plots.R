@@ -106,38 +106,38 @@ get.plot.functions <- function(){
          legend = "bottomright", ylim = c(0, 36)),
     list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
          legend = "bottomright", ylim = c(0.3, 0.68)),
-    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
-         legend = "topright", ylim = c(0.2, 0.5)),
-    list(
-      f = function(...){ 
-        plot.effect.sign.mismatches(..., max.maf = 0.10) 
-      },
-      name = "sign-mismatches-maf-0.10", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.2, 0.5)
-    ),
-    list(
-      f = function(...){ 
-        plot.effect.sign.mismatches(..., max.maf = 0.05) 
-      },
-      name = "sign-mismatches-maf-0.05", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.2, 0.5)
-    ),
-    list(
-      f = function(...){ 
-        plot.effect.sign.mismatches(..., eff.quantile = 0.25) 
-      },
-      name = "sign-mismatches-eff-quant-0.25", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.2, 0.5)
-    ),
-    list(f = plot.tp.size, name = "tp-size", title = "Training population size",
-         legend = "bottomright", ylim = c(200, 7000)),
     list(
       f = function(...){ 
         plot.effect.estimation.accuracy(..., corrected = TRUE) 
       },
       name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
       legend = "bottomright", ylim = c(0.4, 1.0)
-    )
+    ),
+    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
+         legend = "topright", ylim = c(0.15, 0.45)),
+    list(
+      f = function(...){ 
+        plot.effect.sign.mismatches(..., max.maf = 0.10) 
+      },
+      name = "sign-mismatches-maf-0.10", title = "Ratio of effect sign mismatches",
+      legend = "topright", ylim = c(0.15, 0.45)
+    ),
+    list(
+      f = function(...){ 
+        plot.effect.sign.mismatches(..., max.maf = 0.05) 
+      },
+      name = "sign-mismatches-maf-0.05", title = "Ratio of effect sign mismatches",
+      legend = "topright", ylim = c(0.15, 0.45)
+    ),
+    list(
+      f = function(...){ 
+        plot.effect.sign.mismatches(..., eff.quantile = 0.25) 
+      },
+      name = "sign-mismatches-eff-quant-0.25", title = "Ratio of effect sign mismatches",
+      legend = "topright", ylim = c(0.15, 0.45)
+    ),
+    list(f = plot.tp.size, name = "tp-size", title = "Training population size",
+         legend = "topleft", ylim = c(200, 6000))
   )
   return(plot.functions)
 }
@@ -368,8 +368,8 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     
     for(setting in settings){
       for(type in types){
-        for(bp in 1:5){
-          
+        for(bp in 1:10){
+
           name <- sprintf("mds-detail-h2-%.1f-addTP-%d-BP-%d-%s", setting$h2, setting$addTP, bp, type)
           
           # plots
@@ -394,13 +394,12 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           
           saveVideo({
             
-            ani.options(interval = 0.5, autobrowse = FALSE)
             gen <- 1:30
             plot.MDS.populations.CGS.opt(type,
                                          HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight,
-                                         gen, bp, setting$h2, setting$addTP)
+                                         gen, bp, setting$h2, setting$addTP, include.gain = TRUE)
             
-          }, video.name = file)
+          }, video.name = file, ani.height = 500, ani.width = 1000, interval = 0.5, autobrowse = FALSE)
           
         }
       }
@@ -793,6 +792,48 @@ plot.simulation.variable <- function(replicates,
   
 }
 
+# set function to extract genetic gains from a simulated list of seasons
+extract.gain <- function(seasons, scale = c("jannink", "sd")){
+  
+  scale <- match.arg(scale)
+  
+  # extract number of seasons
+  num.seasons <- length(seasons)-1
+  # initialize gain vector
+  gains <- rep(NA, length(seasons))
+  # extract general variables
+  general <- seasons[[1]]$general
+  # extract base pop variables
+  base.pop <- seasons[[1]]$candidates
+  
+  # set mean genetic value of base population
+  gains[1] <- mean(base.pop$geneticValues)
+  # set mean genetic value of selected populations during simulation
+  for(s in 1:num.seasons){
+    season <- seasons[[s+1]]
+    # compute mean genetic value in selected population
+    if(!is.null(season$selection$geneticValues)){
+      gains[s+1] <- mean(season$selection$geneticValues)
+    }
+  }
+  
+  if (scale == "sd"){
+    # subtract values from initial value and divide by intial sd
+    gains <- gains - gains[1]
+    gains <- gains / sd(base.pop$geneticValues)
+  } else {
+    # scale according to Jannink: normalize genetic values to [-1,1]
+    # based on minimum and maximum possible value
+    gains <- normalize.genetic.values(gains, general$qtl.effects)
+    # subtract values from initial value
+    gains <- gains - gains[1]
+  }
+  
+  # return extracted gains
+  return(gains)
+  
+}
+
 # plot genetic gain, with one of these scales:
 #  1) in terms of number of standard deviations of genetic value in founder population
 #  2) normalized wrt maximal genotypic value possible, as in the paper by Jannink
@@ -804,47 +845,11 @@ plot.genetic.gain <- function(replicates,
   # get selected scale
   scale <- match.arg(scale)
   
-  # set function to extract genetic gains from a simulated list of seasons
-  extract.gain <- function(seasons){
-    # extract number of seasons
-    num.seasons <- length(seasons)-1
-    # initialize gain vector
-    gains <- rep(NA, length(seasons))
-    # extract general variables
-    general <- seasons[[1]]$general
-    # extract base pop variables
-    base.pop <- seasons[[1]]$candidates
-    
-    # set mean genetic value of base population
-    gains[1] <- mean(base.pop$geneticValues)
-    # set mean genetic value of selected populations during simulation
-    for(s in 1:num.seasons){
-      season <- seasons[[s+1]]
-      # compute mean genetic value in selected population
-      if(!is.null(season$selection$geneticValues)){
-        gains[s+1] <- mean(season$selection$geneticValues)
-      }
-    }
-    
-    if (scale == "sd"){
-      # subtract values from initial value and divide by intial sd
-      gains <- gains - gains[1]
-      gains <- gains / sd(base.pop$geneticValues)
-    } else {
-      # scale according to Jannink: normalize genetic values to [-1,1]
-      # based on minimum and maximum possible value
-      gains <- normalize.genetic.values(gains, general$qtl.effects)
-      # subtract values from initial value
-      gains <- gains - gains[1]
-    }
-    
-    # return extracted gains
-    return(gains)
-    
-  }
+  # set function to extract gain with requested scaling
+  extract.gain.scaled <- function(seasons){ extract.gain(seasons, scale = scale) }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values = extract.gain, ylab = ylab, ...)
+  plot.simulation.variable(replicates, extract.values = extract.gain.scaled, ylab = ylab, ...)
   
 }
 
@@ -985,11 +990,12 @@ plot.effect.sign.mismatches <- function(replicates,
         fav.freqs <- season$gp$fav.marker.allele.freqs
         fav.freqs <- fav.freqs[QTL.marker.LD$marker.name]
         mafs <- pmin(fav.freqs, 1 - fav.freqs)
-        # infer effect quantile
+        # infer effect quantile (absolute values)
         marker.effects <- QTL.marker.LD$marker.effect
-        quant <- quantile(marker.effects, eff.quantile)
+        abs.effects <- abs(marker.effects)
+        quant <- quantile(abs.effects, eff.quantile)
         # restrict markers
-        res <- marker.effects >= quant & mafs <= max.maf
+        res <- abs.effects >= quant & mafs <= max.maf
         marker.effects <- marker.effects[res]
         qtl.effects <- QTL.marker.LD$QTL.effect[res]
         # compute and store ratio of sign mismatches
@@ -1216,7 +1222,7 @@ plot.MDS.methods <- function(settings, names, ...){
 # for this plot, the simulations with each method should have been
 # started from the same base population, and full marker data should
 # be available for the selection candidates and selection in each generation
-plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, generations, method.names){
+plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, generations, method.names, include.gain = FALSE){
   
   type <- match.arg(type)
   
@@ -1276,22 +1282,40 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
   mds.cand <- mds[1:nrow(selection.candidates), ]
   mds.sel <- mds[(nrow(selection.candidates)+1):nrow(mds), ]
   
+  # extract gains if requested
+  if(include.gain){
+    # extract
+    method.gains <- lapply(simulations, function(seasons){
+      gains <- extract.gain(seasons)
+      gains <- gains[!is.na(gains)]
+      return(gains)
+    })
+    # set xlim
+    max.gain <- max(sapply(method.gains, max))
+    gain.xlim <- c(0.0, max.gain)
+  }
+  
   # split across plots (1 per generation)
   for(g.i in 1:length(generations)){
     
     g <- generations[g.i]
 
     # graphical settings
-    par(mar = c(0.5, 0.5, 4.1, 0.5))
+    par(mar = c(4.1, 1.0, 4.1, 1.0))
+    par(xpd = TRUE)
     sel.col <- cbPalette[1:length(method.names)]
     cand.col <- sapply(sel.col, function(c){
-      alpha(c, 0.15)
+      alpha(c, 0.2)
     })
-    sel.pch <- 20 + (1:length(method.names))
-    
+    # 2 plots on 1 row if gain is included
+    if(include.gain){
+      par(mfrow = c(1,2))
+    }
+
     # init plot
     plot(NULL, type = "n", xlim = xlim, ylim = ylim,
-         xlab = "", ylab = "", xaxt = 'n', yaxt = 'n')
+         xlab = "", ylab = "", xaxt = 'n', yaxt = 'n',
+         asp = 1)
     
     # 1) plot candidates
     for(m.i in 1:length(method.names)){
@@ -1302,19 +1326,32 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
     # 2) plot selections
     for(m.i in 1:length(method.names)){
       m.sel <- mds.sel[selection[, 1] == g.i & selection[, 2] == m.i, ]
-      points(m.sel, pch = sel.pch[m.i], bg = sel.col[m.i], col = sel.col[m.i])
+      points(m.sel, pch = 24, bg = sel.col[m.i], col = sel.col[m.i])
     }
     
     # add title
     title(sprintf("Generation %d", g))
     # add legend
     legend(
-      x = "topleft",
+      horiz = TRUE,
+      x = "bottom",
+      inset = -0.12,
       legend = method.names,
-      pch = sel.pch,
+      pch = 24,
       col = sel.col,
       pt.bg = sel.col
     )
+    
+    # gain progress bars
+    if(include.gain){
+      
+      par(mar = c(4.1, 2.5, 4.1, 1.0))
+      barplot(unlist(lapply(method.gains, function(gains){
+        gains[[g]]
+      })), horiz = TRUE, col = sel.col, names.arg = method.names, xlim = gain.xlim)
+      title("Genetic gain")
+      
+    }
 
   }
   
@@ -1322,7 +1359,7 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
 
 plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
                                          HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight,
-                                         generations, bp, h2, addTP){
+                                         generations, bp, h2, addTP, include.gain = FALSE){
   
   type <- match.arg(type)
   
@@ -1362,7 +1399,8 @@ plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
       expression(HE[fav]),
       expression(LOG[all]),
       expression(LOG[fav])
-    )
+    ),
+    include.gain = include.gain
   )
   
 }
