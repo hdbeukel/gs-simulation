@@ -356,9 +356,9 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   if(MDS.pops){
     
     settings <- list(
-      #list(h2 = 0.2, addTP = 0),
-      #list(h2 = 0.5, addTP = 800),
+      list(h2 = 0.2, addTP = 0),
       list(h2 = 0.2, addTP = 800)
+      #list(h2 = 0.5, addTP = 800)
     )
     
     types <- list(
@@ -368,7 +368,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     
     for(setting in settings){
       for(type in types){
-        for(bp in 1:10){
+        for(bp in 1:5){
 
           name <- sprintf("mds-detail-h2-%.1f-addTP-%d-BP-%d-%s", setting$h2, setting$addTP, bp, type)
           
