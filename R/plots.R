@@ -114,27 +114,27 @@ get.plot.functions <- function(){
       legend = "bottomright", ylim = c(0.4, 1.0)
     ),
     list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
-         legend = "topright", ylim = c(0.15, 0.45)),
+         legend = "topright", ylim = c(0.15, 0.5)),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., max.maf = 0.10) 
       },
       name = "sign-mismatches-maf-0.10", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.15, 0.45)
+      legend = "topright", ylim = c(0.15, 0.5)
     ),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., max.maf = 0.05) 
       },
       name = "sign-mismatches-maf-0.05", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.15, 0.45)
+      legend = "topright", ylim = c(0.15, 0.5)
     ),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., eff.quantile = 0.25) 
       },
       name = "sign-mismatches-eff-quant-0.25", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.15, 0.45)
+      legend = "topright", ylim = c(0.15, 0.5)
     ),
     list(f = plot.tp.size, name = "tp-size", title = "Training population size",
          legend = "topleft", ylim = c(200, 6000))
