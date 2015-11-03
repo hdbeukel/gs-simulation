@@ -356,7 +356,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   if(MDS.pops){
     
     settings <- list(
-      list(h2 = 0.2, addTP = 0),
+      #list(h2 = 0.2, addTP = 0),
       list(h2 = 0.2, addTP = 800)
       #list(h2 = 0.5, addTP = 800)
     )
