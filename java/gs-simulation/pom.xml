@@ -85,25 +85,24 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>org.jamesframework</groupId>
             <artifactId>james-core</artifactId>
             <version>1.1</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>org.jamesframework</groupId>
             <artifactId>james-extensions</artifactId>
             <version>1.1.1</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>org.jamesframework</groupId>
             <artifactId>james-examples</artifactId>
-            <version>1.1</version>
-            <classifier>jar-with-dependencies</classifier>
+            <version>1.1.1</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>

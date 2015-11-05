@@ -22,7 +22,6 @@ import org.jamesframework.examples.util.ProgressSearchListener;
 import org.jamesframework.ext.problems.objectives.NormalizedObjective;
 import org.jamesframework.ext.problems.objectives.WeightedIndex;
 import org.jamesframework.gs.simulation.data.PopulationData;
-import org.jamesframework.gs.simulation.obj.LOGfav;
 import org.jamesframework.gs.simulation.obj.MeanBreedingValue;
 
 public class API {
