@@ -1,6 +1,8 @@
 Genomic selection simulation
 ----------------------------
 
-Based on paper by Jannink:
+Simulation code and data for:
 
-Jannink, Jean-Luc. "Dynamics of long-term genomic selection." Genetics Selection Evolution 42.1 (2010): 35.
+"Diversity Management in Genomic Selection: A Group is More than a Sum of its Individuals."
+
+Submitted to [Genetics](http://www.genetics.org).
