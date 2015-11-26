@@ -1,0 +1,16 @@
+.Rhistory
+.log
+/java/**/target/
+/BGLR-tmp/
+/BGLR-example/
+/out
+/beagle/
+/chloe/
+*.md
+!README.md
+data/snapshots/
+figures/
+scripts/
+!scripts/run.R
+!scripts/gen-fixed-bp.R
+/overzicht/
