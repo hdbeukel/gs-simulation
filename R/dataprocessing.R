@@ -412,8 +412,7 @@ prepare <- function(map, hap1, hap2, dh = FALSE){
   chrom.bounds <- cbind(chrom.starts, chrom.ends)
   
   # 2: pack data
-  # TODO: simplify data structure (minimum redundancy + appropriate getters)
-  
+    
   if(dh){
     prepared.data <- list(isDH = TRUE, dh = hap1)
   } else {
