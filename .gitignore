@@ -3,6 +3,7 @@
 /java/**/target/
 /BGLR-tmp/
 /BGLR-example/
+/hpc
 /out
 /beagle/
 /chloe/
