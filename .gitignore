@@ -3,7 +3,6 @@
 /java/**/target/
 /BGLR-tmp/
 /BGLR-example/
-/hpc
 /out
 /beagle/
 /chloe/
@@ -11,7 +10,4 @@
 !README.md
 data/snapshots/
 figures/
-scripts/
-!scripts/run.R
-!scripts/gen-fixed-bp.R
 /overzicht/
