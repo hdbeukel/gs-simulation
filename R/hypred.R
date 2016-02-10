@@ -511,7 +511,9 @@ mate.founders <- function(founders, n, name.prefix = "i"){
 
 # create new population through random mating of individuals in a given DH population
 # random crossings create n F1 individuals + inbreeding --> one DH per F1 genotype
-mate.dh <- function(pop, n, name.prefix){
+# optional probabilities can be given with which the parents are sampled; if not set,
+# parents are sampled uniformly
+mate.dh <- function(pop, n, name.prefix = "offspring", probs){
   # assert: DH population
   if(is.null(pop$dh)){
     stop("only use this function for DH populations")
@@ -519,6 +521,11 @@ mate.dh <- function(pop, n, name.prefix){
   # assert: dummies added
   if(!pop$hypred$dummiesAdded){
     stop("first add dummy markers using add.dummies(pop)")
+  }
+  # set default uniform probabilities if not specified
+  if(missing(probs)){
+    ng <- pop$numGenotypes
+    probs <- rep(1/ng, ng)
   }
   # initialize output
   offspring <- pop
@@ -531,8 +538,8 @@ mate.dh <- function(pop, n, name.prefix){
   names(offspring$pedigree$par1) <- names(offspring$pedigree$par2) <- rownames(offspring$dh)
   # generate DHs
   for(i in 1:n){
-    # select two distinct DH parents
-    parents <- sample(rownames(pop$dh), 2, replace = T)
+    # select two DH parents
+    parents <- sample(rownames(pop$dh), 2, replace = T, prob = probs)
     gametes <- pop$dh[parents,]
     # recombine to create new DH
     dh <- recombine(pop$hypred$genome, gametes[1,], gametes[2,])
