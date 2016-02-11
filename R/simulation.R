@@ -138,7 +138,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
 GS <- function(founders, heritability, base.pop = NULL,
               num.QTL=100, QTL.effects = c("normal", "jannink"),
               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
-              selection.criterion=select.highest.score,
+              selection.criterion = select.highest.score,
               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
               store.all.pops = FALSE, weighted = FALSE, ...){
   
@@ -364,6 +364,47 @@ replicate.simulation <- function(num.rep = 100, simulate){
   return(replicates)
 }
 
+# returns vector of equal probabilities [1/n, ..., 1/n]'
+equal.contributions <- function(values, ...){
+  n <- length(values)
+  probs <- rep(1/n, n)
+  return(probs)
+}
+
+# returns vector with optimal contributions, maximizing expected response
+# with a predefined rate of inbreeding according to Meuwissen 1997
+# (adjusted for plant breeding with constraint 1'c_t = 1 instead of Q'c_t = 1/2)
+optimal.contributions <- function(values, markers, C){
+  
+  # compute G
+  # ...
+  
+  # compute lambda.0
+  # lambda.0.squared <- ...
+  
+}
+
+# make genomic relationship matrix G from marker matrix M (0/1 DHs)
+genomic.relationship.matrix <- function (M){
+  n <- nrow(M)
+  # convert to 0/2 format
+  M <- 2*M
+  # center
+  pfreq <- colMeans(M)/2
+  Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
+  # compute G
+  G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq)))
+  return(G)
+}
+
+genomic.relationship.matrix.old <- function (M){
+  nSNP <- ncol(M)
+  pfreq <- colMeans(M)
+  Z <- t(apply(M, 1, function(row) { row-pfreq }))
+  G <- 2*(Z%*%t(Z))/(sum(pfreq*(1-pfreq)))
+  return(G)
+}
+
 #####################################################
 # EXTRACT SIMULATION METADATA FROM FULL OUTPUT DATA #
 #####################################################
@@ -538,7 +579,7 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       mean.LD <- mean(QTL.marker.LD$LD)
       # retrieve polymorphic QTL and corresponding marker effects
       # (!! based on marker *names*, *not* indices, as the latter
-      #  include QTL and dummies which were dropped fro GP analysis)
+      #  include QTL and dummies which were dropped for GP analysis)
       all.names <- rownames(gp.tp$map)
       all.marker.effects <- gp.get.effects(gp.model)
       all.qtl.effects <- get.qtl.effects(gp.tp)
@@ -558,12 +599,12 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       metadata[[s+1]]$gp$effect.estimation.accuracy$plain <- plain.acc
       metadata[[s+1]]$gp$effect.estimation.accuracy$corrected <- plain.acc / mean.LD
       
-      # 4) ratio of effect sign mismatches
+      # 4) proportion of effect sign mismatches
       sign.diff <- sign(marker.effects) - sign(qtl.effects)
       sign.mismatches <- sum(sign.diff != 0) / length(marker.effects)
       metadata[[s+1]]$gp$sign.mismatches <- sign.mismatches
       
-      # 3) TP size (after redundancy filtering)
+      # 5) TP size (after redundancy filtering)
       metadata[[s+1]]$gp$tp.size <- gp.tp$numGenotypes
       
     }
@@ -580,15 +621,6 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
 #############################################
 # UTILITY FUNCTIONS FOR METADATA EXTRACTION #
 #############################################
-
-# make genomic relationship matrix G from marker matrix Z (0/1 DHs)
-genomic.relationship.matrix <- function (Z){
-  nSNP <- ncol(Z)
-  pfreq <- colMeans(Z)
-  Zt <- t(apply(Z, 1, function(x, pfreq) { x-pfreq }, pfreq))
-  G <- (Zt%*%t(Zt))/(sum(pfreq*(1-pfreq)))
-  return(G)
-}
 
 # get genomic coefficients of inbreeding for each individual
 genomic.inbreeding.coefficients <- function(pop){
