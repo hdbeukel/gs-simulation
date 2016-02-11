@@ -475,8 +475,8 @@ mate.founders <- function(founders, n, name.prefix = "i"){
   names(offspring$pedigree$par1) <- names(offspring$pedigree$par2) <- rownames(offspring$dh)
   # generate DHs
   for(i in 1:n){
-    # select two distinct parents
-    parents <- sample(rownames(founders$geno), 2)
+    # select two parents
+    parents <- sample(rownames(founders$geno), 2, replace = TRUE)
     # create gametes from each parent (recombination)
     gametes <- lapply(parents, function(p) {
       recombine(founders$hypred$genome, founders$phasedGeno$hap1[p,], founders$phasedGeno$hap2[p,])
@@ -539,7 +539,7 @@ mate.dh <- function(pop, n, name.prefix = "offspring", probs){
   # generate DHs
   for(i in 1:n){
     # select two DH parents
-    parents <- sample(rownames(pop$dh), 2, replace = T, prob = probs)
+    parents <- sample(rownames(pop$dh), 2, replace = TRUE, prob = probs)
     gametes <- pop$dh[parents,]
     # recombine to create new DH
     dh <- recombine(pop$hypred$genome, gametes[1,], gametes[2,])
