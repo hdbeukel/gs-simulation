@@ -3,6 +3,12 @@
 # SELECTION STRATEGIES #
 ########################
 
+# no-op selection that returns the entire set of candidates
+# (ignores the selection size n)
+select.all <- function(n, values, ...){
+  return(names(values))
+}
+
 # selection criterion that selects the n plants with the highest value
 # (phenotype, estimated genetic value, weighted genetic value, ...)
 select.highest.score <- function(n, values, ...){
