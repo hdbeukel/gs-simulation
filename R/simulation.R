@@ -95,11 +95,10 @@ PS <- function(founders, heritability, base.pop = NULL,
 WGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
-               selection.criterion=select.highest.score,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, ...){
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
-            add.TP, num.select, num.seasons, selection.criterion,
+            add.TP, num.select, num.seasons, selection.criterion = select.highest.score,
             gp.method, extract.metadata, store.all.pops, weighted = TRUE, ...))
 }
 CGS <- function(founders, heritability, base.pop = NULL,
@@ -129,6 +128,23 @@ CGS <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, weighted = FALSE, ...))
   
 }
+# optimal contributions simulation
+OC <- function(founders, heritability, base.pop = NULL,
+               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+               store.all.pops = FALSE, C, ...){
+  
+  oc.mating <- function(values, markers){
+    optimal.contributions(values, markers, C)
+  }
+  
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = select.all,
+            gp.method, extract.metadata, store.all.pops, weighted = FALSE,
+            mating.probability = oc.mating, ...))
+  
+}
 # simulate genomic selection (possibly weighted by favourable allele frequencies)
 #  - season 0: cross & inbreed founders, assign QTL, infer genetic values and fix heritability
 #  - season 1: evaluate offspring, train GP & select (on predicted values)
@@ -140,7 +156,8 @@ GS <- function(founders, heritability, base.pop = NULL,
               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
               selection.criterion = select.highest.score,
               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-              store.all.pops = FALSE, weighted = FALSE, ...){
+              store.all.pops = FALSE, weighted = FALSE,
+              mating.probability = equal.contributions, ...){
   
   # check input
   if(missing(founders)){
@@ -261,7 +278,11 @@ GS <- function(founders, heritability, base.pop = NULL,
   
   # cross & inbreed
   message("|- Cross & inbreed")
-  offspring <- mate.dh(selected.pop, F1.size, "s2")
+  offspring <- mate.dh(selected.pop, F1.size, "s2",
+                       probs = mating.probability(
+                         values = selected.pop$estGeneticValues,
+                         markers = gp.design.matrix(selected.pop)
+                       ))
 
   # select based on estimated values
   message("|- Select (no model update)")
@@ -296,7 +317,11 @@ GS <- function(founders, heritability, base.pop = NULL,
     # cross & inbreed selection from previous offspring
     message("|- Cross & inbreed parents selected in previous generation")
     parents <- seasons[[s]]$select$pop.out
-    offspring <- mate.dh(parents, F1.size, paste("s", s, sep=""))
+    offspring <- mate.dh(parents, F1.size, paste("s", s, sep=""),
+                         probs = mating.probability(
+                           values = parents$estGeneticValues,
+                           markers = gp.design.matrix(parents)
+                         ))
     # select from offspring based on estimated values using updated GP model
     message("|- Select")
     offspring <- predict.values(gp.trained.model, offspring)
@@ -376,11 +401,59 @@ equal.contributions <- function(values, ...){
 # (adjusted for plant breeding with constraint 1'c_t = 1 instead of Q'c_t = 1/2)
 optimal.contributions <- function(values, markers, C){
   
-  # compute G
-  # ...
+  all.values <- values
+  all.markers <- markers
   
-  # compute lambda.0
-  # lambda.0.squared <- ...
+  n.all <- nrow(all.markers)
+  c.all <- rep(-1, n.all)
+  discarded <- rep(FALSE, n.all)
+  
+  while(any(c.all < 0)){
+    
+    # discard flagged individuals
+    markers <- all.markers[!discarded, !discarded]
+    values <- all.values[!discarded]
+    
+    n <- nrow(markers)
+    m <- ncol(markers)
+    
+    # compute G and its inverse
+    G <- genomic.relationship.matrix(markers)
+    G.inv <- solve(G)
+    
+    # precompute some values for efficiency
+    ones <- rep(1, n)  
+    s <- as.numeric(ones %*% G.inv %*% ones)
+    
+    # compute lambda.0
+    num <- values %*% (G.inv - (G.inv %*% ones %*% ones %*% G.inv)/s) %*% values
+    num <- as.numeric(num)
+    den <- 8*C - 4/s
+    lambda.0.squared <- num/den
+    if(lambda.0.squared < 0){
+      stop("Inbreeding requirement can not be reached")
+    }
+    lambda.0 <- sqrt(lambda.0.squared) # TODO: is -sqrt(...) also a valid solution?
+    
+    # compute lambda.1
+    lambda.1 <- (ones %*% G.inv %*% values - 2*lambda.0) / s
+    
+    # compute optimal contributions
+    c <- (G.inv %*% (values - lambda.1)) / (2*lambda.0)
+    # set contribution of discarded individuals to zero
+    c.all <- rep(0, n.all)
+    c.all[!discarded] <- c
+    
+    if(any(c.all < 0)){
+      discarded[which.min(c.all)] <- TRUE
+      #print(min(c.all))
+      #message(sprintf("Discarded %d/%d", sum(discarded), n.all))
+    }
+    
+  }
+  
+  # return final optimal contributions (all positive or zero)
+  return(c.all)
   
 }
 

@@ -6,30 +6,32 @@
 # should be run from project root directory, with 'Rscript scripts/run.R <args>'
 
 # command line arguments:
-#  1: simulation type ("PS", "GS", "WGS", "CGS")
-#  2: number of seasons
-#  3: heritability
-#  4: additional TP size, ignored for PS
-#  5: effect sampling method ("normal", "jannink")
-#  6: GP method ("RR", "BRR"), ignored for PS
-#  7: diversity measure ("HEall", "HEfav", "LOGall", "LOGfav"; ignored for all types except CGS) 
-#  8: diversity weight (ignored for all types except CGS) 
-#  9: CGS type ("index", "split"; ignored for all types except CGS)
-#  10: iteration number
-#  11: store full marker data of all intermediate populations (logical)
+#  1:  simulation type ("PS", "GS", "WGS", "CGS", "OC")
+#  2:  number of seasons
+#  3:  heritability
+#  4:  additional TP size, ignored for PS
+#  5:  effect sampling method ("normal", "jannink")
+#  6:  GP method ("RR", "BRR"), ignored for PS
+#  7:  diversity measure ("HEall", "HEfav", "LOGall", "LOGfav"; CGS only) 
+#  8:  diversity weight (CGS only) 
+#  9:  CGS type ("index", "split"; CGS only)
+#  10: inbreeding threshold C_{t+1} (OC only)
+#  11: iteration number
+#  12: store full marker data of all intermediate populations (logical)
 #      when missing or empty string, defaults to FALSE
-#  12: random generator seed (numerical)
+#  13: random generator seed (numerical)
 #      when missing or empty string, a random seed is set
 #      if set, the seed is included in the output file name
-#  13: fixed base population (numerical)
+#  14: fixed base population (numerical)
 #      when missing or empty string, a base population is generated when starting the simulation
 #      if set, a fixed bp is loaded from 'data/fixed-bp' based on heritability and the given bp number,
 #      and the bp number is included in the output file name
 #
 # output file written to:
-#  - GS, WGS: out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/*<10>.RDS
-#  - CGS:     out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/<7>-<8>/<9>/*<10>.RDS
-#  - PS:      out/<1>/<2>-seasons/h2-<3>/<5>-effects/*<10>.RDS
+#  - GS, WGS: out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/*<11>.RDS
+#  - CGS:     out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/<7>-<8>/<9>/*<11>.RDS
+#  - OC:      out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/C-<10>/*<11>.RDS
+#  - PS:      out/<1>/<2>-seasons/h2-<3>/<5>-effects/*<11>.RDS
 # if seed or BP index are specified, they are prepended to the file name
 
 # load scripts
@@ -55,16 +57,17 @@ if(sim.function.name == "PS"){
 div.measure <- args[7]
 div.weight <- as.numeric(args[8])
 CGS.type <- args[9]
-it <- as.numeric(args[10])
+inbreeding.threshold <- as.numeric(args[10])
+it <- as.numeric(args[11])
 
 # store full marker data?
-store.all.pops <- as.logical(args[11])
+store.all.pops <- as.logical(args[12])
 if(is.na(store.all.pops)){
   store.all.pops <- FALSE
 }
 
 # set seed
-custom.seed <- as.numeric(args[12])
+custom.seed <- as.numeric(args[13])
 if(is.na(custom.seed)){
   seed <- ceiling(runif(1, 0, 2^31-1))
 } else {
@@ -76,7 +79,7 @@ message(sprintf("RNG Kind: %s", getRNG()$kind))
 message(sprintf("RNG Normal kind: %s", getRNG()$normal.kind))
 
 # load fixed base population if requested
-fixed.bp <- as.numeric(args[13])
+fixed.bp <- as.numeric(args[14])
 if(!is.na(fixed.bp)){
   base.pop <- readRDS(sprintf("data/fixed-bp/bp-%d.RDS", fixed.bp))
 } else {
@@ -92,7 +95,8 @@ seasons <- sim.function(founders, heritability, base.pop,
                         div.measure = div.measure,
                         div.weight = div.weight,
                         type = CGS.type,
-                        store.all.pops = store.all.pops)
+                        store.all.pops = store.all.pops,
+                        C = inbreeding.threshold)
 
 # print warnings
 warnings()
@@ -107,6 +111,10 @@ if(sim.function.name == "PS"){
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method,
                      div.measure, div.weight, CGS.type)
+} else if(sim.function.name == "OC") {
+  out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s/C-%.5f",
+                     sim.function.name, num.seasons, heritability,
+                     add.TP, QTL.effects, gp.method, C)
 } else {
   out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s",
                      sim.function.name, num.seasons, heritability,
