@@ -67,11 +67,15 @@ enlarge.tp <- function(cur.tp, add, redundancy.thr = 0.02){
   add.ind <- (num.all - num.add + 1):num.all
   redundant <- sapply(add.ind, function(i){
     a <- Z.all[i, ]
-    dup <- sapply(1:(i-1), function(j){
-      b <- Z.all[j, ]
-      return(sum(abs(a-b))/length(a) <= redundancy.thr)
-    })
-    return(any(dup))
+    if(i > 1){
+      dup <- sapply(1:(i-1), function(j){
+        b <- Z.all[j, ]
+        return(sum(abs(a-b))/length(a) <= redundancy.thr)
+      })
+      return(any(dup))
+    } else {
+      return(FALSE)
+    }
   })
   add.names <- rownames(Z.add)
   non.redundant <- add.names[!redundant]
