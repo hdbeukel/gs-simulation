@@ -411,20 +411,23 @@ optimal.contributions <- function(values, markers, C){
   while(any(c.all < 0)){
     
     # discard flagged individuals
-    markers <- all.markers[!discarded, !discarded]
+    markers <- all.markers[!discarded, ]
     values <- all.values[!discarded]
     
     n <- nrow(markers)
     m <- ncol(markers)
     
-    # compute G and its inverse
+    # compute G
     G <- genomic.relationship.matrix(markers)
+    # make positive definite
+    G <- make.positive.definite(G)
+    # invert
     G.inv <- solve(G)
     
     # precompute some values for efficiency
     ones <- rep(1, n)  
     s <- as.numeric(ones %*% G.inv %*% ones)
-    
+
     # compute lambda.0
     num <- values %*% (G.inv - (G.inv %*% ones %*% ones %*% G.inv)/s) %*% values
     num <- as.numeric(num)
@@ -436,7 +439,7 @@ optimal.contributions <- function(values, markers, C){
     lambda.0 <- sqrt(lambda.0.squared) # TODO: is -sqrt(...) also a valid solution?
     
     # compute lambda.1
-    lambda.1 <- (ones %*% G.inv %*% values - 2*lambda.0) / s
+    lambda.1 <- as.numeric((ones %*% G.inv %*% values - 2*lambda.0) / s)
     
     # compute optimal contributions
     c <- (G.inv %*% (values - lambda.1)) / (2*lambda.0)
@@ -446,10 +449,9 @@ optimal.contributions <- function(values, markers, C){
     
     if(any(c.all < 0)){
       discarded[which.min(c.all)] <- TRUE
-      #print(min(c.all))
-      #message(sprintf("Discarded %d/%d", sum(discarded), n.all))
+      message(sprintf("Discarded %d/%d", sum(discarded), n.all))
     }
-    
+  
   }
   
   # return final optimal contributions (all positive or zero)
@@ -459,23 +461,29 @@ optimal.contributions <- function(values, markers, C){
 
 # make genomic relationship matrix G from marker matrix M (0/1 DHs)
 genomic.relationship.matrix <- function (M){
-  n <- nrow(M)
   # convert to 0/2 format
   M <- 2*M
   # center
   pfreq <- colMeans(M)/2
   Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
   # compute G
-  G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq)))
+  #G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq)))
+  G <- Z %*% t(Z) / ncol(M)
   return(G)
 }
 
-genomic.relationship.matrix.old <- function (M){
-  nSNP <- ncol(M)
-  pfreq <- colMeans(M)
-  Z <- t(apply(M, 1, function(row) { row-pfreq }))
-  G <- 2*(Z%*%t(Z))/(sum(pfreq*(1-pfreq)))
-  return(G)
+make.positive.definite <- function(X, tol = 1e-6) {
+  eig <- eigen(X, symmetric = TRUE)
+  rtol <- tol * eig$values[1]
+  if(eig$values[length(eig$values)] < rtol) {
+    vals <- eig$values
+    vals[vals < rtol] <- rtol
+    Srev <- eig$vectors %*% (vals * t(eig$vectors))
+    dimnames(Srev) <- dimnames(X)
+    return(Srev)
+  } else {
+    return(X)
+  }
 }
 
 #####################################################
