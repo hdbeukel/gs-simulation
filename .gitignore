@@ -6,8 +6,6 @@
 /out
 /beagle/
 /chloe/
-*.md
-!README.md
 data/snapshots/
 figures/
 /overzicht/
