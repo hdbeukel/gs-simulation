@@ -133,10 +133,10 @@ OC <- function(founders, heritability, base.pop = NULL,
                num.QTL=100, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-               store.all.pops = FALSE, C, ...){
+               store.all.pops = FALSE, delta.F, ...){
   
-  oc.mating <- function(values, markers){
-    optimal.contributions(values, markers, C)
+  oc.mating <- function(values, markers, generation){
+    optimal.contributions(values, markers, 1 - (1 - delta.F)^generation)
   }
   
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -281,7 +281,8 @@ GS <- function(founders, heritability, base.pop = NULL,
   offspring <- mate.dh(selected.pop, F1.size, "s2",
                        probs = mating.probability(
                          values = selected.pop$estGeneticValues,
-                         markers = gp.design.matrix(selected.pop)
+                         markers = gp.design.matrix(selected.pop),
+                         generation = 1
                        ))
 
   # select based on estimated values
@@ -320,7 +321,8 @@ GS <- function(founders, heritability, base.pop = NULL,
     offspring <- mate.dh(parents, F1.size, paste("s", s, sep=""),
                          probs = mating.probability(
                            values = parents$estGeneticValues,
-                           markers = gp.design.matrix(parents)
+                           markers = gp.design.matrix(parents),
+                           generation = s-1
                          ))
     # select from offspring based on estimated values using updated GP model
     message("|- Select")

@@ -15,7 +15,7 @@
 #  7:  diversity measure ("HEall", "HEfav", "LOGall", "LOGfav"; CGS only) 
 #  8:  diversity weight (CGS only) 
 #  9:  CGS type ("index", "split"; CGS only)
-#  10: inbreeding threshold C_{t+1} (OC only)
+#  10: desired rate of inbreeding delta F (OC only)
 #  11: iteration number
 #  12: store full marker data of all intermediate populations (logical)
 #      when missing or empty string, defaults to FALSE
@@ -57,7 +57,7 @@ if(sim.function.name == "PS"){
 div.measure <- args[7]
 div.weight <- as.numeric(args[8])
 CGS.type <- args[9]
-inbreeding.threshold <- as.numeric(args[10])
+delta.F <- as.numeric(args[10])
 it <- as.numeric(args[11])
 
 # store full marker data?
@@ -96,7 +96,7 @@ seasons <- sim.function(founders, heritability, base.pop,
                         div.weight = div.weight,
                         type = CGS.type,
                         store.all.pops = store.all.pops,
-                        C = inbreeding.threshold)
+                        delta.F = delta.F)
 
 # print warnings
 warnings()
