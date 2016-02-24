@@ -424,8 +424,8 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
     n <- length(values)
 
     # precompute for efficiency
-    s <- sum(G.inv)
     G.inv <- solve(G)
+    s <- sum(G.inv)
 
     # compute lambda.0
     num <- values %*% (G.inv - (rowSums(G.inv) %*% t(colSums(G.inv)))/s) %*% values
@@ -433,7 +433,7 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
     den <- 8*C - 4/s
     lambda.0.squared <- num/den
     if(lambda.0.squared < 0){
-      stop("Inbreeding requirement can not be reached")
+      stop(sprintf("Average coancestry constraint C_t+1 = %g can not be reached (minimum achievable = %g)", C, 1/s))
     }
     lambda.0 <- sqrt(lambda.0.squared) # TODO: is -sqrt(...) also a valid solution?
     

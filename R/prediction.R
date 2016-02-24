@@ -46,7 +46,7 @@ gp.restrict.design.matrix = function(names, G){
 # INIT/ENLARGE TRAINING POPULATION #
 ####################################
 
-init.tp <- function(pop, redundancy.thr = 0.02){
+init.tp <- function(pop, redundancy.thr = 0.001){
   enlarge.tp(cur.tp = NULL, pop, redundancy.thr)
 }
 
