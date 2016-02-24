@@ -399,7 +399,7 @@ equal.contributions <- function(values, ...){
 # returns vector with optimal contributions, maximizing expected response
 # with a predefined rate of inbreeding according to Meuwissen 1997
 # (adjusted for plant breeding with constraint 1'c_t = 1 instead of Q'c_t = 1/2)
-optimal.contributions <- function(values, markers, C){
+optimal.contributions <- function(values, markers, C, iterate = TRUE){
   
   all.values <- values
   all.markers <- markers
@@ -408,28 +408,25 @@ optimal.contributions <- function(values, markers, C){
   c.all <- rep(-1, n.all)
   discarded <- rep(FALSE, n.all)
   
-  while(any(c.all < 0)){
+  # compute G
+  G.all <- genomic.relationship.matrix(all.markers)
+  # make positive definite
+  G.all <- make.positive.definite(G.all)
+  
+  i <- 1
+  while((i == 1 || iterate) && any(c.all < 0)){
     
     # discard flagged individuals
-    markers <- all.markers[!discarded, ]
+    G <- G.all[!discarded, !discarded]
     values <- all.values[!discarded]
-    
-    n <- nrow(markers)
-    m <- ncol(markers)
-    
-    # compute G
-    G <- genomic.relationship.matrix(markers)
-    # make positive definite
-    G <- make.positive.definite(G)
-    # invert
+    n <- length(values)
+
+    # precompute for efficiency
+    s <- sum(G.inv)
     G.inv <- solve(G)
-    
-    # precompute some values for efficiency
-    ones <- rep(1, n)  
-    s <- as.numeric(ones %*% G.inv %*% ones)
 
     # compute lambda.0
-    num <- values %*% (G.inv - (G.inv %*% ones %*% ones %*% G.inv)/s) %*% values
+    num <- values %*% (G.inv - (rowSums(G.inv) %*% t(colSums(G.inv)))/s) %*% values
     num <- as.numeric(num)
     den <- 8*C - 4/s
     lambda.0.squared <- num/den
@@ -439,7 +436,7 @@ optimal.contributions <- function(values, markers, C){
     lambda.0 <- sqrt(lambda.0.squared) # TODO: is -sqrt(...) also a valid solution?
     
     # compute lambda.1
-    lambda.1 <- as.numeric((ones %*% G.inv %*% values - 2*lambda.0) / s)
+    lambda.1 <- (colSums(G.inv) %*% values - 2*lambda.0) / s
     
     # compute optimal contributions
     c <- (G.inv %*% (values - lambda.1)) / (2*lambda.0)
@@ -447,14 +444,19 @@ optimal.contributions <- function(values, markers, C){
     c.all <- rep(0, n.all)
     c.all[!discarded] <- c
     
-    if(any(c.all < 0)){
+    if(iterate && any(c.all < 0)){
       discarded[which.min(c.all)] <- TRUE
-      message(sprintf("Discarded %d/%d", sum(discarded), n.all))
     }
-  
+    
+    i <- i + 1
+    
+  }
+  if(any(discarded)){
+    message(sprintf("Discarded %d/%d", sum(discarded), n.all))
   }
   
   # return final optimal contributions (all positive or zero)
+  names(c.all) <- names(all.values)
   return(c.all)
   
 }
@@ -467,8 +469,8 @@ genomic.relationship.matrix <- function (M){
   pfreq <- colMeans(M)/2
   Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
   # compute G
-  #G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq)))
-  G <- Z %*% t(Z) / ncol(M)
+  # G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
+  G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
   return(G)
 }
 

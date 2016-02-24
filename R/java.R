@@ -12,7 +12,7 @@ j.max.index <- function(n, names, values, markers, div.weight, div.measure, fav.
   div.weight <- as.numeric(div.weight)
   div.measure <- .jcast(div.measure, j.core("problems/objectives/Objective"))
   if(is.null(fav.alleles)){
-    fav.alleles <- .jnull()
+    fav.alleles <- .jnull(class = "[I")
   } else {
     fav.alleles <- as.integer(fav.alleles)
   }
