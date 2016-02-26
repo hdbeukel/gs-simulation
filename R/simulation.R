@@ -416,41 +416,51 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
   i <- 1
   while((i == 1 || iterate) && any(c.all < 0)){
     
-    # discard flagged individuals
-    G <- G.all[!discarded, !discarded]
-    values <- all.values[!discarded]
-    n <- length(values)
-
-    # make G positive definite and invert
-    G <- make.positive.definite(G)
-    G.inv <- solve(G)
+    if(sum(!discarded) == 1){
+      
+      # all but one are discarded (note that this will fix the population to a single genotype)
+      c.all <- rep(0, n.all)
+      c.all[which(!discarded)] <- 1.0
+      
+    } else {
     
-    # precompute value for efficiency
-    s <- sum(G.inv)
-
-    # compute lambda.0
-    num <- values %*% (G.inv - (rowSums(G.inv) %*% t(colSums(G.inv)))/s) %*% values
-    num <- as.numeric(num)
-    den <- 8*C - 4/s
-    lambda.0.squared <- num/den
-    if(lambda.0.squared < 0){
-      stop(sprintf("Average coancestry constraint C_t+1 = %g can not be reached (minimum achievable = %g)", C, 1/s))
+      # discard flagged individuals
+      G <- G.all[!discarded, !discarded]
+      values <- all.values[!discarded]
+      n <- length(values)
+  
+      # make G positive definite and invert
+      G <- make.positive.definite(G)
+      G.inv <- solve(G)
+      
+      # precompute value for efficiency
+      s <- sum(G.inv)
+  
+      # compute lambda.0
+      num <- values %*% (G.inv - (rowSums(G.inv) %*% t(colSums(G.inv)))/s) %*% values
+      num <- as.numeric(num)
+      den <- 8*C - 4/s
+      lambda.0.squared <- num/den
+      if(lambda.0.squared < 0){
+        stop(sprintf("Average coancestry constraint C_t+1 = %g can not be reached (minimum achievable = %g)", C, 1/s))
+      }
+      lambda.0 <- sqrt(lambda.0.squared) # TODO: is -sqrt(...) also a valid solution?
+      
+      # compute lambda.1
+      lambda.1 <- (colSums(G.inv) %*% values - 2*lambda.0) / s
+      
+      # compute optimal contributions
+      c <- (G.inv %*% (values - lambda.1)) / (2*lambda.0)
+      # set contribution of discarded individuals to zero
+      c.all <- rep(0, n.all)
+      c.all[!discarded] <- c
+      
+      if(iterate && any(c.all < 0)){
+        discarded[which.min(c.all)] <- TRUE
+      }
+      
     }
-    lambda.0 <- sqrt(lambda.0.squared) # TODO: is -sqrt(...) also a valid solution?
-    
-    # compute lambda.1
-    lambda.1 <- (colSums(G.inv) %*% values - 2*lambda.0) / s
-    
-    # compute optimal contributions
-    c <- (G.inv %*% (values - lambda.1)) / (2*lambda.0)
-    # set contribution of discarded individuals to zero
-    c.all <- rep(0, n.all)
-    c.all[!discarded] <- c
-    
-    if(iterate && any(c.all < 0)){
-      discarded[which.min(c.all)] <- TRUE
-    }
-    
+          
     i <- i + 1
     
   }
