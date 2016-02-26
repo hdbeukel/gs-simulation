@@ -575,22 +575,22 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       
       # 4B) pedigree
       
-      # update pedigree data
-      pedigree$ID <- c(pedigree$ID, geno.names(candidates))
-      pedigree$par1 <- c(pedigree$par1, candidates$pedigree$par1)
-      pedigree$par2 <- c(pedigree$par2, candidates$pedigree$par2)
-      # convert to synbreed data
-      candidates.ped <- create.pedigree(pedigree$ID, pedigree$par1, pedigree$par2, add.ancestors = TRUE)
-      candidates.ped <- create.gpData(pedigree = candidates.ped)
-      # compute A-matrix
-      A <- kin(candidates.ped, ret = "add")
-      # infer all inbreeding coefficients
-      all.inbreeding.coefs <- diag(A) - 1
-      # erase relationship matrix class
-      class(all.inbreeding.coefs) <- NULL
-      # store inbreeding coefficients of current selection candidates only
-      cur.gener <- max(candidates.ped$pedigree$gener)
-      metadata[[s+1]]$candidates$inbreeding$ped <- all.inbreeding.coefs[candidates.ped$pedigree$gener == cur.gener]
+      # # update pedigree data
+      # pedigree$ID <- c(pedigree$ID, geno.names(candidates))
+      # pedigree$par1 <- c(pedigree$par1, candidates$pedigree$par1)
+      # pedigree$par2 <- c(pedigree$par2, candidates$pedigree$par2)
+      # # convert to synbreed data
+      # candidates.ped <- create.pedigree(pedigree$ID, pedigree$par1, pedigree$par2, add.ancestors = TRUE)
+      # candidates.ped <- create.gpData(pedigree = candidates.ped)
+      # # compute A-matrix
+      # A <- kin(candidates.ped, ret = "add")
+      # # infer all inbreeding coefficients
+      # all.inbreeding.coefs <- diag(A) - 1
+      # # erase relationship matrix class
+      # class(all.inbreeding.coefs) <- NULL
+      # # store inbreeding coefficients of current selection candidates only
+      # cur.gener <- max(candidates.ped$pedigree$gener)
+      # metadata[[s+1]]$candidates$inbreeding$ped <- all.inbreeding.coefs[candidates.ped$pedigree$gener == cur.gener]
       
       # 5) QTL favourable allele frequencies
       metadata[[s+1]]$candidates$fav.QTL.allele.freqs <- get.favourable.qtl.allele.frequencies(candidates)
@@ -705,7 +705,7 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       sign.mismatches <- sum(sign.diff != 0) / length(marker.effects)
       metadata[[s+1]]$gp$sign.mismatches <- sign.mismatches
       
-      # 5) TP size (after redundancy filtering)
+      # 5) TP size (after possible filtering)
       metadata[[s+1]]$gp$tp.size <- gp.tp$numGenotypes
       
     }
