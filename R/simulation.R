@@ -406,6 +406,11 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
   all.values <- values
   all.markers <- markers
   
+  if(isTRUE(all.equal(apply(all.markers, 2, sd), rep(0, ncol(all.markers)), check.names = FALSE))){
+    # population already fixed at all markers: return equal contributions
+    return(equal.contributions(values))
+  }
+  
   n.all <- nrow(all.markers)
   c.all <- rep(-1, n.all)
   discarded <- rep(FALSE, n.all)
