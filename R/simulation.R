@@ -412,8 +412,6 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
   
   # compute G
   G.all <- genomic.relationship.matrix(all.markers)
-  # make positive definite
-  G.all <- make.positive.definite(G.all)
   
   i <- 1
   while((i == 1 || iterate) && any(c.all < 0)){
@@ -423,8 +421,11 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
     values <- all.values[!discarded]
     n <- length(values)
 
-    # precompute for efficiency
+    # make G positive definite and invert
+    G <- make.positive.definite(G)
     G.inv <- solve(G)
+    
+    # precompute value for efficiency
     s <- sum(G.inv)
 
     # compute lambda.0
