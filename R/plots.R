@@ -969,7 +969,7 @@ plot.effect.estimation.accuracy <- function(replicates,
 
 # plot ratio of effect sign mismatches
 plot.effect.sign.mismatches <- function(replicates,
-                                        ylab = "Ratio of effect sign mismatches",
+                                        ylab = "Proportion of effect sign mismatches",
                                         max.maf = 0.5, eff.quantile = 0.0,
                                         ...){
   

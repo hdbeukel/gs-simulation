@@ -143,24 +143,16 @@ contains.identical.pair <- function(markers, marker.names, allowed.error){
 }
 
 # arbitrarily spread out markers on same position with a given distance
-spread.coinciding.markers <- function(map, dist){
+spread.coinciding.markers <- function(map, max.shift, min.shift = 0.01){
   adjusted.map <- map[,1:2]
   coinciding.markers <- markers.per.position(map)
   # go through groups of markers at same position
   num.groups <- length(coinciding.markers)
   for(i in 1:num.groups){
-    group <- coinciding.markers[[i]]
-    group.size <- length(group)
-    if(group.size %% 2 == 0){
-      # even number of markers
-      n <- group.size - 2
-      deltas <- seq(dist * -n/2 - dist/2, dist * n/2 + dist/2, dist)
-    } else {
-      # odd number of markers
-      n <- group.size - 1
-      deltas <- seq(dist * -n/2, dist * n/2, dist)
-    }
     # adjust positions
+    group <- coinciding.markers[[i]]
+    deltas <- runif(length(group), min = min.shift, max = max.shift)
+    deltas <- sample(c(-1,1), replace = T, size = length(group)) * deltas
     adjusted.map[group,2] <- adjusted.map[group,2] + deltas
   }
   return(adjusted.map)
@@ -212,20 +204,22 @@ marker.names <- function(pop){
   return(colnames(geno))
 }
 
-###########################
-# CLEAN DATA FROM JANNINK #
-###########################
+##############
+# CLEAN DATA #
+##############
 
 # input markers encoded as AA/AB/BB ("-" indicates missing data)
 # marker matrix: ind x markers (named)
 # map: one row per marker (named); 2 columns: chromosome, position (unnamed)
-clean.jannink <- function(markers, map,
-                          max.missing = 0.1,
-                          max.genotype.error = 0.03,
-                          spread.dist = 0.1,
-                          min.maf = 0.01){
+clean.data <- function(markers, map,
+                       max.missing = 0.20,
+                       max.genotype.error = 0.00,
+                       max.spread.dist = 0.1,
+                       min.maf = 0.00){
   
-  message("Clean raw data (", nrow(markers), " genotypes, ", ncol(markers), " markers)")
+  n <- nrow(markers)
+  m <- ncol(markers)
+  message("Clean raw data (", n, " genotypes, ", m, " markers)")
   
   # 1: filter map
   
@@ -233,12 +227,15 @@ clean.jannink <- function(markers, map,
   colnames(map) <- c("chr", "pos")
   # extract names of observed markers
   marker.names <- colnames(markers)
-  # restrict map to observed markers
-  map <- map[marker.names, ]
   # discard markers with unknown position
-  unknown <- map$chr == "UNK"
-  markers <- markers[, !unknown]
-  map <- map[!unknown, ]
+  unknown.chromosome <- map$chr == "UNK"
+  known.chromosome <- rownames(map[!unknown.chromosome,])
+  known.position <- intersect(marker.names, known.chromosome)
+  map <- map[known.position, ]
+  markers <- markers[, known.position]
+  message("Discarded ", m - length(known.position),
+          " of ", m,
+          " markers with unknown position (retained ", length(known.position), " markers)")
   # convert chromosome names to numeric
   map$chr <- as.numeric(map$chr)
   # order markers according to
@@ -300,8 +297,8 @@ clean.jannink <- function(markers, map,
           " (retained ", length(retained.marker.names) , " markers)")
   
   # 7: spread remaining markers at same position
-  map <- spread.coinciding.markers(map, spread.dist)
-  message("Spread remaining markers mapped to same position at ", spread.dist, " cM intervals in arbitrary order")
+  map <- spread.coinciding.markers(map, max.spread.dist)
+  message("Randomly shift remaining markers mapped to same position with  <= ", max.spread.dist, " cM")
   
   # 8: sort markers after spreading
   unordered.marker.names <- colnames(markers) 
@@ -451,20 +448,20 @@ prepare <- function(map, hap1, hap2, dh = FALSE){
   
 }
 
-###############################################
-# CREATE FOUNDER POPULATION FROM JANNINK DATA #
-###############################################
+##############################
+# CREATE FOUNDER POPULATION  #
+##############################
 
-create.founders.jannink <- function(){
+create.founders <- function(){
   
   # load raw data
   message("# Load raw data ...")
-  markers <- as.matrix(read.table("data/minnesota-markers.txt", check.names = FALSE))
-  map <- read.table("data/minnesota-map.txt", row.names = 1)
+  markers <- as.matrix(read.table("data/oregon-markers.txt", check.names = FALSE))
+  map <- read.table("data/barley-map.txt", row.names = 1)
   
   # clean
   message("# Clean data ...")
-  cleaned <- clean.jannink(markers, map)
+  cleaned <- clean.data(markers, map)
   
   # phase
   message("# Phase genotypes ...")
