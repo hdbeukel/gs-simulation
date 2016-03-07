@@ -506,6 +506,21 @@ make.positive.definite <- function(X, tol = 1e-6) {
   }
 }
 
+# compute inbreeding rate deltaF based on markers (cfr. Jannink)
+inbreeding.rate <- function(pop, prev.pop){
+  cur.fixed <- proportion.fixed.markers(pop)
+  prev.fixed <- proportion.fixed.markers(prev.pop)
+  deltaF <- (cur.fixed - prev.fixed) / (1.0 - prev.fixed)
+  return(deltaF)
+}
+
+proportion.fixed.markers <- function(pop){
+  M <- gp.design.matrix(pop)
+  polymorphic <- sum(apply(M, 2, sd) > 0)/ncol(M)
+  fixed <- 1.0 - polymorphic
+  return(fixed)
+}
+
 #####################################################
 # EXTRACT SIMULATION METADATA FROM FULL OUTPUT DATA #
 #####################################################
@@ -518,16 +533,13 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
   num.seasons <- length(seasons)-1
   metadata <- lapply(1:(num.seasons+1), function(i) {list()})
   
-  # initialize complete pedigree
-  pedigree <- list()
-  
   # store general variables
   base.pop <- seasons[[1]]$cross.inbreed$pop.out
   # 1) QTL effects
   metadata[[1]]$general$qtl.effects <- get.qtl.effects(base.pop)
-  # 2) complete pedigree --> after processing each season (see below)
-  
+
   # go through all seasons
+  prev.candidates <- NULL
   for(s in 0:num.seasons){
     
     # get current and next season (if any)
@@ -567,30 +579,10 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
         metadata[[s+1]]$candidates$estGeneticValues <- evaluated.candidates$estGeneticValues
       }
       
-      # 4) inbreeding coefficients
-      
-      # 4A) genomic
-  
-      metadata[[s+1]]$candidates$inbreeding$geno <- genomic.inbreeding.coefficients(candidates)
-      
-      # 4B) pedigree
-      
-      # # update pedigree data
-      # pedigree$ID <- c(pedigree$ID, geno.names(candidates))
-      # pedigree$par1 <- c(pedigree$par1, candidates$pedigree$par1)
-      # pedigree$par2 <- c(pedigree$par2, candidates$pedigree$par2)
-      # # convert to synbreed data
-      # candidates.ped <- create.pedigree(pedigree$ID, pedigree$par1, pedigree$par2, add.ancestors = TRUE)
-      # candidates.ped <- create.gpData(pedigree = candidates.ped)
-      # # compute A-matrix
-      # A <- kin(candidates.ped, ret = "add")
-      # # infer all inbreeding coefficients
-      # all.inbreeding.coefs <- diag(A) - 1
-      # # erase relationship matrix class
-      # class(all.inbreeding.coefs) <- NULL
-      # # store inbreeding coefficients of current selection candidates only
-      # cur.gener <- max(candidates.ped$pedigree$gener)
-      # metadata[[s+1]]$candidates$inbreeding$ped <- all.inbreeding.coefs[candidates.ped$pedigree$gener == cur.gener]
+      # 4) inbreeding rate (marker based, cfr. Jannink)
+      if(!is.null(prev.candidates)){
+        metadata[[s+1]]$candidates$inbreeding <- inbreeding.rate(candidates, prev.candidates)
+      }
       
       # 5) QTL favourable allele frequencies
       metadata[[s+1]]$candidates$fav.QTL.allele.freqs <- get.favourable.qtl.allele.frequencies(candidates)
@@ -605,6 +597,9 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
         metadata[[s+1]]$candidates$markers <- gp.design.matrix(candidates)
         metadata[[s+1]]$candidates$qtl <- get.qtl.allele.matrix(candidates)
       }
+      
+      # store for inbreeding rate calculation in next generation
+      prev.candidates <- candidates
       
     }
     
@@ -712,22 +707,8 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
     
   }
   
-  # store complete pedigree
-  metadata[[1]]$general$pedigree <- pedigree
-  
   return(metadata)
   
-}
-
-#############################################
-# UTILITY FUNCTIONS FOR METADATA EXTRACTION #
-#############################################
-
-# get genomic coefficients of inbreeding for each individual
-genomic.inbreeding.coefficients <- function(pop){
-  Z <- gp.design.matrix(pop)
-  G <- genomic.relationship.matrix(Z)
-  coeff <- diag(G)-1
 }
 
 ##################################################

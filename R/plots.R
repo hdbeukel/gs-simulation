@@ -98,7 +98,7 @@ get.plot.functions <- function(){
          legend = "bottomright", ylim = c(0.48, 0.78)),
     list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
          legend = "bottomleft", ylim = c(0.3, 0.9)),
-    list(f = plot.mean.inbreeding, name = "inbreeding", title = "Mean inbreeding",
+    list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = expression(paste("Inbreeding rate (", Delta, "F)")),
          legend = "bottomright", ylim = c(0, 0.68)),
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
          legend = "topright", ylim = c(0, 0.08)),
@@ -883,33 +883,32 @@ plot.genetic.standard.deviation <- function(replicates,
   
 }
 
-# plot average inbreeding coefficient among selection candidates
-plot.mean.inbreeding <- function(replicates,
-                                 type = c("ped", "geno"),
-                                 ylab = "Mean inbreeding coefficient",
+# plot inbreeding rate of selection candidates
+plot.inbreeding.rate <- function(replicates,
+                                 ylab = "Inbreeding rate",
                                  ...){
   
-  # get selected type
-  type <- match.arg(type)
-  
-  # set function to extract mean inbreeding coefficient
-  extract.mean.inbr <- function(seasons){
+  # set function to extract inbreeding rate
+  extract.inbr.rate <- function(seasons){
     # initialize result vector
-    mean.inbr <- rep(NA, length(seasons))
-    # extract mean inbreeding for each season
+    inbr.rate <- rep(NA, length(seasons))
+    # extract inbreeding rate for each season
     for(s in 1:length(seasons)){
       season <- seasons[[s]]
       # check whether selection candidates have been produced in this season
       if(!is.null(season$candidates)){
-        # extract and store mean inbreeding coefficient
-        mean.inbr[s] <- mean(season$candidates$inbreeding[[type]])
+        # extract and store inbreeding rate (if available)
+        inbr <- season$candidates$inbreeding
+        if(!is.null(inbr)){
+          inbr.rate[s] <- inbr
+        }
       }
     }
-    return(mean.inbr)
+    return(inbr.rate)
   }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values =  extract.mean.inbr, ylab = ylab, ...)
+  plot.simulation.variable(replicates, extract.values =  extract.inbr.rate, ylab = ylab, shift = 1, ...)
   
 }
 
