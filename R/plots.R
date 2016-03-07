@@ -362,7 +362,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     )
     
     types <- list(
-      #"qtl",
+      "qtl",
       "markers"
     )
     
@@ -1246,6 +1246,7 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
       } else {
         Z <- sim[[1+g]]$candidates$qtl
         if(is.null(Z)){
+          # same special case as above
           Z <- sim[[g]]$candidates$qtl
         }
       }
