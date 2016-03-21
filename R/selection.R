@@ -20,6 +20,15 @@ select.highest.score <- function(n, values, ...){
   return(selected.names)
 }
 
+# selects the n individuals with the highest optimal contributions according to Meuwissen 1997
+select.highest.optimal.contribution <- function(n, values, markers, generation, delta.F, ...){
+  # compute optimal contributions
+  c <- optimal.contributions(values, markers, 1 - (1 - delta.F)^generation)
+  # select individuals with highest contribution
+  selected.names <- names(head(sort(c, decreasing = TRUE), n=n))
+  return(selected.names)
+}
+
 # select by maximizing weighted index of mean breeding value and diversity
 select.weighted.index <- function(n, values, markers, div.weight,
                                   div.measure = c("HEall", "HEfav", "LOGall", "LOGfav"),

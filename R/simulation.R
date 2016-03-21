@@ -10,7 +10,7 @@
 #  - even seasons >= 2: randomly mate selected individuals & inbreed (DH)
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS <- function(founders, heritability, base.pop = NULL,
-               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               num.QTL=1000, QTL.effects = c("normal", "jannink"),
                F1.size=200, num.select=20, num.seasons=30,
                selection.criterion=select.highest.score,
                extract.metadata = TRUE,
@@ -93,7 +93,7 @@ PS <- function(founders, heritability, base.pop = NULL,
 }
 
 WGS <- function(founders, heritability, base.pop = NULL,
-               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               num.QTL=1000, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, ...){
@@ -102,7 +102,7 @@ WGS <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, weighted = TRUE, ...))
 }
 CGS <- function(founders, heritability, base.pop = NULL,
-               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               num.QTL=1000, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, div.weight,
@@ -114,8 +114,13 @@ CGS <- function(founders, heritability, base.pop = NULL,
   
   if(type == "index"){
     # maximize weighted index
-    sel.crit <- function(n, values, markers, fav.alleles){
-      select.weighted.index(n, values, markers, div.weight, div.measure, fav.alleles)
+    sel.crit <- function(n, values, markers, fav.alleles, ...){
+      select.weighted.index(n = n,
+                            values = values,
+                            markers = markers,
+                            div.weight = div.weight,
+                            div.measure = div.measure,
+                            fav.alleles = fav.alleles)
     }
   } else {
     # split & combine: highest quality + most diverse individuals
@@ -125,24 +130,27 @@ CGS <- function(founders, heritability, base.pop = NULL,
   # run GS with combinatorial selection strategy
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion = sel.crit,
-            gp.method, extract.metadata, store.all.pops, weighted = FALSE, ...))
+            gp.method, extract.metadata, store.all.pops, ...))
   
 }
 # optimal contributions simulation
 OC <- function(founders, heritability, base.pop = NULL,
-               num.QTL=100, QTL.effects = c("normal", "jannink"),
+               num.QTL=1000, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, delta.F, ...){
-  
-  oc.mating <- function(values, markers, generation){
-    optimal.contributions(values, markers, 1 - (1 - delta.F)^generation)
+
+  sel.crit <- function(n, values, markers, generation, ...){
+    select.highest.optimal.contribution(n = n,
+                                        values = values,
+                                        markers = markers,
+                                        generation = generation,
+                                        delta.F = delta.F)
   }
   
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
-            add.TP, num.select, num.seasons, selection.criterion = select.all,
-            gp.method, extract.metadata, store.all.pops, weighted = FALSE,
-            mating.probability = oc.mating, ...))
+            add.TP, num.select, num.seasons, selection.criterion = sel.crit,
+            gp.method, extract.metadata, store.all.pops, ...))
   
 }
 # simulate genomic selection (possibly weighted by favourable allele frequencies)
@@ -152,7 +160,7 @@ OC <- function(founders, heritability, base.pop = NULL,
 #  - season >= 3: (1) evaluate previous offspring, update GP model
 #               + (2) cross, inbreed & select (on predicted values)
 GS <- function(founders, heritability, base.pop = NULL,
-              num.QTL=100, QTL.effects = c("normal", "jannink"),
+              num.QTL=1000, QTL.effects = c("normal", "jannink"),
               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
               selection.criterion = select.highest.score,
               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
@@ -261,9 +269,10 @@ GS <- function(founders, heritability, base.pop = NULL,
   message("|- Select")
   evaluated.base.pop <- predict.values(gp.trained.model, evaluated.base.pop)
   selected.names <- selection.criterion(n = num.select,
-                                       values = evaluated.base.pop$estGeneticValues,
-                                       markers = gp.design.matrix(evaluated.base.pop),
-                                       fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
+                                        values = evaluated.base.pop$estGeneticValues,
+                                        markers = gp.design.matrix(evaluated.base.pop),
+                                        fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
+                                        generation = 1)
   selected.pop <- restrict.population(evaluated.base.pop, selected.names)
 
   # store season
@@ -291,7 +300,8 @@ GS <- function(founders, heritability, base.pop = NULL,
   selected.names <- selection.criterion(n = num.select,
                                        values = offspring$estGeneticValues,
                                        markers = gp.design.matrix(offspring),
-                                       fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
+                                       fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
+                                       generation = 2)
   selected.offspring <- restrict.population(offspring, selected.names)
   
   # store season
@@ -330,7 +340,8 @@ GS <- function(founders, heritability, base.pop = NULL,
     selected.names <- selection.criterion(n = num.select,
                                          values = offspring$estGeneticValues,
                                          markers = gp.design.matrix(offspring),
-                                         fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)))
+                                         fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
+                                         generation = s)
     selected.offspring <- restrict.population(offspring, selected.names)
     # store season
     new.season <- list(evaluate = list(pop = evaluated.prev.offspring),
@@ -449,7 +460,7 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
       if(lambda.0.squared < 0){
         stop(sprintf("Average coancestry constraint C_t+1 = %g can not be reached (minimum achievable = %g)", C, 1/s))
       }
-      lambda.0 <- sqrt(lambda.0.squared) # TODO: is -sqrt(...) also a valid solution?
+      lambda.0 <- sqrt(lambda.0.squared)
       
       # compute lambda.1
       lambda.1 <- (colSums(G.inv) %*% values - 2*lambda.0) / s
@@ -470,7 +481,7 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
     
   }
   if(any(discarded)){
-    message(sprintf("Discarded %d/%d", sum(discarded), n.all))
+    message(sprintf("[OC] Set contribution of %d/%d individuals to zero", sum(discarded), n.all))
   }
   
   # return final optimal contributions (all positive or zero)
