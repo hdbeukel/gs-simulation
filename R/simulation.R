@@ -722,9 +722,9 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
   
 }
 
-##################################################
-# CONVERT FULL OUTPUT DATA TO EXTRACTED METADATA #
-##################################################
+###########################
+# OUTPUT DATA CONVERSIONS #
+###########################
 
 # converts all .RDS files in the given directory (overwrites original files)
 convert.to.metadata <- function(dir){
@@ -744,6 +744,31 @@ convert.to.metadata <- function(dir){
     saveRDS(metadata, file = file)
   }
   
+}
+
+# strip full marker data from output file to reduce memory footprint (except for final selection)
+# NOTE: information needed for detailed snapshot MDS plots and movies is lost
+strip.marker.data <- function(file){
+ 
+  message("Processing file ", file)
+  
+  # load data
+  seasons <- readRDS(file)
+  
+  # discard full marker data
+  for(s in 1:length(seasons)){
+    seasons[[s]]$candidates$markers <- NULL
+    seasons[[s]]$candidates$qtl <- NULL
+    # retain full data for final selection
+    if(s < length(seasons)){
+      seasons[[s]]$selection$markers <- NULL
+      seasons[[s]]$selection$qtl <- NULL
+    }
+  }
+  
+  # overwrite data
+  saveRDS(seasons, file = file)
+   
 }
 
 
