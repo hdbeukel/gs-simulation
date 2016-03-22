@@ -91,53 +91,51 @@ create.pdf <- function(file, plot.fun, width = 14, height = 10.5){
 get.plot.functions <- function(){
   plot.functions <- list(
     list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
-         legend = "bottomright", ylim =  c(0, 0.7)),
+         legend = "bottomright", ylim =  c(0, 0.35)),
     list(f = plot.ratio.fixed.QTL, name = "QTL-fixed", title = "Ratio of fixed QTL",
          legend = "bottomright", ylim = c(0, 1.0)),
     list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency",
-         legend = "bottomright", ylim = c(0.48, 0.78)),
+         legend = "bottomright", ylim = c(0.50, 0.65)),
     list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
          legend = "bottomleft", ylim = c(0.3, 0.9)),
     list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = expression(paste("Inbreeding rate (", Delta, "F)")),
-         legend = "bottomright", ylim = c(0, 0.68)),
+         legend = "topleft", ylim = c(0, 0.8)),
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
-         legend = "topright", ylim = c(0, 0.08)),
+         legend = "topright", ylim = c(0, 0.04)),
     list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost",
-         legend = "bottomright", ylim = c(0, 36)),
+         legend = "bottomright", ylim = c(0, 500)),
     list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
-         legend = "bottomright", ylim = c(0.3, 0.68)),
+         legend = "bottomright", ylim = c(0.0, 1.0)),
     list(
       f = function(...){ 
         plot.effect.estimation.accuracy(..., corrected = TRUE) 
       },
       name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
-      legend = "bottomright", ylim = c(0.4, 1.0)
+      legend = "bottomright", ylim = c(0.0, 1.0)
     ),
     list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
-         legend = "topright", ylim = c(0.15, 0.5)),
+         legend = "topright", ylim = c(0.4, 0.5)),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., max.maf = 0.10) 
       },
       name = "sign-mismatches-maf-0.10", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.15, 0.5)
+      legend = "topright", ylim = c(0.4, 0.5)
     ),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., max.maf = 0.05) 
       },
       name = "sign-mismatches-maf-0.05", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.15, 0.5)
+      legend = "topright", ylim = c(0.4, 0.5)
     ),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., eff.quantile = 0.25) 
       },
       name = "sign-mismatches-eff-quant-0.25", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.15, 0.5)
-    ),
-    list(f = plot.tp.size, name = "tp-size", title = "Training population size",
-         legend = "topleft", ylim = c(200, 6000))
+      legend = "topright", ylim = c(0.4, 0.5)
+    )
   )
   return(plot.functions)
 }
@@ -171,7 +169,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   
   fig.dir <- sprintf("figures/simulation/CGS/h2-%.1f-%.1f/%s", low.h, high.h, strategy.name)
   if(!is.na(ci)){
-    fig.dir <- paste(fig.dir, "with-ci", sep = "-")
+    fig.dir <- sprintf("%s-ci-%.2f", fig.dir, ci)
   } else {
     fig.dir <- paste(fig.dir, "no-ci", sep = "-")
   }
