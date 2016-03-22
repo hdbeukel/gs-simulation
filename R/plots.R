@@ -92,49 +92,49 @@ get.plot.functions <- function(){
   plot.functions <- list(
     list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
          legend = "bottomright", ylim =  c(0, 0.35)),
-    list(f = plot.ratio.fixed.QTL, name = "QTL-fixed", title = "Ratio of fixed QTL",
+    list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
          legend = "bottomright", ylim = c(0, 1.0)),
     list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency",
-         legend = "bottomright", ylim = c(0.50, 0.65)),
+         legend = "bottomright", ylim = c(0.50, 0.625)),
     list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
          legend = "bottomleft", ylim = c(0.3, 0.9)),
     list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = expression(paste("Inbreeding rate (", Delta, "F)")),
          legend = "topleft", ylim = c(0, 0.8)),
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
-         legend = "topright", ylim = c(0, 0.04)),
+         legend = "topright", ylim = c(0, 0.035)),
     list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost",
-         legend = "bottomright", ylim = c(0, 500)),
+         legend = "bottomright", ylim = c(0, 450)),
     list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
-         legend = "bottomright", ylim = c(0.0, 1.0)),
+         legend = "bottomright", ylim = c(0.1, 0.45)),
     list(
       f = function(...){ 
         plot.effect.estimation.accuracy(..., corrected = TRUE) 
       },
       name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
-      legend = "bottomright", ylim = c(0.0, 1.0)
+      legend = "bottomright", ylim = c(0.1, 0.45)
     ),
-    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Ratio of effect sign mismatches",
-         legend = "topright", ylim = c(0.4, 0.5)),
+    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Proportion of effect sign mismatches",
+         legend = "topright", ylim = c(0.38, 0.5)),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., max.maf = 0.10) 
       },
-      name = "sign-mismatches-maf-0.10", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.4, 0.5)
+      name = "sign-mismatches-maf-0.10", title = "Proportion of effect sign mismatches",
+      legend = "topright", ylim = c(0.38, 0.5)
     ),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., max.maf = 0.05) 
       },
-      name = "sign-mismatches-maf-0.05", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.4, 0.5)
+      name = "sign-mismatches-maf-0.05", title = "Proportion of effect sign mismatches",
+      legend = "topright", ylim = c(0.38, 0.5)
     ),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., eff.quantile = 0.25) 
       },
-      name = "sign-mismatches-eff-quant-0.25", title = "Ratio of effect sign mismatches",
-      legend = "topright", ylim = c(0.4, 0.5)
+      name = "sign-mismatches-eff-quant-0.25", title = "Proportion of effect sign mismatches",
+      legend = "topright", ylim = c(0.38, 0.5)
     )
   )
   return(plot.functions)
@@ -964,7 +964,7 @@ plot.effect.estimation.accuracy <- function(replicates,
   
 }
 
-# plot ratio of effect sign mismatches
+# plot proportion of effect sign mismatches
 plot.effect.sign.mismatches <- function(replicates,
                                         ylab = "Proportion of effect sign mismatches",
                                         max.maf = 0.5, eff.quantile = 0.0,
@@ -995,7 +995,7 @@ plot.effect.sign.mismatches <- function(replicates,
         res <- abs.effects >= quant & mafs <= max.maf
         marker.effects <- marker.effects[res]
         qtl.effects <- QTL.marker.LD$QTL.effect[res]
-        # compute and store ratio of sign mismatches
+        # compute and store proportion of sign mismatches
         sign.diff <- sign(marker.effects) - sign(qtl.effects)
         sign.mismatches <- sum(sign.diff != 0) / length(marker.effects)
         mismatches[s] <- sign.mismatches
@@ -1061,32 +1061,32 @@ plot.num.fav.QTL.lost <- function(replicates,
   
 }
 
-# plot ratio of fixed QTL
-plot.ratio.fixed.QTL <- function(replicates,
-                                 ylab = "Ratio of fixed QTL",
-                                 ...){
+# plot proportion of fixed QTL
+plot.proportion.fixed.QTL <- function(replicates,
+                                      ylab = "Proportion of fixed QTL",
+                                      ...){
   
-  # set function to extract ratio of fixed QTL
-  extract.ratio.fixed.QTL <- function(seasons){
+  # set function to extract proportion of fixed QTL
+  extract.proportion.fixed.QTL <- function(seasons){
     # initialize result vector
-    ratio.fixed <- rep(NA, length(seasons))
-    # extract ratio for each season
+    proportionfixed <- rep(NA, length(seasons))
+    # extract proportion for each season
     for(s in 1:length(seasons)){
       season <- seasons[[s]]
       # check whether selection candidates have been produced in this season
       if(!is.null(season$candidates)){
-        # extract and store ratio
+        # extract and store proportion
         fav.QTL.allele.freqs <- season$candidates$fav.QTL.allele.freqs
         mafs <- pmin(fav.QTL.allele.freqs, 1 - fav.QTL.allele.freqs)
-        ratio <- sum(mafs == 0)/length(fav.QTL.allele.freqs)
-        ratio.fixed[s] <- ratio
+        proportion <- sum(mafs == 0)/length(fav.QTL.allele.freqs)
+        proportion.fixed[s] <- proportion
       }
     }
-    return(ratio.fixed)
+    return(proportion.fixed)
   }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values =  extract.ratio.fixed.QTL, ylab = ylab, ...)
+  plot.simulation.variable(replicates, extract.values =  extract.proportion.fixed.QTL, ylab = ylab, ...)
   
 }
 
