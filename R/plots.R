@@ -464,10 +464,10 @@ plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HEall
       
       # heritability/TP settings
       settings <- list(
-        list(h = low.h, add.tp = 0),
-        list(h = low.h, add.tp = 800),
-        list(h = high.h, add.tp = 0),
-        list(h = high.h, add.tp = 800)
+        #list(h = low.h, add.tp = 0),
+        list(h = low.h, add.tp = 800)
+        #list(h = high.h, add.tp = 0),
+        #list(h = high.h, add.tp = 800)
       )
       
       # load data
@@ -534,22 +534,26 @@ plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HEall
       
       for(plot.fun in plot.functions){
         
-        file <- sprintf("%s/%s.pdf", fig.subdir, plot.fun$name)
+        if(plot.fun$name == "gain"){
         
-        create.pdf(file, function(){
+          file <- sprintf("%s/%s.pdf", fig.subdir, plot.fun$name)
           
-          # combine plots for different heritabilities and TP sizes
-          par(mfrow = c(2,2))
+          create.pdf(file, function(){
+            
+            # combine plots for different heritabilities and TP sizes
+            par(mfrow = c(2,2))
+            
+            for(data in all.data){
+              # plot
+              plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = NA)
+              # extend title (include heritability and TP size)
+              title(make.title(plot.fun$title, data$h, data$tp))
+              add.legend(names, params, pos = plot.fun$legend) 
+            }
+            
+          })
           
-          for(data in all.data){
-            # plot
-            plot.multi(data$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim)
-            # extend title (include heritability and TP size)
-            title(make.title(plot.fun$title, data$h, data$tp))
-            add.legend(names, params, pos = plot.fun$legend) 
-          }
-          
-        })
+        }
         
       }
        
