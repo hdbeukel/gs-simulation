@@ -258,6 +258,8 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   if(main.plots){
     for(plot.fun in plot.functions){
       
+      message(" |- ", plot.fun$name, " ...")
+      
       # plot with all four settings
       file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
       
