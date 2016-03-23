@@ -120,14 +120,14 @@ get.plot.functions <- function(){
       f = function(...){ 
         plot.effect.sign.mismatches(..., max.maf = 0.10) 
       },
-      name = "sign-mismatches-maf-0.10", title = "Proportion of effect sign mismatches",
+      name = "sign-mismatches-maf-0.10", title = "Proportion of effect sign mismatches for rare alleles",
       legend = "topright", ylim = c(0.38, 0.5)
     ),
     list(
       f = function(...){ 
         plot.effect.sign.mismatches(..., max.maf = 0.05) 
       },
-      name = "sign-mismatches-maf-0.05", title = "Proportion of effect sign mismatches",
+      name = "sign-mismatches-maf-0.05", title = "Proportion of effect sign mismatches for rare alleles",
       legend = "topright", ylim = c(0.38, 0.5)
     ),
     list(
@@ -1072,7 +1072,7 @@ plot.proportion.fixed.QTL <- function(replicates,
   # set function to extract proportion of fixed QTL
   extract.proportion.fixed.QTL <- function(seasons){
     # initialize result vector
-    proportionfixed <- rep(NA, length(seasons))
+    proportion.fixed <- rep(NA, length(seasons))
     # extract proportion for each season
     for(s in 1:length(seasons)){
       season <- seasons[[s]]
