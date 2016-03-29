@@ -92,6 +92,7 @@ PS <- function(founders, heritability, base.pop = NULL,
   
 }
 
+# weighted genomic selection (cfr. Jannink)
 WGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
@@ -99,8 +100,20 @@ WGS <- function(founders, heritability, base.pop = NULL,
                store.all.pops = FALSE, ...){
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
             add.TP, num.select, num.seasons, selection.criterion = select.highest.score,
-            gp.method, extract.metadata, store.all.pops, weighted = TRUE, ...))
+            gp.method, extract.metadata, store.all.pops, weights = weights.jannink, ...))
 }
+# weighted genomic selection (cfr. Liu and Woolliams)
+WGS2 <- function(founders, heritability, base.pop = NULL,
+                num.QTL=1000, QTL.effects = c("normal", "jannink"),
+                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+                store.all.pops = FALSE, ...){
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = select.highest.score,
+            gp.method, extract.metadata, store.all.pops, weights = weights.liu.woolliams, ...))
+}
+
+# combinatorial genomic selection
 CGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
@@ -133,6 +146,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, ...))
   
 }
+
 # optimal contributions simulation
 OC <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
@@ -153,6 +167,7 @@ OC <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, ...))
   
 }
+
 # simulate genomic selection (possibly weighted by favourable allele frequencies)
 #  - season 0: cross & inbreed founders, assign QTL, infer genetic values and fix heritability
 #  - season 1: evaluate offspring, train GP & select (on predicted values)
@@ -164,7 +179,7 @@ GS <- function(founders, heritability, base.pop = NULL,
               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
               selection.criterion = select.highest.score,
               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-              store.all.pops = FALSE, weighted = FALSE,
+              store.all.pops = FALSE, weights = weights.none,
               mating.probability = equal.contributions, ...){
   
   # check input
@@ -185,25 +200,13 @@ GS <- function(founders, heritability, base.pop = NULL,
     stop("additional training population size (add.TP) should be >= 0")
   }
   
-  # set weigthed/unweighted prediction
-  if(weighted){
-    # weighted GS
-    predict.values <- function(model, pop) {
-      est.values <- gp.predict(model, gp.design.matrix(pop), infer.weights(model, pop))
-      # store in population
-      pop$estGeneticValues <- est.values
-      # return modified population
-      return(pop)
-    }
-  } else {
-    # unweighted GS
-    predict.values <- function(model, pop) {
-      est.values <- gp.predict(model, gp.design.matrix(pop))
-      # store in population
-      pop$estGeneticValues <- est.values
-      # return modified population
-      return(pop)
-    }
+  # wrap prediction to store predicted values
+  predict.values <- function(model, pop, generation) {
+    est.values <- gp.predict(model, gp.design.matrix(pop), weights(model, pop, t = generation, N = num.seasons))
+    # store in population
+    pop$estGeneticValues <- est.values
+    # return modified population
+    return(pop)
   }
   
   # initialize results list (one entry per season 0-n)
@@ -267,7 +270,7 @@ GS <- function(founders, heritability, base.pop = NULL,
   
   # select based on estimated values
   message("|- Select")
-  evaluated.base.pop <- predict.values(gp.trained.model, evaluated.base.pop)
+  evaluated.base.pop <- predict.values(gp.trained.model, evaluated.base.pop, generation = 1)
   selected.names <- selection.criterion(n = num.select,
                                         values = evaluated.base.pop$estGeneticValues,
                                         markers = gp.design.matrix(evaluated.base.pop),
@@ -296,7 +299,7 @@ GS <- function(founders, heritability, base.pop = NULL,
 
   # select based on estimated values
   message("|- Select (no model update)")
-  offspring <- predict.values(gp.trained.model, offspring)
+  offspring <- predict.values(gp.trained.model, offspring, generation = 2)
   selected.names <- selection.criterion(n = num.select,
                                        values = offspring$estGeneticValues,
                                        markers = gp.design.matrix(offspring),
@@ -336,7 +339,7 @@ GS <- function(founders, heritability, base.pop = NULL,
                          ))
     # select from offspring based on estimated values using updated GP model
     message("|- Select")
-    offspring <- predict.values(gp.trained.model, offspring)
+    offspring <- predict.values(gp.trained.model, offspring, generation = s)
     selected.names <- selection.criterion(n = num.select,
                                          values = offspring$estGeneticValues,
                                          markers = gp.design.matrix(offspring),
@@ -381,12 +384,32 @@ create.base.population <- function(founders, num.ind, num.QTL, QTL.effects){
   return(base.pop)
 }
 
-infer.weights <- function(gp.trained.model, pop){
+weights.none <- function(gp.trained.model, ...){
+  effects <- gp.get.effects(gp.trained.model)
+  weights <- rep(1, times = length(effects))
+  return(weights)
+}
+
+weights.jannink <- function(gp.trained.model, pop, ...){
   Z <- gp.design.matrix(pop)
-  # weigh according to favourable allele frequencies (inversely proportional)
-  weights <- 1/sqrt(get.favourable.allele.frequencies(gp.get.effects(gp.trained.model), Z))
-  # set Inf's to zero (fixed alleles no longer influence GP anyway)
+  # weigh according to Jannink (2010)
+  p <- get.favourable.allele.frequencies(gp.get.effects(gp.trained.model), Z)
+  weights <- 1/sqrt(p)
+  # set Inf's to zero (fixed markers no longer influence GP anyway)
   weights[is.infinite(weights)] = 0
+  return(weights)
+}
+
+weights.liu.woolliams <- function(gp.trained.model, pop, t, N){
+  Z <- gp.design.matrix(pop)
+  # weigh according to formulas by Liu and Woolliams (2010)
+  p <- get.favourable.allele.frequencies(gp.get.effects(gp.trained.model), Z)
+  B <- asin(1 - 2*p)
+  A <- - 1/(N-t+1) * (pi/2 + B)
+  p.next <- 1/2 * (1 - sin(A + B))
+  weights <- (p.next - p)/sqrt(1/2 * p * (1-p))
+  # set Inf's and NaN's to zero (fixed markers no longer influence GP anyway)
+  weights[is.infinite(weights) | is.nan(weights)] = 0
   return(weights)
 }
 

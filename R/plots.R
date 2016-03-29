@@ -99,7 +99,7 @@ get.plot.functions <- function(){
     list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
          legend = "bottomleft", ylim = c(0.3, 0.9)),
     # TODO: fix title with expression (currently blank in generated PDF...)
-    list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = expression(paste("Inbreeding rate (", Delta, "F)")),
+    list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = "Inbreeding rate",
          legend = "topleft", ylim = c(0, 0.8)),
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
          legend = "topright", ylim = c(0, 0.035)),
