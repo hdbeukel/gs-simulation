@@ -6,7 +6,7 @@
 # should be run from project root directory, with 'Rscript scripts/run.R <args>'
 
 # command line arguments:
-#  1:  simulation type ("PS", "GS", "WGS", "CGS", "OC")
+#  1:  simulation type ("PS", "GS", "WGS", "WGS2", "CGS", "OC")
 #  2:  number of seasons
 #  3:  heritability
 #  4:  additional TP size, ignored for PS
@@ -116,6 +116,7 @@ if(sim.function.name == "PS"){
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method, delta.F)
 } else {
+  # WGS or WGS2
   out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s",
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method)
