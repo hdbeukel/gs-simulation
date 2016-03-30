@@ -440,11 +440,6 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
   all.values <- values
   all.markers <- markers
   
-  if(isTRUE(all.equal(apply(all.markers, 2, sd), rep(0, ncol(all.markers)), check.names = FALSE))){
-    # population already fixed at all markers: return equal contributions
-    return(equal.contributions(values))
-  }
-  
   n.all <- nrow(all.markers)
   c.all <- rep(-1, n.all)
   discarded <- rep(FALSE, n.all)
@@ -464,32 +459,42 @@ optimal.contributions <- function(values, markers, C, iterate = TRUE){
     } else {
     
       # discard flagged individuals
-      G <- G.all[!discarded, !discarded]
+      markers <- all.markers[!discarded, ]
       values <- all.values[!discarded]
       n <- length(values)
-  
-      # make G positive definite and invert
-      G <- make.positive.definite(G)
-      G.inv <- solve(G)
+      m <- ncol(markers)
       
-      # precompute value for efficiency
-      s <- sum(G.inv)
-  
-      # compute lambda.0
-      num <- values %*% (G.inv - (rowSums(G.inv) %*% t(colSums(G.inv)))/s) %*% values
-      num <- as.numeric(num)
-      den <- 8*C - 4/s
-      lambda.0.squared <- num/den
-      if(lambda.0.squared < 0){
-        stop(sprintf("Average coancestry constraint C_t+1 = %g can not be reached (minimum achievable = %g)", C, 1/s))
+      if(isTRUE(all.equal(apply(markers, 2, sd), rep(0, m), check.names = FALSE))){
+        # candidates fixed at all markers: set to equal contributions
+        c <- equal.contributions(values)
+      } else {
+      
+        # make G positive definite and invert
+        G <- G.all[!discarded, !discarded]
+        G <- make.positive.definite(G)
+        G.inv <- solve(G)
+        
+        # precompute value for efficiency
+        s <- sum(G.inv)
+        
+        # compute lambda.0
+        num <- values %*% (G.inv - (rowSums(G.inv) %*% t(colSums(G.inv)))/s) %*% values
+        num <- as.numeric(num)
+        den <- 8*C - 4/s
+        lambda.0.squared <- num/den
+        if(lambda.0.squared < 0){
+          stop(sprintf("Average coancestry constraint C_t+1 = %g can not be reached (minimum achievable = %g)", C, 1/s))
+        }
+        lambda.0 <- sqrt(lambda.0.squared)
+        
+        # compute lambda.1
+        lambda.1 <- (colSums(G.inv) %*% values - 2*lambda.0) / s
+        
+        # compute optimal contributions
+        c <- (G.inv %*% (values - lambda.1)) / (2*lambda.0)
+          
       }
-      lambda.0 <- sqrt(lambda.0.squared)
       
-      # compute lambda.1
-      lambda.1 <- (colSums(G.inv) %*% values - 2*lambda.0) / s
-      
-      # compute optimal contributions
-      c <- (G.inv %*% (values - lambda.1)) / (2*lambda.0)
       # set contribution of discarded individuals to zero
       c.all <- rep(0, n.all)
       c.all[!discarded] <- c
