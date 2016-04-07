@@ -665,7 +665,7 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
 
 # stores PDF plots in "figures/simulation/GS-WGS-OC-[delta.F]",
 # within a subfolder according to the two included heritabilities
-plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA, delta.F){
+plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA, delta.F){
   
   # check: two heritabilities
   if(length(heritability) != 2){
