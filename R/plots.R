@@ -743,10 +743,10 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
     names <- c(
       bquote(GS ~ (h^2 == .(low.h))),
       bquote(WGS ~ (h^2 == .(low.h))),
-      bquote(OC ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ paste(Delta, F) == .(delta.F))))),
+      bquote(OC ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ paste(Delta, F) == .(dF))))),
       bquote(GS ~ (h^2 == .(high.h))),
       bquote(WGS ~ (h^2 == .(high.h))),
-      bquote(OC ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ paste(Delta, F) == .(delta.F)))))
+      bquote(OC ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ paste(Delta, F) == .(dF)))))
     )
     names <- sapply(names, as.expression)
     
