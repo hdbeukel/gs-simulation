@@ -665,7 +665,8 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
 
 # stores PDF plots in "figures/simulation/GS-WGS-OC-[delta.F]",
 # within a subfolder according to the two included heritabilities
-plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA, delta.F){
+plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
+                           delta.F = c(0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005)){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -675,96 +676,101 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
   low.h <- min(heritability)
   high.h <- max(heritability)
   
-  fig.dir <- sprintf("figures/simulation/GS-WGS-OC-%.5f/h2-%.1f-%.1f", delta.F, low.h, high.h)
-  
-  # create output directory
-  if(!dir.exists(fig.dir)){
-    message(sprintf("Create output directory \"%s\"", fig.dir))
-    dir.create(fig.dir, recursive = T)
-  }
-  
-  message("Load data ...")
-  
-  # load data
-  dirs.low.h2 <- c(
-    sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", low.h))),
-    sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", low.h, delta.F)
-  )
-  dirs.high.h2 <- c(
-    sort(Sys.glob(sprintf("out/[GW]*S*/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h))),
-    sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", high.h, delta.F)
-  )
-  data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
-  data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
-  # combine data:
-  # -- low h2 --
-  #  1)  GS, h2: low, add TP: 0
-  #  2)  GS, h2: low, add TP: 800
-  #  3) WGS, h2: low, add TP: 0
-  #  4) WGS, h2: low, add TP: 800
-  #  5)  OC, h2: low, add TP: 0
-  #  6)  OC, h2: low, add TP: 800
-  # -- high h2 --
-  #  7)  GS, h2: high, add TP: 0
-  #  8)  GS, h2: high, add TP: 800
-  #  9) WGS, h2: high, add TP: 0
-  # 10) WGS, h2: high, add TP: 800
-  # 11)  OC, h2: high, add TP: 0
-  # 12)  OC, h2: high, add TP: 800
-  data <- c(data.low.h2, data.high.h2)
-  # group small and large TP results
-  small.TP <- data[c(1,3,5,7,9,11)]
-  large.TP <- data[c(2,4,6,8,10,12)]
-  results <- list(
-    list(data = small.TP, title.suffix = "(TP = 200)"),
-    list(data = large.TP, title.suffix = "(TP = 1000)")
-  )
-  
-  # set graphical parameters
-  params <- list(
-    # GS, h2 = low
-    list(lty = 1, bg = "black", pch = 24),
-    # WGS, h2 = low
-    list(lty = 2, bg = "white", pch = 24),
-    # OC, h2 = low
-    list(lty = 3, bg = "grey", pch = 24),
-    # GS, h2 = high
-    list(lty = 1, bg = "black", pch = 21),
-    # WGS, h2 = high
-    list(lty = 2, bg = "white", pch = 21),
-    # OC, h2 = high
-    list(lty = 3, bg = "grey", pch = 21)
-  )
-  # set curve names
-  names <- c(
-    bquote(GS ~ (h^2 == .(low.h))),
-    bquote(WGS ~ (h^2 == .(low.h))),
-    bquote(OC ~ (h^2 == .(paste(low.h, ", ", sep = "") ~ paste(Delta, F) == .(delta.F)))),
-    bquote(GS ~ (h^2 == .(high.h))),
-    bquote(WGS ~ (h^2 == .(high.h))),
-    bquote(OC ~ (h^2 == .(paste(high.h, ", ", sep = "") ~ paste(Delta, F) == .(delta.F))))
-  )
-  names <- sapply(names, as.expression)
-  
-  message("Create plots ...")
-  
-  # setup plot functions
-  plot.functions <- get.plot.functions()
-  
-  # create plots
-  for(plot.fun in plot.functions){
+  for(dF in delta.F){
     
-    file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+    message(sprintf("Delta F: %.5f", dF))
+    fig.dir <- sprintf("figures/simulation/GS-WGS-OC-%.5f/h2-%.1f-%.1f", dF, low.h, high.h)
     
-    create.pdf(file, function(){
-      # combine small/large TP plots
-      par(mfrow = c(1,2))
-      for(res in results){
-        plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
-        title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
-        add.legend(names, params, pos = plot.fun$legend)
-      }
-    }, height = 6)
+    # create output directory
+    if(!dir.exists(fig.dir)){
+      message(sprintf("Create output directory \"%s\"", fig.dir))
+      dir.create(fig.dir, recursive = T)
+    }
+    
+    message("Load data ...")
+    
+    # load data
+    dirs.low.h2 <- c(
+      sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", low.h))),
+      sort(Sys.glob(sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", low.h, dF)))
+    )
+    dirs.high.h2 <- c(
+      sort(Sys.glob(sprintf("out/[GW]*S*/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h))),
+      sort(Sys.glob(sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", high.h, dF)))
+    )
+    data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
+    data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
+    # combine data:
+    # -- low h2 --
+    #  1)  GS, h2: low, add TP: 0
+    #  2)  GS, h2: low, add TP: 800
+    #  3) WGS, h2: low, add TP: 0
+    #  4) WGS, h2: low, add TP: 800
+    #  5)  OC, h2: low, add TP: 0
+    #  6)  OC, h2: low, add TP: 800
+    # -- high h2 --
+    #  7)  GS, h2: high, add TP: 0
+    #  8)  GS, h2: high, add TP: 800
+    #  9) WGS, h2: high, add TP: 0
+    # 10) WGS, h2: high, add TP: 800
+    # 11)  OC, h2: high, add TP: 0
+    # 12)  OC, h2: high, add TP: 800
+    data <- c(data.low.h2, data.high.h2)
+    # group small and large TP results
+    small.TP <- data[c(1,3,5,7,9,11)]
+    large.TP <- data[c(2,4,6,8,10,12)]
+    results <- list(
+      list(data = small.TP, title.suffix = "(TP = 200)"),
+      list(data = large.TP, title.suffix = "(TP = 1000)")
+    )
+    
+    # set graphical parameters
+    params <- list(
+      # GS, h2 = low
+      list(lty = 1, bg = "black", pch = 24),
+      # WGS, h2 = low
+      list(lty = 2, bg = "white", pch = 24),
+      # OC, h2 = low
+      list(lty = 3, bg = "grey", pch = 24),
+      # GS, h2 = high
+      list(lty = 1, bg = "black", pch = 21),
+      # WGS, h2 = high
+      list(lty = 2, bg = "white", pch = 21),
+      # OC, h2 = high
+      list(lty = 3, bg = "grey", pch = 21)
+    )
+    # set curve names
+    names <- c(
+      bquote(GS ~ (h^2 == .(low.h))),
+      bquote(WGS ~ (h^2 == .(low.h))),
+      bquote(OC ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ paste(Delta, F) == .(delta.F))))),
+      bquote(GS ~ (h^2 == .(high.h))),
+      bquote(WGS ~ (h^2 == .(high.h))),
+      bquote(OC ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ paste(Delta, F) == .(delta.F)))))
+    )
+    names <- sapply(names, as.expression)
+    
+    message("Create plots ...")
+    
+    # setup plot functions
+    plot.functions <- get.plot.functions()
+    
+    # create plots
+    for(plot.fun in plot.functions){
+      
+      file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+      
+      create.pdf(file, function(){
+        # combine small/large TP plots
+        par(mfrow = c(1,2))
+        for(res in results){
+          plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+          title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+          add.legend(names, params, pos = plot.fun$legend)
+        }
+      }, height = 6)
+      
+    }
     
   }
   
