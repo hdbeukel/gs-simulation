@@ -695,7 +695,7 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
       sort(Sys.glob(sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", low.h, dF)))
     )
     dirs.high.h2 <- c(
-      sort(Sys.glob(sprintf("out/[GW]*S*/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h))),
+      sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h))),
       sort(Sys.glob(sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", high.h, dF)))
     )
     data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
