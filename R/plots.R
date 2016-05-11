@@ -11,7 +11,10 @@ load.simulation.results <- function(dir, file.pattern = "bp-*.RDS") {
   # get file paths
   files <- Sys.glob(sprintf("%s/%s", dir, file.pattern))
   # load list of simulated breeding cycles
-  breeding.cycles <- lapply(files, readRDS)
+  breeding.cycles <- lapply(files, function(file){
+    message(file)
+    readRDS(file)
+  })
   # return results
   return(breeding.cycles)
 }
