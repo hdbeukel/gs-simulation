@@ -3,44 +3,44 @@
 # ADD AND STRIP DUMMY MARKERS #
 ###############################
 
-add.dummies = function(data){
+add.dummies <- function(data){
   # check if dummies have not already been added
   if(data$hypred$dummiesAdded){
     stop("dummmies already added")
   }
   # initialize extended genotype matrices and map
-  num.genotypes = data$numGenotypes
-  num.markers = data$numChroms * data$hypred$markersPerChrom
+  num.genotypes <- data$numGenotypes
+  num.markers <- data$numChroms * data$hypred$markersPerChrom
   if(!is.null(data$geno)){
-    geno = matrix(NA, num.genotypes, num.markers)
-    rownames(geno) = rownames(data$geno)
-    colnames(geno) = seq(1, num.markers)
+    geno <- matrix(NA, num.genotypes, num.markers)
+    rownames(geno) <- rownames(data$geno)
+    colnames(geno) <- seq(1, num.markers)
   }
   if(!is.null(data$phasedGeno)){
-    phased.hap1 = matrix(NA, num.genotypes, num.markers)
-    phased.hap2 = matrix(NA, num.genotypes, num.markers)
-    rownames(phased.hap1) = rownames(data$phasedGeno$hap1)
-    colnames(phased.hap1) = seq(1, num.markers)
-    rownames(phased.hap2) = rownames(data$phasedGeno$hap2)
-    colnames(phased.hap2) = seq(1, num.markers)
+    phased.hap1 <- matrix(NA, num.genotypes, num.markers)
+    phased.hap2 <- matrix(NA, num.genotypes, num.markers)
+    rownames(phased.hap1) <- rownames(data$phasedGeno$hap1)
+    colnames(phased.hap1) <- seq(1, num.markers)
+    rownames(phased.hap2) <- rownames(data$phasedGeno$hap2)
+    colnames(phased.hap2) <- seq(1, num.markers)
   }
   if(!is.null(data$dh)){
-    dh = matrix(NA, num.genotypes, num.markers)
-    rownames(dh) = rownames(data$dh)
-    colnames(dh) = seq(1, num.markers)
+    dh <- matrix(NA, num.genotypes, num.markers)
+    rownames(dh) <- rownames(data$dh)
+    colnames(dh) <- seq(1, num.markers)
   }
-  map = matrix(NA, num.markers, 2)
-  rownames(map) = seq(1, num.markers)
-  colnames(map) = colnames(data$map)
+  map <- matrix(NA, num.markers, 2)
+  rownames(map) <- seq(1, num.markers)
+  colnames(map) <- colnames(data$map)
   # fill extended genotype matrices and map (per chromosome)
   for(i in 1:data$numChroms){
     # compute marker index bounds (real part + dummy part)
-    start.real = (i-1)*data$hypred$markersPerChrom + 1
-    end.real = start.real + data$chrNumMarkers[i] - 1
-    start.dummy = end.real + 1
-    end.dummy = i*data$hypred$markersPerChrom
-    orig.start = data$hypred$chromBounds[i,1]
-    orig.end = data$hypred$chromBounds[i,2]
+    start.real <- (i-1)*data$hypred$markersPerChrom + 1
+    end.real <- start.real + data$chrNumMarkers[i] - 1
+    start.dummy <- end.real + 1
+    end.dummy <- i*data$hypred$markersPerChrom
+    orig.start <- data$hypred$chromBounds[i,1]
+    orig.end <- data$hypred$chromBounds[i,2]
     message("Extending chromosome ", i, ":", " start.real = ", start.real,
                                              ", end.real = ", end.real,
                                              ", start.dummy = ", start.dummy,
@@ -49,165 +49,165 @@ add.dummies = function(data){
                                              ", orig.end = ", orig.end)
     # copy real genotype data
     if(exists("geno")){
-      geno[,start.real:end.real] = data$geno[, orig.start:orig.end]
-      colnames(geno)[start.real:end.real] = colnames(data$geno)[orig.start:orig.end]
+      geno[,start.real:end.real] <- data$geno[, orig.start:orig.end]
+      colnames(geno)[start.real:end.real] <- colnames(data$geno)[orig.start:orig.end]
     }
     if(exists("phased.hap1")){
-      phased.hap1[,start.real:end.real] = data$phasedGeno$hap1[, orig.start:orig.end]
-      phased.hap2[,start.real:end.real] = data$phasedGeno$hap2[, orig.start:orig.end]
-      colnames(phased.hap1)[start.real:end.real] = colnames(data$phasedGeno$hap1)[orig.start:orig.end]
-      colnames(phased.hap2)[start.real:end.real] = colnames(data$phasedGeno$hap2)[orig.start:orig.end]
+      phased.hap1[,start.real:end.real] <- data$phasedGeno$hap1[, orig.start:orig.end]
+      phased.hap2[,start.real:end.real] <- data$phasedGeno$hap2[, orig.start:orig.end]
+      colnames(phased.hap1)[start.real:end.real] <- colnames(data$phasedGeno$hap1)[orig.start:orig.end]
+      colnames(phased.hap2)[start.real:end.real] <- colnames(data$phasedGeno$hap2)[orig.start:orig.end]
     }
     if(exists("dh")){
-      dh[,start.real:end.real] = data$dh[, orig.start:orig.end]
-      colnames(dh)[start.real:end.real] = colnames(data$dh)[orig.start:orig.end]
+      dh[,start.real:end.real] <- data$dh[, orig.start:orig.end]
+      colnames(dh)[start.real:end.real] <- colnames(data$dh)[orig.start:orig.end]
     }
     # set dummy genotype data
     if(data$hypred$chrNumDummies[i] > 0){
-      dummy.names = paste("dummy", i, seq(1, data$hypred$chrNumDummies[i]), sep="-")
+      dummy.names <- paste("dummy", i, seq(1, data$hypred$chrNumDummies[i]), sep="-")
       if(exists("geno")){
-        geno[,start.dummy:end.dummy] = 0
-        colnames(geno)[start.dummy:end.dummy] = dummy.names
+        geno[,start.dummy:end.dummy] <- 0
+        colnames(geno)[start.dummy:end.dummy] <- dummy.names
       }
       if(exists("phased.hap1")){
-        phased.hap1[,start.dummy:end.dummy] = 0
-        phased.hap2[,start.dummy:end.dummy] = 0
-        colnames(phased.hap1)[start.dummy:end.dummy] = dummy.names
-        colnames(phased.hap2)[start.dummy:end.dummy] = dummy.names
+        phased.hap1[,start.dummy:end.dummy] <- 0
+        phased.hap2[,start.dummy:end.dummy] <- 0
+        colnames(phased.hap1)[start.dummy:end.dummy] <- dummy.names
+        colnames(phased.hap2)[start.dummy:end.dummy] <- dummy.names
       }
       if(exists("dh")){
-        dh[,start.dummy:end.dummy] = 0
-        colnames(dh)[start.dummy:end.dummy] = dummy.names
+        dh[,start.dummy:end.dummy] <- 0
+        colnames(dh)[start.dummy:end.dummy] <- dummy.names
       }
     }
     # update map (dummies at 1 cM distance)
-    map[start.real:end.real,] = as.matrix(data$map[orig.start:orig.end,])
-    rownames(map)[start.real:end.real] = rownames(data$map)[orig.start:orig.end]
+    map[start.real:end.real,] <- as.matrix(data$map[orig.start:orig.end,])
+    rownames(map)[start.real:end.real] <- rownames(data$map)[orig.start:orig.end]
     if(data$hypred$chrNumDummies[i] > 0){
       # chromosome number
-      map[start.dummy:end.dummy,1] = i
+      map[start.dummy:end.dummy,1] <- i
       # position
-      map[start.dummy:end.dummy,2] = data$chrLengths[i] + seq(1,data$hypred$chrNumDummies[i])
+      map[start.dummy:end.dummy,2] <- data$chrLengths[i] + seq(1,data$hypred$chrNumDummies[i])
       # names
-      rownames(map)[start.dummy:end.dummy] = dummy.names
+      rownames(map)[start.dummy:end.dummy] <- dummy.names
     }
   }
   # set extended genotype matrices and map
   if(exists("geno")){
-    data$geno = geno
+    data$geno <- geno
   }
   if(exists("phased.hap1")){
-    data$phasedGeno = list(hap1 = phased.hap1, hap2 = phased.hap2)
+    data$phasedGeno <- list(hap1 = phased.hap1, hap2 = phased.hap2)
   }
   if(exists("dh")){
-    data$dh = dh
+    data$dh <- dh
   }
-  data$map = as.data.frame(map)
+  data$map <- as.data.frame(map)
   
   # update metadata
-  data$numMarkers = num.markers
-  data$chrLengths = data$chrLengths + data$hypred$chrNumDummies
-  data$chrNumMarkers[] = data$hypred$markersPerChrom
-  data$hypred$chromBounds[,1] = data$hypred$chromBounds[,1] + c(0, cumsum(data$hypred$chrNumDummies[1:(data$numChroms-1)]))
-  data$hypred$chromBounds[,2] = data$hypred$chromBounds[,2] + cumsum(data$hypred$chrNumDummies)
+  data$numMarkers <- num.markers
+  data$chrLengths <- data$chrLengths + data$hypred$chrNumDummies
+  data$chrNumMarkers[] <- data$hypred$markersPerChrom
+  data$hypred$chromBounds[,1] <- data$hypred$chromBounds[,1] + c(0, cumsum(data$hypred$chrNumDummies[1:(data$numChroms-1)]))
+  data$hypred$chromBounds[,2] <- data$hypred$chromBounds[,2] + cumsum(data$hypred$chrNumDummies)
   
   # attach hypred genome definition if not yet present
   if(is.null(data$hypred$genome)){
     # IMPORTANT: positions and lengths in Morgan (not cM)
-    hypred.genome = hypredGenome(num.chr = data$numChroms,
+    hypred.genome <- hypredGenome(num.chr = data$numChroms,
                                  len.chr = data$chrLengths/100.0,
                                  num.snp.chr = data$hypred$markersPerChrom)
-    hypred.genome = hypredNewMap(hypred.genome, data$map$pos/100.0)
-    data$hypred$genome = hypred.genome
+    hypred.genome <- hypredNewMap(hypred.genome, data$map$pos/100.0)
+    data$hypred$genome <- hypred.genome
   }
   
   # change dummy flag
-  data$hypred$dummiesAdded = TRUE
+  data$hypred$dummiesAdded <- TRUE
   
   return(data)
 }
 
-strip.dummies = function(data){
+strip.dummies <- function(data){
   # check if dummies have been added
   if(!data$hypred$dummiesAdded){
     stop("dummmies currently not added")
   }
   # initialize stripped genotype matrices and map
-  num.genotypes = data$numGenotypes
-  num.markers = data$numMarkers - sum(data$hypred$chrNumDummies)
+  num.genotypes <- data$numGenotypes
+  num.markers <- data$numMarkers - sum(data$hypred$chrNumDummies)
   if(!is.null(data$geno)){
-    geno = matrix(NA, num.genotypes, num.markers)
-    rownames(geno) = rownames(data$geno)
-    colnames(geno) = seq(1, num.markers)
+    geno <- matrix(NA, num.genotypes, num.markers)
+    rownames(geno) <- rownames(data$geno)
+    colnames(geno) <- seq(1, num.markers)
   }
   if(!is.null(data$phasedGeno)){
-    phased.hap1 = matrix(NA, num.genotypes, num.markers)
-    phased.hap2 = matrix(NA, num.genotypes, num.markers)
-    rownames(phased.hap1) = rownames(data$phasedGeno$hap1)
-    colnames(phased.hap1) = seq(1, num.markers)
-    rownames(phased.hap2) = rownames(data$phasedGeno$hap2)
-    colnames(phased.hap2) = seq(1, num.markers)
+    phased.hap1 <- matrix(NA, num.genotypes, num.markers)
+    phased.hap2 <- matrix(NA, num.genotypes, num.markers)
+    rownames(phased.hap1) <- rownames(data$phasedGeno$hap1)
+    colnames(phased.hap1) <- seq(1, num.markers)
+    rownames(phased.hap2) <- rownames(data$phasedGeno$hap2)
+    colnames(phased.hap2) <- seq(1, num.markers)
   }
   if(!is.null(data$dh)){
-    dh = matrix(NA, num.genotypes, num.markers)
-    rownames(dh) = rownames(data$dh)
-    colnames(dh) = seq(1, num.markers)
+    dh <- matrix(NA, num.genotypes, num.markers)
+    rownames(dh) <- rownames(data$dh)
+    colnames(dh) <- seq(1, num.markers)
   }
-  map = matrix(NA, num.markers, 3)
-  rownames(map) = seq(1, num.markers)
-  colnames(map) = colnames(data$map)
+  map <- matrix(NA, num.markers, 2)
+  rownames(map) <- seq(1, num.markers)
+  colnames(map) <- colnames(data$map)
   # strip genotype matrices and map (per chromosome)
-  strippedNumMarkers = data$chrNumMarkers - data$hypred$chrNumDummies
+  strippedNumMarkers <- data$chrNumMarkers - data$hypred$chrNumDummies
   for(i in 1:data$numChroms){
     # compute marker index bounds
-    start.stripped = sum(strippedNumMarkers[1:i]) - strippedNumMarkers[i] + 1
-    end.stripped = sum(strippedNumMarkers[1:i])
-    start.extended = data$hypred$chromBounds[i,1]
-    end.extended = data$hypred$chromBounds[i,2] - data$hypred$chrNumDummies[i]
+    start.stripped <- sum(strippedNumMarkers[1:i]) - strippedNumMarkers[i] + 1
+    end.stripped <- sum(strippedNumMarkers[1:i])
+    start.extended <- data$hypred$chromBounds[i,1]
+    end.extended <- data$hypred$chromBounds[i,2] - data$hypred$chrNumDummies[i]
     message("Stripping chromosome ", i, ":", " start.stripped = ", start.stripped,
                                              ", end.stripped = ", end.stripped,
                                              ", start.extended = ", start.extended,
                                              ", end.extended = ", end.extended)
     # strip genotype data
     if(exists("geno")){
-      geno[,start.stripped:end.stripped] = data$geno[,start.extended:end.extended]
-      colnames(geno)[start.stripped:end.stripped] = colnames(data$geno)[start.extended:end.extended]
+      geno[,start.stripped:end.stripped] <- data$geno[,start.extended:end.extended]
+      colnames(geno)[start.stripped:end.stripped] <- colnames(data$geno)[start.extended:end.extended]
     }
     if(exists("phased.hap1")){
-      phased.hap1[,start.stripped:end.stripped] = data$phasedGeno$hap1[,start.extended:end.extended]
-      phased.hap2[,start.stripped:end.stripped] = data$phasedGeno$hap2[,start.extended:end.extended]
-      colnames(phased.hap1)[start.stripped:end.stripped] = colnames(data$phasedGeno$hap1)[start.extended:end.extended]
-      colnames(phased.hap2)[start.stripped:end.stripped] = colnames(data$phasedGeno$hap2)[start.extended:end.extended]
+      phased.hap1[,start.stripped:end.stripped] <- data$phasedGeno$hap1[,start.extended:end.extended]
+      phased.hap2[,start.stripped:end.stripped] <- data$phasedGeno$hap2[,start.extended:end.extended]
+      colnames(phased.hap1)[start.stripped:end.stripped] <- colnames(data$phasedGeno$hap1)[start.extended:end.extended]
+      colnames(phased.hap2)[start.stripped:end.stripped] <- colnames(data$phasedGeno$hap2)[start.extended:end.extended]
     }
     if(exists("dh")){
-      dh[,start.stripped:end.stripped] = data$dh[,start.extended:end.extended]
-      colnames(dh)[start.stripped:end.stripped] = colnames(data$dh)[start.extended:end.extended]
+      dh[,start.stripped:end.stripped] <- data$dh[,start.extended:end.extended]
+      colnames(dh)[start.stripped:end.stripped] <- colnames(data$dh)[start.extended:end.extended]
     }
     # strip map
-    map[start.stripped:end.stripped,] = as.matrix(data$map[start.extended:end.extended,])
-    rownames(map)[start.stripped:end.stripped] = rownames(data$map)[start.extended:end.extended]
+    map[start.stripped:end.stripped,] <- as.matrix(data$map[start.extended:end.extended,])
+    rownames(map)[start.stripped:end.stripped] <- rownames(data$map)[start.extended:end.extended]
   }
   # set stripped genotype matrices and map
   if(exists("geno")){
-    data$geno = geno
+    data$geno <- geno
   }
   if(exists("phased.hap1")){
-    data$phasedGeno = list(hap1 = phased.hap1, hap2 = phased.hap2)
+    data$phasedGeno <- list(hap1 = phased.hap1, hap2 = phased.hap2)
   }
   if(exists("dh")){
-    data$dh = dh
+    data$dh <- dh
   }
-  data$map = as.data.frame(map)
+  data$map <- as.data.frame(map)
   
   # update metadata
-  data$numMarkers = num.markers
-  data$chrLengths = data$chrLengths - data$hypred$chrNumDummies
-  data$chrNumMarkers = data$chrNumMarkers - data$hypred$chrNumDummies
-  data$hypred$chromBounds[,1] = data$hypred$chromBounds[,1] - c(0, cumsum(data$hypred$chrNumDummies[1:(data$numChroms-1)]))
-  data$hypred$chromBounds[,2] = data$hypred$chromBounds[,2] - cumsum(data$hypred$chrNumDummies)
+  data$numMarkers <- num.markers
+  data$chrLengths <- data$chrLengths - data$hypred$chrNumDummies
+  data$chrNumMarkers <- data$chrNumMarkers - data$hypred$chrNumDummies
+  data$hypred$chromBounds[,1] <- data$hypred$chromBounds[,1] - c(0, cumsum(data$hypred$chrNumDummies[1:(data$numChroms-1)]))
+  data$hypred$chromBounds[,2] <- data$hypred$chromBounds[,2] - cumsum(data$hypred$chrNumDummies)
   
   # change dummy flag
-  data$hypred$dummiesAdded = FALSE
+  data$hypred$dummiesAdded <- FALSE
   
   return(data)
 }
