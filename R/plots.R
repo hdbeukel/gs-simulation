@@ -100,7 +100,7 @@ get.plot.functions <- function(){
     list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency",
          legend = "bottomright", ylim = c(0.50, 0.625)),
     list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
-    #      legend = "bottomleft", ylim = c(0.3, 0.9)),
+          legend = "bottomleft", ylim = c(0.3, 0.9)),
     list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = "Inbreeding rate",
          legend = "topleft", ylim = c(0, 0.8)),
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
