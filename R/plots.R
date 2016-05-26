@@ -100,7 +100,7 @@ get.plot.functions <- function(){
     list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency",
          legend = "bottomright", ylim = c(0.50, 0.625)),
     list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
-         legend = "bottomleft", ylim = c(0.3, 0.9)),
+    #      legend = "bottomleft", ylim = c(0.3, 0.9)),
     list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = "Inbreeding rate",
          legend = "topleft", ylim = c(0, 0.8)),
     list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
@@ -110,8 +110,8 @@ get.plot.functions <- function(){
     list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
          legend = "bottomright", ylim = c(0.1, 0.45)),
     list(
-      f = function(...){ 
-        plot.effect.estimation.accuracy(..., corrected = TRUE) 
+      f = function(...){
+        plot.effect.estimation.accuracy(..., corrected = TRUE)
       },
       name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
       legend = "bottomright", ylim = c(0.1, 0.45)
@@ -119,22 +119,22 @@ get.plot.functions <- function(){
     list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Proportion of effect sign mismatches",
          legend = "topright", ylim = c(0.38, 0.5)),
     list(
-      f = function(...){ 
-        plot.effect.sign.mismatches(..., max.maf = 0.10) 
+      f = function(...){
+        plot.effect.sign.mismatches(..., max.maf = 0.10)
       },
       name = "sign-mismatches-maf-0.10", title = "Proportion of effect sign mismatches for rare alleles",
       legend = "topright", ylim = c(0.38, 0.5)
     ),
     list(
-      f = function(...){ 
-        plot.effect.sign.mismatches(..., max.maf = 0.05) 
+      f = function(...){
+        plot.effect.sign.mismatches(..., max.maf = 0.05)
       },
       name = "sign-mismatches-maf-0.05", title = "Proportion of effect sign mismatches for rare alleles",
       legend = "topright", ylim = c(0.38, 0.5)
     ),
     list(
-      f = function(...){ 
-        plot.effect.sign.mismatches(..., eff.quantile = 0.25) 
+      f = function(...){
+        plot.effect.sign.mismatches(..., eff.quantile = 0.25)
       },
       name = "sign-mismatches-eff-quant-0.25", title = "Proportion of effect sign mismatches",
       legend = "topright", ylim = c(0.38, 0.5)
@@ -747,6 +747,109 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
       bquote(WGS ~ (h^2 == .(low.h))),
       bquote(OC ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ paste(Delta, F) == .(dF))))),
       bquote(GS ~ (h^2 == .(high.h))),
+      bquote(WGS ~ (h^2 == .(high.h))),
+      bquote(OC ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ paste(Delta, F) == .(dF)))))
+    )
+    names <- sapply(names, as.expression)
+    
+    message("Create plots ...")
+    
+    # setup plot functions
+    plot.functions <- get.plot.functions()
+    
+    # create plots
+    for(plot.fun in plot.functions){
+      
+      file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+      
+      create.pdf(file, function(){
+        # combine small/large TP plots
+        par(mfrow = c(1,2))
+        for(res in results){
+          plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+          title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+          add.legend(names, params, pos = plot.fun$legend)
+        }
+      }, height = 6)
+      
+    }
+    
+  }
+  
+}
+
+# stores PDF plots in "figures/simulation/WGS-OC-[delta.F]",
+# within a subfolder according to the two included heritabilities
+plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
+                           delta.F = c(0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005)){
+  
+  # check: two heritabilities
+  if(length(heritability) != 2){
+    stop("'heritability' should be a vector of length 2")
+  }
+  # extract low and high heritabilities
+  low.h <- min(heritability)
+  high.h <- max(heritability)
+  
+  for(dF in delta.F){
+    
+    message(sprintf("Delta F: %.5f", dF))
+    fig.dir <- sprintf("figures/simulation/WGS-OC-%.5f/h2-%.1f-%.1f", dF, low.h, high.h)
+    
+    # create output directory
+    if(!dir.exists(fig.dir)){
+      message(sprintf("Create output directory \"%s\"", fig.dir))
+      dir.create(fig.dir, recursive = T)
+    }
+    
+    message("Load data ...")
+    
+    # load data
+    dirs.low.h2 <- c(
+      sort(Sys.glob(sprintf("out/WGS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", low.h))),
+      sort(Sys.glob(sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", low.h, dF)))
+    )
+    dirs.high.h2 <- c(
+      sort(Sys.glob(sprintf("out/WGS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h))),
+      sort(Sys.glob(sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", high.h, dF)))
+    )
+    data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
+    data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
+    # combine data:
+    # -- low h2 --
+    # 1) WGS, h2: low, add TP: 0
+    # 2) WGS, h2: low, add TP: 800
+    # 3)  OC, h2: low, add TP: 0
+    # 4)  OC, h2: low, add TP: 800
+    # -- high h2 --
+    # 5) WGS, h2: high, add TP: 0
+    # 6) WGS, h2: high, add TP: 800
+    # 7)  OC, h2: high, add TP: 0
+    # 8)  OC, h2: high, add TP: 800
+    data <- c(data.low.h2, data.high.h2)
+    # group small and large TP results
+    small.TP <- data[c(1,3,5,7)]
+    large.TP <- data[c(2,4,6,8)]
+    results <- list(
+      list(data = small.TP, title.suffix = "(TP = 200)"),
+      list(data = large.TP, title.suffix = "(TP = 1000)")
+    )
+    
+    # set graphical parameters
+    params <- list(
+      # WGS, h2 = low
+      list(lty = 1, bg = "black", pch = 24),
+      # OC, h2 = low
+      list(lty = 2, bg = "white", pch = 24),
+      # WGS, h2 = high
+      list(lty = 1, bg = "black", pch = 21),
+      # OC, h2 = high
+      list(lty = 2, bg = "white", pch = 21)
+    )
+    # set curve names
+    names <- c(
+      bquote(WGS ~ (h^2 == .(low.h))),
+      bquote(OC ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ paste(Delta, F) == .(dF))))),
       bquote(WGS ~ (h^2 == .(high.h))),
       bquote(OC ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ paste(Delta, F) == .(dF)))))
     )
