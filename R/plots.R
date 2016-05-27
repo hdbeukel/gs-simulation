@@ -95,50 +95,50 @@ get.plot.functions <- function(){
   plot.functions <- list(
     list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
          legend = "bottomright", ylim =  c(0, 0.3)),
-    list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
-         legend = "bottomright", ylim = c(0, 1.0)),
-    list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency",
-         legend = "bottomright", ylim = c(0.50, 0.625)),
-    list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
-          legend = "bottomleft", ylim = c(0.3, 0.9)),
+    # list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
+    #      legend = "bottomright", ylim = c(0, 1.0)),
+    # list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency",
+    #      legend = "bottomright", ylim = c(0.50, 0.625)),
+    # list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
+    #       legend = "bottomleft", ylim = c(0.3, 0.9)),
     list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = "Inbreeding rate",
-         legend = "topleft", ylim = c(0, 0.8)),
-    list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
-         legend = "topright", ylim = c(0, 0.035)),
-    list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost",
-         legend = "bottomright", ylim = c(0, 450)),
-    list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
-         legend = "bottomright", ylim = c(0.1, 0.45)),
-    list(
-      f = function(...){
-        plot.effect.estimation.accuracy(..., corrected = TRUE)
-      },
-      name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
-      legend = "bottomright", ylim = c(0.1, 0.45)
-    ),
-    list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Proportion of effect sign mismatches",
-         legend = "topright", ylim = c(0.38, 0.5)),
-    list(
-      f = function(...){
-        plot.effect.sign.mismatches(..., max.maf = 0.10)
-      },
-      name = "sign-mismatches-maf-0.10", title = "Proportion of effect sign mismatches for rare alleles",
-      legend = "topright", ylim = c(0.38, 0.5)
-    ),
-    list(
-      f = function(...){
-        plot.effect.sign.mismatches(..., max.maf = 0.05)
-      },
-      name = "sign-mismatches-maf-0.05", title = "Proportion of effect sign mismatches for rare alleles",
-      legend = "topright", ylim = c(0.38, 0.5)
-    ),
-    list(
-      f = function(...){
-        plot.effect.sign.mismatches(..., eff.quantile = 0.25)
-      },
-      name = "sign-mismatches-eff-quant-0.25", title = "Proportion of effect sign mismatches",
-      legend = "topright", ylim = c(0.38, 0.5)
-    )
+         legend = "topleft", ylim = c(0, 0.8))#,
+    # list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
+    #      legend = "topright", ylim = c(0, 0.035)),
+    # list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost",
+    #      legend = "bottomright", ylim = c(0, 450)),
+    # list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
+    #      legend = "bottomright", ylim = c(0.1, 0.45)),
+    # list(
+    #   f = function(...){
+    #     plot.effect.estimation.accuracy(..., corrected = TRUE)
+    #   },
+    #   name = "eff-acc-corrected", title = "Corrected effect estimation accuracy",
+    #   legend = "bottomright", ylim = c(0.1, 0.45)
+    # ),
+    # list(f = plot.effect.sign.mismatches, name = "sign-mismatches", title = "Proportion of effect sign mismatches",
+    #      legend = "topright", ylim = c(0.38, 0.5)),
+    # list(
+    #   f = function(...){
+    #     plot.effect.sign.mismatches(..., max.maf = 0.10)
+    #   },
+    #   name = "sign-mismatches-maf-0.10", title = "Proportion of effect sign mismatches for rare alleles",
+    #   legend = "topright", ylim = c(0.38, 0.5)
+    # ),
+    # list(
+    #   f = function(...){
+    #     plot.effect.sign.mismatches(..., max.maf = 0.05)
+    #   },
+    #   name = "sign-mismatches-maf-0.05", title = "Proportion of effect sign mismatches for rare alleles",
+    #   legend = "topright", ylim = c(0.38, 0.5)
+    # ),
+    # list(
+    #   f = function(...){
+    #     plot.effect.sign.mismatches(..., eff.quantile = 0.25)
+    #   },
+    #   name = "sign-mismatches-eff-quant-0.25", title = "Proportion of effect sign mismatches",
+    #   legend = "topright", ylim = c(0.38, 0.5)
+    # )
   )
   return(plot.functions)
 }
@@ -149,9 +149,9 @@ get.plot.functions <- function(){
 #  2) the given optimal strategy name
 #  3) whether confidence intervals are included (ci)
 plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
-                         HE.all.weight = 0.35, HE.fav.weight = 0.50, LOG.all.weight = 0.35, LOG.fav.weight = 0.50,
+                         OC.delta.F = 0.0003, CGS.alpha = 0.35,
                          heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
-                         xlim = c(0,30), ci = NA, main.plots = TRUE, MDS.methods = FALSE,
+                         xlim = c(0,30), ci = NA, main.plots = TRUE,
                          MDS.pops = FALSE){
   
   # check: two heritabilities
@@ -161,14 +161,6 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   # extract low and high heritability
   low.h <- min(heritability)
   high.h <- max(heritability)
-  
-  # combine weights
-  div.weights <- c(HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight)
-  names(div.weights) <- c("HEall", "HEfav", "LOGall", "LOGfav")
-  div.measure.labels.main <- c("HE", "HE", "LOG", "LOG")
-  names(div.measure.labels.main) <- names(div.weights)
-  div.measure.labels.subscript <- c("all", "fav", "all", "fav")
-  names(div.measure.labels.subscript) <- names(div.weights)
   
   fig.dir <- sprintf("figures/simulation/CGS/h2-%.1f-%.1f/%s", low.h, high.h, strategy.name)
   if(!is.na(ci)){
@@ -190,74 +182,70 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     list(h = high.h, add.tp = 800)
   )
   
-  # load data
-  message("|- Load data ...")
-  
-  all.data <- lapply(settings, function(setting){
-    
-    h <- setting$h
-    add.tp <- setting$add.tp
-    tp <- add.tp + 200
-    
-    message(sprintf(" |- Heritability: %.1f, additional TP: %d", h, add.tp))
-    
-    # determine data directory names
-    dir.template <- sprintf("out/%%s/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.tp)
-    # CGS results with various diversity measures and selected weights
-    CGS.dir.template <- paste(sprintf(dir.template, "CGS"), "%s-%.2f/index", sep = "/")
-    CGS.dirs <- sapply(names(div.weights), function(div.measure){
-      sprintf(CGS.dir.template, div.measure, div.weights[div.measure])
-    })
-    # corresponding GS/WGS results
-    GS.dir <- sprintf(dir.template, "GS")
-    WGS.dir <- sprintf(dir.template, "WGS")
-    
-    # load:
-    #    1) GS
-    # 2..5) CGS with various diversity measures and selected weights
-    #    6) WGS
-    data <- lapply(c(GS.dir, CGS.dirs, WGS.dir), load.simulation.results, file.pattern)
-    
-    return(list(data = data, h = h, tp = tp))
-    
-  })
-  
-  # set graphical parameters
-  params <- list(
-    list(lty = 1, bg = "black", pch = 23), # GS
-    list(lty = 3, bg = "black", pch = 24), # CGS: HEall
-    list(lty = 3, bg = "white", pch = 24), # CGS: HEfav
-    list(lty = 4, bg = "black", pch = 25), # CGS: LOGall
-    list(lty = 4, bg = "white", pch = 25), # CGS: LOGfav
-    list(lty = 2, bg = "white", pch = 21)  # WGS
-  )
-  
-  # set curve names
-  names <- as.list(rep(NA, length(params)))
-  
-  # GS
-  names[[1]] <- bquote(GS)
-  # CGS
-  names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
-    bquote(CGS ~ (.(div.measure.labels.main[div.measure])[.(div.measure.labels.subscript[div.measure])]: alpha == .(sprintf("%.2f", div.weights[div.measure]))))
-  })
-  # WGS
-  names[[length(names)]] <- bquote(WGS)
-  # convert to expressions
-  names <- as.expression(names)
-  
-  # setup plot functions
-  plot.functions <- get.plot.functions()
-  # init function to extend plot title
-  make.title <- function(title, h, tp){
-    h.formatted <- sprintf("%.1f", h)
-    bquote(.(title) ~ (.(substitute(list(h^2 == .h2, TP == .tp), list(.h2 = h.formatted, .tp = tp)))))
-  }
-  
-  # create plots
-  message("|- Create plots ...")
-  
   if(main.plots){
+    
+    # load data
+    message("|- Load data ...")
+    
+    all.data <- lapply(settings, function(setting){
+      
+      h <- setting$h
+      add.tp <- setting$add.tp
+      tp <- add.tp + 200
+      
+      message(sprintf(" |- Heritability: %.1f, additional TP: %d", h, add.tp))
+      
+      # determine data directory names
+      dir.template <- sprintf("out/%%s/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.tp)
+      # CGS results with selected weight
+      CGS.dir.template <- paste(sprintf(dir.template, "CGS"), "%s-%.2f/index", sep = "/")
+      CGS.dir <- sprintf(CGS.dir.template, "LOGall", CGS.alpha)
+      # corresponding OC results
+      OC.dir.template <- paste(sprintf(dir.template, "OC"), "dF-%.5f", sep = "/")
+      OC.dir <- sprintf(OC.dir.template, OC.delta.F)
+      # corresponding WGS results
+      WGS.dir <- sprintf(dir.template, "WGS")
+      
+      # load:
+      #    1) WGS
+      #    2) OC
+      #    3) CGS
+      data <- lapply(c(WGS.dir, OC.dir, CGS.dir), load.simulation.results, file.pattern)
+      
+      return(list(data = data, h = h, tp = tp))
+      
+    })
+    
+    # set graphical parameters
+    params <- list(
+      list(lty = 1, bg = "black", pch = 21), # WGS
+      list(lty = 2, bg = "white", pch = 24), # OC
+      list(lty = 3, bg = "grey",  pch = 25)  # CGS
+    )
+    
+    # set curve names
+    names <- as.list(rep(NA, length(params)))
+    
+    # WGS
+    names[[1]] <- bquote(WGS)
+    # OC
+    names[[2]] <- bquote(OC ~ (paste(Delta, F) == .(sprintf("%.5f", OC.delta.F))))
+    # CGS
+    names[[3]] <- bquote(SET ~ (alpha == .(sprintf("%.2f", CGS.alpha))))
+    # convert to expressions
+    names <- as.expression(names)
+    
+    # setup plot functions
+    plot.functions <- get.plot.functions()
+    # init function to extend plot title
+    make.title <- function(title, h, tp){
+      h.formatted <- sprintf("%.1f", h)
+      bquote(.(title) ~ (.(substitute(list(h^2 == .h2, TP == .tp), list(.h2 = h.formatted, .tp = tp)))))
+    }
+    
+    # create plots
+    message("|- Create plots ...")
+    
     for(plot.fun in plot.functions){
       
       message(" |- ", plot.fun$name, " ...")
@@ -335,27 +323,6 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
   }
   
   # MDS plots
-  
-  if(MDS.methods){
-    
-    # comparison of different methods, averaged over several BP
-    file <- sprintf("%s/%s.pdf", fig.dir, "mds-methods")
-    
-    create.pdf(file, function(){
-      
-      # shorten names
-      names[2:(length(names)-1)] <- sapply(names(div.weights), function(div.measure){
-        bquote(.(div.measure.labels.main[div.measure])[.(div.measure.labels.subscript[div.measure])])
-      })
-      # plot
-      plot.MDS.methods(all.data, names, cex = 1.5)
-      title("Similarity of final selections")
-      
-    }, width = 8, height = 6)
-    
-  }
-    
-  # detailed populations
   if(MDS.pops){
     
     settings <- list(
@@ -385,7 +352,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
             par(mfrow = c(3,3))
             gen <- c(1, seq(2, 30, 4))
             plot.MDS.populations.CGS.opt(type,
-                                         HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight,
+                                         OC.delta.F, CGS.alpha,
                                          gen, bp, setting$h2, setting$addTP)
             
           }, width = 12, height = 12)
@@ -396,40 +363,18 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           file <- sprintf("%s/%s.mp4", fig.dir, name)
           
           saveVideo({
-            
+
             gen <- 1:30
             plot.MDS.populations.CGS.opt(type,
-                                         HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight,
+                                         OC.delta.F, CGS.alpha,
                                          gen, bp, setting$h2, setting$addTP, include.gain = TRUE)
-            
+
           }, video.name = file, ani.height = 500, ani.width = 1000, interval = 0.5, autobrowse = FALSE)
           
         }
       }
     }
 
-  }
-  
-}
-
-plot.CGS.opt.all <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
-                             main.plots = TRUE, MDS.methods = FALSE, MDS.pops = FALSE){
-  
-  # optimal strategies
-  opt.strategies <- list(
-    # short-term gain at least as high as Jannink's WGS
-    list(name = "OPT-high-short-term-gain", HE.all.weight = 0.35, HE.fav.weight = 0.5, LOG.all.weight = 0.35, LOG.fav.weight = 0.5),
-    # moderate short-term gain (at least that of GS in previous generation)
-    list(name = "OPT-moderate-short-term-gain", HE.all.weight = 0.45, HE.fav.weight = 0.65, LOG.all.weight = 0.45, LOG.fav.weight = 0.65),
-    # maximum long-term gain
-    list(name = "OPT-max-long-term-gain", HE.all.weight = 0.5, HE.fav.weight = 0.75, LOG.all.weight = 0.50, LOG.fav.weight = 0.75)
-  )
-  
-  for(strat in opt.strategies){
-    message("Strategy: ", strat$name)
-    plot.CGS.opt(strat$name,
-                 strat$HE.all.weight, strat$HE.fav.weight, strat$LOG.all.weight, strat$LOG.fav.weight,
-                 heritability, file.pattern, xlim, ci, main.plots, MDS.methods, MDS.pops)
   }
   
 }
@@ -651,15 +596,32 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
   
     file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
 
+    # combine small/large TP plots
     create.pdf(file, function(){
-      # combine small/large TP plots
       par(mfrow = c(1,2))
       for(res in results){
         plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
         title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
         add.legend(names, params, pos = plot.fun$legend)
       }
-    }, height = 6)
+    }, height = 5.25)
+    
+    # separate plots for small and large TP
+    
+    create.pdf(sprintf("%s/%s-TP200.pdf", fig.dir, plot.fun$name), function(){
+      res <- results[[1]]
+      plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+      title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+      add.legend(names, params, pos = plot.fun$legend)
+    }, height = 5.25, width = 7)
+    
+    create.pdf(sprintf("%s/%s-TP1000.pdf", fig.dir, plot.fun$name), function(){
+      res <- results[[2]]
+      plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+      title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+      add.legend(names, params, pos = plot.fun$legend)
+    }, height = 5.25, width = 7)
+    
       
   }
   
@@ -762,15 +724,15 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
       
       file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
       
+      # combine small/large TP plots
       create.pdf(file, function(){
-        # combine small/large TP plots
         par(mfrow = c(1,2))
         for(res in results){
           plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
           title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
           add.legend(names, params, pos = plot.fun$legend)
         }
-      }, height = 6)
+      }, height = 5.25)
       
     }
     
@@ -780,8 +742,7 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
 
 # stores PDF plots in "figures/simulation/WGS-OC-[delta.F]",
 # within a subfolder according to the two included heritabilities
-plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
-                           delta.F = c(0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005)){
+plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA, delta.F = 0.0003){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -873,10 +834,219 @@ plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
           title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
           add.legend(names, params, pos = plot.fun$legend)
         }
-      }, height = 6)
+      }, height = ifelse(plot.fun$name == "inbreeding-rate", 4, 5.25))
       
     }
     
+  }
+  
+}
+
+# stores PDF plots in "figures/simulation/WGS-SET-[alpha]",
+# within a subfolder according to the two included heritabilities
+plot.WGS.SET <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
+                         alphas = 0.35){
+  
+  # check: two heritabilities
+  if(length(heritability) != 2){
+    stop("'heritability' should be a vector of length 2")
+  }
+  # extract low and high heritabilities
+  low.h <- min(heritability)
+  high.h <- max(heritability)
+  
+  for(alpha in alphas){
+    
+    message(sprintf("alpha: %.2f", alpha))
+    fig.dir <- sprintf("figures/simulation/WGS-SET-%.2f/h2-%.1f-%.1f", alpha, low.h, high.h)
+    
+    # create output directory
+    if(!dir.exists(fig.dir)){
+      message(sprintf("Create output directory \"%s\"", fig.dir))
+      dir.create(fig.dir, recursive = T)
+    }
+    
+    message("Load data ...")
+    
+    # load data
+    dirs.low.h2 <- c(
+      sort(Sys.glob(sprintf("out/WGS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", low.h))),
+      sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/LOGall-%.2f/index", low.h, alpha)))
+    )
+    dirs.high.h2 <- c(
+      sort(Sys.glob(sprintf("out/WGS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h))),
+      sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/LOGall-%.2f/index", high.h, alpha)))
+    )
+    data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
+    data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
+    # combine data:
+    # -- low h2 --
+    # 1) WGS, h2: low, add TP: 0
+    # 2) WGS, h2: low, add TP: 800
+    # 3) SET, h2: low, add TP: 0
+    # 4) SET, h2: low, add TP: 800
+    # -- high h2 --
+    # 5) WGS, h2: high, add TP: 0
+    # 6) WGS, h2: high, add TP: 800
+    # 7) SET, h2: high, add TP: 0
+    # 8) SET, h2: high, add TP: 800
+    data <- c(data.low.h2, data.high.h2)
+    # group small and large TP results
+    small.TP <- data[c(1,3,5,7)]
+    large.TP <- data[c(2,4,6,8)]
+    results <- list(
+      list(data = small.TP, title.suffix = "(TP = 200)"),
+      list(data = large.TP, title.suffix = "(TP = 1000)")
+    )
+    
+    # set graphical parameters
+    params <- list(
+      # WGS, h2 = low
+      list(lty = 1, bg = "black", pch = 24),
+      # SET, h2 = low
+      list(lty = 2, bg = "white", pch = 24),
+      # WGS, h2 = high
+      list(lty = 1, bg = "black", pch = 21),
+      # SET, h2 = high
+      list(lty = 2, bg = "white", pch = 21)
+    )
+    # set curve names
+    names <- c(
+      bquote(WGS ~ (h^2 == .(low.h))),
+      bquote(SET ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ alpha == .(alpha))))),
+      bquote(WGS ~ (h^2 == .(high.h))),
+      bquote(SET ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ alpha == .(alpha)))))
+    )
+    names <- sapply(names, as.expression)
+    
+    message("Create plots ...")
+    
+    # setup plot functions
+    plot.functions <- get.plot.functions()
+    
+    # create plots
+    for(plot.fun in plot.functions){
+      
+      file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+      
+      create.pdf(file, function(){
+        # combine small/large TP plots
+        par(mfrow = c(1,2))
+        for(res in results){
+          plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+          title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+          add.legend(names, params, pos = plot.fun$legend)
+        }
+      }, height = 5.25)
+      
+    }
+    
+  }
+  
+}
+
+# stores PDF plots in "figures/simulation/OC-[delta.F]-SET-[alpha]",
+# within a subfolder according to the two included heritabilities
+plot.OC.SET <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
+                        delta.F = 0.0003, alphas = 0.35){
+  
+  # check: two heritabilities
+  if(length(heritability) != 2){
+    stop("'heritability' should be a vector of length 2")
+  }
+  # extract low and high heritabilities
+  low.h <- min(heritability)
+  high.h <- max(heritability)
+  
+  for(dF in delta.F){
+    for(alpha in alphas){
+      
+      message(sprintf("Delta F: %.5f", dF))
+      message(sprintf("alpha: %.2f", alpha))
+      fig.dir <- sprintf("figures/simulation/OC-%.5f-SET-%.2f/h2-%.1f-%.1f", dF, alpha, low.h, high.h)
+      
+      # create output directory
+      if(!dir.exists(fig.dir)){
+        message(sprintf("Create output directory \"%s\"", fig.dir))
+        dir.create(fig.dir, recursive = T)
+      }
+      
+      message("Load data ...")
+      
+      # load data
+      dirs.low.h2 <- c(
+        sort(Sys.glob(sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", low.h, dF))),
+        sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/LOGall-%.2f/index", low.h, alpha)))
+      )
+      dirs.high.h2 <- c(
+        sort(Sys.glob(sprintf("out/OC/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", high.h, dF))),
+        sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/LOGall-%.2f/index", high.h, alpha)))
+      )
+      data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
+      data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
+      # combine data:
+      # -- low h2 --
+      # 1)  OC, h2: low, add TP: 0
+      # 2)  OC, h2: low, add TP: 800
+      # 3) SET, h2: low, add TP: 0
+      # 4) SET, h2: low, add TP: 800
+      # -- high h2 --
+      # 5)  OC, h2: high, add TP: 0
+      # 6)  OC, h2: high, add TP: 800
+      # 7) SET, h2: high, add TP: 0
+      # 8) SET, h2: high, add TP: 800
+      data <- c(data.low.h2, data.high.h2)
+      # group small and large TP results
+      small.TP <- data[c(1,3,5,7)]
+      large.TP <- data[c(2,4,6,8)]
+      results <- list(
+        list(data = small.TP, title.suffix = "(TP = 200)"),
+        list(data = large.TP, title.suffix = "(TP = 1000)")
+      )
+      
+      # set graphical parameters
+      params <- list(
+        # OC, h2 = low
+        list(lty = 1, bg = "black", pch = 24),
+        # SET, h2 = low
+        list(lty = 2, bg = "white", pch = 24),
+        # OC, h2 = high
+        list(lty = 1, bg = "black", pch = 21),
+        # SET, h2 = high
+        list(lty = 2, bg = "white", pch = 21)
+      )
+      # set curve names
+      names <- c(
+        bquote(OC ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ paste(Delta, F) == .(dF))))),
+        bquote(SET ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ alpha == .(alpha))))),
+        bquote(OC ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ paste(Delta, F) == .(dF))))),
+        bquote(SET ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ alpha == .(alpha)))))
+      )
+      names <- sapply(names, as.expression)
+      
+      message("Create plots ...")
+      
+      # setup plot functions
+      plot.functions <- get.plot.functions()
+      
+      # create plots
+      for(plot.fun in plot.functions){
+        
+        file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+        
+        create.pdf(file, function(){
+          # combine small/large TP plots
+          par(mfrow = c(1,2))
+          for(res in results){
+            plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+            title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+            add.legend(names, params, pos = plot.fun$legend)
+          }
+        }, height = 5.25)
+        
+      }
+      
+    }
   }
   
 }
@@ -1574,7 +1744,8 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
       legend = method.names,
       pch = 24,
       col = sel.col,
-      pt.bg = sel.col
+      pt.bg = sel.col,
+      text.width = max(sapply(method.names, strwidth))*1.1
     )
     
     # gain progress bars
@@ -1593,32 +1764,30 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
 }
 
 plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
-                                         HE.all.weight, HE.fav.weight, LOG.all.weight, LOG.fav.weight,
+                                         OC.delta.F = 0.0003, CGS.alpha = 0.35,
                                          generations, bp, h2, addTP, include.gain = FALSE){
   
   type <- match.arg(type)
   
   # load data
   message("Load data ...")
-  # GS/WGS
+  # GS/WGS(2)
   GS.data <- readRDS(
     sprintf("out/GS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
   )
   WGS.data <- readRDS(
     sprintf("out/WGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
   )
+  WGS2.data <- readRDS(
+    sprintf("out/WGS2/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
+  )
+  # OC
+  OC.data <- readRDS(
+    sprintf("out/OC/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f/bp-%d-1.RDS", h2, addTP, OC.delta.F, bp)
+  )
   # CGS
-  CGS.HE.all.data <- readRDS(
-    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HEall-%.2f/index/bp-%d-1.RDS", h2, addTP, HE.all.weight, bp)
-  )
-  CGS.HE.fav.data <- readRDS(
-    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HEfav-%.2f/index/bp-%d-1.RDS", h2, addTP, HE.fav.weight, bp)
-  )
-  CGS.LOG.all.data <- readRDS(
-    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index/bp-%d-1.RDS", h2, addTP, LOG.all.weight, bp)
-  )
-  CGS.LOG.fav.data <- readRDS(
-    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGfav-%.2f/index/bp-%d-1.RDS", h2, addTP, LOG.fav.weight, bp)
+  CGS.data <- readRDS(
+    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index/bp-%d-1.RDS", h2, addTP, CGS.alpha, bp)
   )
   
   # plot
@@ -1626,14 +1795,13 @@ plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
   
   plot.MDS.populations(
     type = type,
-    list(GS.data, WGS.data, CGS.HE.all.data, CGS.HE.fav.data, CGS.LOG.all.data, CGS.LOG.fav.data),
+    list(GS.data, WGS.data, WGS2.data, OC.data, CGS.data),
     generations = generations, method.names = c(
-      expression(GS),
-      expression(WGS),
-      expression(HE[all]),
-      expression(HE[fav]),
-      expression(LOG[all]),
-      expression(LOG[fav])
+      "GS",
+      "WGS",
+      "WGS2",
+      "OC",
+      "SET"
     ),
     include.gain = include.gain
   )
