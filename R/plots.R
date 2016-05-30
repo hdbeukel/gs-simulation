@@ -94,7 +94,7 @@ create.pdf <- function(file, plot.fun, width = 14, height = 10.5){
 get.plot.functions <- function(){
   plot.functions <- list(
     list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
-         legend = "bottomright", ylim =  c(0, 0.3)),
+         legend = "bottomright", ylim =  c(0, 0.35)),
     # list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
     #      legend = "bottomright", ylim = c(0, 1.0)),
     # list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq", title = "Mean QTL favourable allele frequency",
@@ -200,6 +200,8 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
       # CGS results with selected weight
       CGS.dir.template <- paste(sprintf(dir.template, "CGS"), "%s-%.2f/index", sep = "/")
       CGS.dir <- sprintf(CGS.dir.template, "LOGall", CGS.alpha)
+      # corresponding GS results
+      GS.dir <- sprintf(dir.template, "GS")
       # corresponding OC results
       OC.dir.template <- paste(sprintf(dir.template, "OC"), "dF-%.5f", sep = "/")
       OC.dir <- sprintf(OC.dir.template, OC.delta.F)
@@ -207,10 +209,11 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
       WGS.dir <- sprintf(dir.template, "WGS")
       
       # load:
-      #    1) WGS
-      #    2) OC
-      #    3) CGS
-      data <- lapply(c(WGS.dir, OC.dir, CGS.dir), load.simulation.results, file.pattern)
+      #    1) GS
+      #    2) WGS
+      #    3) OC
+      #    4) CGS
+      data <- lapply(c(GS.dir, WGS.dir, OC.dir, CGS.dir), load.simulation.results, file.pattern)
       
       return(list(data = data, h = h, tp = tp))
       
@@ -218,20 +221,23 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     
     # set graphical parameters
     params <- list(
-      list(lty = 1, bg = "black", pch = 21), # WGS
-      list(lty = 2, bg = "white", pch = 24), # OC
-      list(lty = 3, bg = "grey",  pch = 25)  # CGS
+      list(lty = 1, bg = "black", pch = 21), # GS
+      list(lty = 2, bg = "grey", pch = 24), # WGS
+      list(lty = 3, bg = "grey", pch = 25), # OC
+      list(lty = 4, bg = "white",  pch = 23)  # SET
     )
     
     # set curve names
     names <- as.list(rep(NA, length(params)))
     
+    # GS
+    names[[1]] <- bquote(GS)
     # WGS
-    names[[1]] <- bquote(WGS)
+    names[[2]] <- bquote(WGS)
     # OC
-    names[[2]] <- bquote(OC ~ (paste(Delta, F) == .(sprintf("%.5f", OC.delta.F))))
+    names[[3]] <- bquote(OC ~ (paste(Delta, F) == .(sprintf("%.5f", OC.delta.F))))
     # CGS
-    names[[3]] <- bquote(SET ~ (alpha == .(sprintf("%.2f", CGS.alpha))))
+    names[[4]] <- bquote(SET ~ (alpha == .(sprintf("%.2f", CGS.alpha))))
     # convert to expressions
     names <- as.expression(names)
     
@@ -283,7 +289,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           add.legend(names, params, pos = plot.fun$legend) 
         }
         
-      }, height = 5.25)
+      }, height = 5.5)
       
       # plot with low heritability only
       file <- sprintf("%s/%s-h2-%.1f.pdf", fig.dir, plot.fun$name, low.h)
@@ -300,7 +306,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           add.legend(names, params, pos = plot.fun$legend) 
         }
         
-      }, height = 5.25)
+      }, height = 5.5)
       
       # plot with high heritability only
       file <- sprintf("%s/%s-h2-%.1f.pdf", fig.dir, plot.fun$name, high.h)
@@ -317,7 +323,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
           add.legend(names, params, pos = plot.fun$legend) 
         }
         
-      }, height = 5.25)
+      }, height = 5.5)
       
     }
   }
@@ -604,7 +610,7 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
         title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
         add.legend(names, params, pos = plot.fun$legend)
       }
-    }, height = 5.25)
+    }, height = 5.5)
     
     # separate plots for small and large TP
     
@@ -613,14 +619,14 @@ plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
       plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
       title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
       add.legend(names, params, pos = plot.fun$legend)
-    }, height = 5.25, width = 7)
+    }, height = 5.5, width = 7)
     
     create.pdf(sprintf("%s/%s-TP1000.pdf", fig.dir, plot.fun$name), function(){
       res <- results[[2]]
       plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
       title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
       add.legend(names, params, pos = plot.fun$legend)
-    }, height = 5.25, width = 7)
+    }, height = 5.5, width = 7)
     
       
   }
@@ -732,7 +738,7 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
           title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
           add.legend(names, params, pos = plot.fun$legend)
         }
-      }, height = 5.25)
+      }, height = 5.5)
       
     }
     
@@ -834,7 +840,7 @@ plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
           title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
           add.legend(names, params, pos = plot.fun$legend)
         }
-      }, height = ifelse(plot.fun$name == "inbreeding-rate", 4, 5.25))
+      }, height = ifelse(plot.fun$name == "inbreeding-rate", 4, 5.5))
       
     }
     
@@ -929,15 +935,31 @@ plot.WGS.SET <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", 
       
       file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
       
+      # combine small/large TP plots
       create.pdf(file, function(){
-        # combine small/large TP plots
         par(mfrow = c(1,2))
         for(res in results){
           plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
           title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
           add.legend(names, params, pos = plot.fun$legend)
         }
-      }, height = 5.25)
+      }, height = 5.5)
+      
+      # separate plots for small and large TP
+      
+      create.pdf(sprintf("%s/%s-TP200.pdf", fig.dir, plot.fun$name), function(){
+        res <- results[[1]]
+        plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+        title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+        add.legend(names, params, pos = plot.fun$legend)
+      }, height = 5.5, width = 7)
+      
+      create.pdf(sprintf("%s/%s-TP1000.pdf", fig.dir, plot.fun$name), function(){
+        res <- results[[2]]
+        plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+        title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+        add.legend(names, params, pos = plot.fun$legend)
+      }, height = 5.5, width = 7)
       
     }
     
@@ -1034,15 +1056,31 @@ plot.OC.SET <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
         
         file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
         
+        # combine small/large TP plots
         create.pdf(file, function(){
-          # combine small/large TP plots
           par(mfrow = c(1,2))
           for(res in results){
             plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
             title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
             add.legend(names, params, pos = plot.fun$legend)
           }
-        }, height = 5.25)
+        }, height = 5.5)
+        
+        # separate plots for small and large TP
+        
+        create.pdf(sprintf("%s/%s-TP200.pdf", fig.dir, plot.fun$name), function(){
+          res <- results[[1]]
+          plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+          title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+          add.legend(names, params, pos = plot.fun$legend)
+        }, height = 5.5, width = 7)
+        
+        create.pdf(sprintf("%s/%s-TP1000.pdf", fig.dir, plot.fun$name), function(){
+          res <- results[[2]]
+          plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+          title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+          add.legend(names, params, pos = plot.fun$legend)
+        }, height = 5.5, width = 7)
         
       }
       
