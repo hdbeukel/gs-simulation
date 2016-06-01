@@ -152,7 +152,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
                          OC.delta.F = 0.0003, CGS.alpha = 0.35,
                          heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
                          xlim = c(0,30), ci = NA, main.plots = TRUE,
-                         MDS.pops = FALSE){
+                         MDS.plots = FALSE, MDS.movies = FALSE){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -328,8 +328,9 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     }
   }
   
-  # MDS plots
-  if(MDS.pops){
+  # MDS plots and movies
+  
+  if(MDS.plots || MDS.movies){
     
     settings <- list(
       #list(h2 = 0.2, addTP = 0),
@@ -348,34 +349,38 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
 
           name <- sprintf("mds-detail-h2-%.1f-addTP-%d-BP-%d-%s", setting$h2, setting$addTP, bp, type)
           
-          # plots
-          message("|- Detailed MDS: plots")
-          
-          file <- sprintf("%s/%s.pdf", fig.dir, name)
-          
-          create.pdf(file, function(){
+          if(MDS.plots){
+            # plot
+            message("|- Detailed MDS: plots")
             
-            par(mfrow = c(3,3))
-            gen <- c(1, seq(2, 30, 4))
-            plot.MDS.populations.CGS.opt(type,
-                                         OC.delta.F, CGS.alpha,
-                                         gen, bp, setting$h2, setting$addTP)
+            file <- sprintf("%s/%s.pdf", fig.dir, name)
             
-          }, width = 12, height = 12)
+            create.pdf(file, function(){
+              
+              par(mfrow = c(3,3))
+              gen <- c(1, seq(2, 30, 4))
+              plot.MDS.populations.CGS.opt(type,
+                                           OC.delta.F, CGS.alpha,
+                                           gen, bp, setting$h2, setting$addTP)
+              
+            }, width = 12, height = 12)
+          }
           
-          # movie
-          message("|- Detailed MDS: movies")
-          
-          file <- sprintf("%s/%s.mp4", fig.dir, name)
-          
-          saveVideo({
-
-            gen <- 1:30
-            plot.MDS.populations.CGS.opt(type,
-                                         OC.delta.F, CGS.alpha,
-                                         gen, bp, setting$h2, setting$addTP, include.gain = TRUE)
-
-          }, video.name = file, ani.height = 500, ani.width = 1000, interval = 0.5, autobrowse = FALSE)
+          if(MDS.movies){
+            # movie
+            message("|- Detailed MDS: movies")
+            
+            file <- sprintf("%s/%s.mp4", fig.dir, name)
+            
+            saveVideo({
+  
+              gen <- 1:30
+              plot.MDS.populations.CGS.opt(type,
+                                           OC.delta.F, CGS.alpha,
+                                           gen, bp, setting$h2, setting$addTP, include.gain = TRUE)
+  
+            }, video.name = file, ani.height = 500, ani.width = 1000, interval = 0.5, autobrowse = FALSE)
+          }
           
         }
       }
