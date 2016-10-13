@@ -526,8 +526,8 @@ genomic.relationship.matrix <- function (M){
   pfreq <- colMeans(M)/2
   Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
   # compute G
-  # G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
-  G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
+  G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
+  # G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
   return(G)
 }
 
