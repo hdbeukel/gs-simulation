@@ -545,13 +545,34 @@ make.positive.definite <- function(X, tol = 1e-6) {
   }
 }
 
-# compute inbreeding rate deltaF based on markers (cfr. Jannink)
-inbreeding.rate <- function(pop, prev.pop){
+# compute inbreeding rate delta F based on markers (cfr. Sonesson)
+inbreeding.rate.sonesson <- function(pop, prev.pop){
+  # get minor allele frequencies of of both populations
+  Z.cur <- gp.design.matrix(pop)
+  Z.prev <- gp.design.matrix(prev.pop)
+  freqs.cur <- maf(Z.cur, encoding = "dh")
+  freqs.prev <- maf(Z.prev, encoding = "dh")
+  # compute average homozygosity
+  hom <- function(f){
+    f^2 + (1-f)^2
+  }
+  hom.cur <- mean(sapply(freqs.cur, hom))
+  hom.prev <- mean(sapply(freqs.prev, hom))
+  # delta F is relative increase in average homozygosity
+  delta.F <- (hom.cur - hom.prev) / (1.0 - hom.prev)
+  return(delta.F)
+}
+
+# compute inbreeding rate delta F based on markers (cfr. Jannink)
+inbreeding.rate.jannink <- function(pop, prev.pop){
   cur.fixed <- proportion.fixed.markers(pop)
   prev.fixed <- proportion.fixed.markers(prev.pop)
-  deltaF <- (cur.fixed - prev.fixed) / (1.0 - prev.fixed)
-  return(deltaF)
+  delta.F <- (cur.fixed - prev.fixed) / (1.0 - prev.fixed)
+  return(delta.F)
 }
+
+# select inbreeding rate formula
+inbreeding.rate <- inbreeding.rate.sonesson
 
 proportion.fixed.markers <- function(pop){
   M <- gp.design.matrix(pop)
