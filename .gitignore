@@ -1,5 +1,7 @@
-*
+.*
 /*/
+*.txt
+*.md
 !.gitignore
 !README.md
 !*.R
@@ -12,3 +14,4 @@
 !/java/
 /java/**/target/
 !/scripts/run.R
+!/hpc/
