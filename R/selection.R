@@ -29,6 +29,17 @@ select.highest.optimal.contribution <- function(n, values, markers, generation, 
   return(selected.names)
 }
 
+select.fixed.size.oc <- function(n, values, markers, generation, delta.F, ...){
+  # compute fixed size OC
+  c <- optimal.contributions(values, markers, 1 - (1 - delta.F)^generation, cmin = 1/n, cmax = 1/n)
+  # retrieve and check
+  selected.names <- names(c[c > 0])
+  if(length(selected.names) != n){
+    stop("Incorrect number of individuals selected by fixed size OC")
+  }
+  return(selected.names)
+}
+
 # select by maximizing weighted index of mean breeding value and diversity
 select.weighted.index <- function(n, values, markers, div.weight,
                                   div.measure = c("HEall", "HEfav", "LOGall", "LOGfav"),

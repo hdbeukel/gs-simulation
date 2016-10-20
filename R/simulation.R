@@ -155,11 +155,11 @@ OC <- function(founders, heritability, base.pop = NULL,
                store.all.pops = FALSE, delta.F, ...){
 
   sel.crit <- function(n, values, markers, generation, ...){
-    select.highest.optimal.contribution(n = n,
-                                        values = values,
-                                        markers = markers,
-                                        generation = generation,
-                                        delta.F = delta.F)
+    select.fixed.size.oc(n = n,
+                        values = values,
+                        markers = markers,
+                        generation = generation,
+                        delta.F = delta.F)
   }
   
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -435,86 +435,149 @@ equal.contributions <- function(values, ...){
 # returns vector with optimal contributions, maximizing expected response
 # with a predefined rate of inbreeding according to Meuwissen 1997
 # (adjusted for plant breeding with constraint 1'c_t = 1 instead of Q'c_t = 1/2)
-optimal.contributions <- function(values, markers, C, iterate = TRUE){
+optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbose = FALSE){
   
   all.values <- values
   all.markers <- markers
+
+  n.all <- length(values)
   
-  n.all <- nrow(all.markers)
-  c.all <- rep(-1, n.all)
-  discarded <- rep(FALSE, n.all)
+  # indices of all individuals
+  i.all <- 1:n.all
+  # indices of individuals whose contribution is optimized (initially all)
+  i.opt <- i.all
+  # indices of individuals whose contribution has been
+  # fixed to the allowed maximum or zero (initially none)
+  i.fixed.max <- numeric(0)
+  i.fixed.zero <- numeric(0)
   
+  # init vector to store computed optimal contributions
+  c <- rep(-1, n.all)
+
   # compute G
-  G.all <- genomic.relationship.matrix(all.markers)
+  G <- genomic.relationship.matrix(all.markers)
   
-  i <- 1
-  while((i == 1 || iterate) && any(c.all < 0)){
+  # continue until cmin and cmax are satisfied
+  while(length(i.opt) > 0 && (any(c > cmax) || any(c < 0) || any(c[c > 0] < cmin))){
     
-    if(sum(!discarded) == 1){
+    # progress message
+    if(verbose){
+      message(sprintf(
+        "Remaining: %d - Fixed to zero: %d - Fixed to cmax: %d",
+        length(i.opt), length(i.fixed.zero), length(i.fixed.max)
+      ))
+    }
+    
+    # set previously fixed contributions
+    i.fixed <- c(i.fixed.max, i.fixed.zero)
+    c.fixed <- c(rep(cmax, length(i.fixed.max)), rep(0, length(i.fixed.zero)))
+    
+    if(length(i.opt) == 1){
       
-      # all but one are discarded (note that this will fix the population to a single genotype)
-      c.all <- rep(0, n.all)
-      c.all[which(!discarded)] <- 1.0
+      # one individual left: assign remaining contribution
+      c.opt <- 1 - sum(c.fixed)
       
     } else {
     
-      # discard flagged individuals
-      markers <- all.markers[!discarded, ]
-      values <- all.values[!discarded]
+      # retrieve values and marker data of individuals
+      # whose contribution remains to be optimized
+      values <- all.values[i.opt]
+      markers <- all.markers[i.opt,]
       n <- length(values)
       m <- ncol(markers)
       
       if(isTRUE(all.equal(apply(markers, 2, sd), rep(0, m), check.names = FALSE))){
-        # candidates fixed at all markers: set to equal contributions
-        c <- equal.contributions(values)
+        
+        # candidates fixed at all markers: equally divide remaining contribution
+        c.remaining <- 1 - sum(c.fixed)
+        c.opt <- rep(c.remaining/n, n)
+        
       } else {
-      
-        # make G positive definite and invert
-        G <- G.all[!discarded, !discarded]
-        G <- make.positive.definite(G)
-        G.inv <- solve(G)
         
-        # precompute value for efficiency
-        s <- sum(G.inv)
+        # subset genomic relationship matrix
+        Goo <- G[i.opt, i.opt, drop = F]
+        Gof <- G[i.opt, i.fixed, drop = F]
+        Gfo <- G[i.fixed, i.opt, drop = F]
+        Gff <- G[i.fixed, i.fixed, drop = F]
+        # invert Goo
+        Goo.inv <- solve(make.positive.definite(Goo))
         
-        # compute lambda.0
-        num <- values %*% (G.inv - (rowSums(G.inv) %*% t(colSums(G.inv)))/s) %*% values
-        num <- as.numeric(num)
-        den <- 8*C - 4/s
-        lambda.0.squared <- num/den
-        if(lambda.0.squared < 0){
-          stop(sprintf("Average coancestry constraint C_t+1 = %g can not be reached (minimum achievable = %g)", C, 1/s))
+        # precompute some values
+        K <- as.numeric(2*C - t(c.fixed) %*% Gff %*% c.fixed)
+        s <- 1 - sum(c.fixed)
+        Goo.inv.sum <- sum(Goo.inv)
+        ones <- rep(1, n)
+        P <- Goo.inv - (Goo.inv %*% ones %*% t(ones) %*% Goo.inv) / Goo.inv.sum
+        
+        # compute lambda 0
+        a <- as.numeric(t(values) %*% P %*% values)
+        b <- as.numeric(
+          K + t(c.fixed) %*% Gfo %*% P %*% Gof %*% c.fixed
+          - s^2/Goo.inv.sum - (2*s * t(ones) %*% Goo.inv %*% Gof %*% c.fixed)/Goo.inv.sum
+        )
+        lambda.0.sq <- 1/4 * a/b
+        if(lambda.0.sq < 0){
+          stop("Constraints can not be satisfied")
         }
-        lambda.0 <- sqrt(lambda.0.squared)
+        lambda.0 <- sqrt(lambda.0.sq)
         
-        # compute lambda.1
-        lambda.1 <- (colSums(G.inv) %*% values - 2*lambda.0) / s
+        # compute lambda
+        a <- as.numeric(t(ones) %*% Goo.inv %*% (values - 2*lambda.0 * Gof %*% c.fixed) - 2*lambda.0*s)
+        lambda <- a / Goo.inv.sum
         
         # compute optimal contributions
-        c <- (G.inv %*% (values - lambda.1)) / (2*lambda.0)
-          
-      }
-      
-      # set contribution of discarded individuals to zero
-      c.all <- rep(0, n.all)
-      c.all[!discarded] <- c
-      
-      if(iterate && any(c.all < 0)){
-        discarded[which.min(c.all)] <- TRUE
+        c.opt <- Goo.inv %*% (values - 2*lambda.0 * Gof %*% c.fixed - lambda) / (2*lambda.0)
+        
       }
       
     }
-          
-    i <- i + 1
     
-  }
-  if(any(discarded)){
-    message(sprintf("[OC] Set contribution of %d/%d individuals to zero", sum(discarded), n.all))
+    # merge fixed and optimized contributions
+    c[i.opt] <- c.opt
+    c[i.fixed] <- c.fixed
+    
+    # eliminate most negative contribution, if any
+    if(any(c < 0)){
+      elim <- which.min(c)
+      i.fixed.zero <- c(i.fixed.zero, elim)
+      i.opt <- setdiff(i.opt, elim)
+    } else {
+      # truncate highest contribution if above maximum allowed
+      if(any(c > cmax)){
+        trunc <- which.max(c)
+        i.fixed.max <- c(i.fixed.max, trunc)
+        # reset those fixed to zero after truncating too large contribution
+        # (so that others are reconsidered for inclusion to decrease inbreeding)
+        i.fixed.zero <- numeric(0)
+        i.opt <- setdiff(i.all, i.fixed.max)
+      } else {
+        # eliminate smallest positive contribution below minimum, if any
+        if(any(c[c > 0] < cmin)){
+          c.pos <- rep(NA, length(c))
+          c.pos[c > 0] <- c[c > 0]
+          elim <- which.min(c.pos)
+          i.fixed.zero <- c(i.fixed.zero, elim)
+          i.opt <- setdiff(i.opt, elim)
+        }
+      }
+    }
+          
   }
   
-  # return final optimal contributions (all positive or zero)
-  names(c.all) <- names(all.values)
-  return(c.all)
+  # print some messages
+  if(length(i.fixed.zero) > 0){
+    message(sprintf("[OC] Set contribution of %d/%d individuals to zero", length(i.fixed.zero), n.all))
+  }
+  if(length(i.fixed.max) > 0){
+    message(sprintf(
+      "[OC] Truncated contribution of %d/%d individuals to cmax = %.2f",
+      length(i.fixed.max), n.all, cmax
+    ))
+  }
+  
+  # return final contributions
+  names(c) <- names(all.values)
+  return(c)
   
 }
 
