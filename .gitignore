@@ -4,6 +4,7 @@
 *.md
 !.gitignore
 !README.md
+!todo.md
 !*.R
 !/R*/
 !/beaglejar/
