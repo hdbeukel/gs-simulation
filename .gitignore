@@ -18,4 +18,4 @@
 !/hpc/
 !/figures/
 /hpc/run*
-/out.back
+/out*
