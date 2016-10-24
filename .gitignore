@@ -16,3 +16,5 @@
 !/scripts/run.R
 !/hpc/
 !/figures/
+/hpc/run*
+/out.back
