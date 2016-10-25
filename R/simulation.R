@@ -152,14 +152,15 @@ OC <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-               store.all.pops = FALSE, delta.F, ...){
+               store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
 
   sel.crit <- function(n, values, markers, generation, ...){
     select.fixed.size.oc(n = n,
                         values = values,
                         markers = markers,
                         generation = generation,
-                        delta.F = delta.F)
+                        delta.F = delta.F,
+                        verbose = verbose)
   }
   
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -437,6 +438,10 @@ equal.contributions <- function(values, ...){
 # (adjusted for plant breeding with constraint 1'c_t = 1 instead of Q'c_t = 1/2)
 optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbose = FALSE){
   
+  message("[OC] Maximum expected coancestry = ", C)
+  
+  tol <- 1e-10
+  
   all.values <- values
   all.markers <- markers
 
@@ -458,7 +463,7 @@ optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbos
   G <- genomic.relationship.matrix(all.markers)
   
   # continue until cmin and cmax are satisfied
-  while(length(i.opt) > 0 && (any(c > cmax) || any(c < 0) || any(c[c > 0] < cmin))){
+  while(length(i.opt) > 0 && (any(c > cmax + tol) || any(c < 0) || any(c[c > 0] < cmin - tol))){
     
     # progress message
     if(verbose){
@@ -543,7 +548,7 @@ optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbos
       i.opt <- setdiff(i.opt, elim)
     } else {
       # truncate highest contribution if above maximum allowed
-      if(any(c > cmax)){
+      if(any(c > cmax + tol)){
         trunc <- which.max(c)
         i.fixed.max <- c(i.fixed.max, trunc)
         # reset those fixed to zero after truncating too large contribution
@@ -552,7 +557,7 @@ optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbos
         i.opt <- setdiff(i.all, i.fixed.max)
       } else {
         # eliminate smallest positive contribution below minimum, if any
-        if(any(c[c > 0] < cmin)){
+        if(any(c[c > 0] < cmin - tol)){
           c.pos <- rep(NA, length(c))
           c.pos[c > 0] <- c[c > 0]
           elim <- which.min(c.pos)
@@ -589,8 +594,8 @@ genomic.relationship.matrix <- function (M){
   pfreq <- colMeans(M)/2
   Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
   # compute G
-  G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
-  # G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
+  # G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
+  G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
   return(G)
 }
 
