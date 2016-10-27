@@ -12,7 +12,7 @@
 #  4:  additional TP size, ignored for PS
 #  5:  effect sampling method ("normal", "jannink")
 #  6:  GP method ("RR", "BRR"), ignored for PS
-#  7:  diversity measure ("HEall", "HEfav", "LOGall", "LOGfav"; CGS only) 
+#  7:  diversity measure ("LOGall", "OC", "HEall", "HEfav", "LOGfav"; CGS only) 
 #  8:  diversity weight (CGS only) 
 #  9:  CGS type ("index", "split"; CGS only)
 #  10: desired rate of inbreeding delta F (OC only)

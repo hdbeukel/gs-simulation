@@ -3,7 +3,8 @@
 # MAXIMIZE WEIGHTED INDEX: AVERAGE BREEDING VALUE + DIVERSITY #
 ###############################################################
 
-j.max.index <- function(n, names, values, markers, div.weight, div.measure, fav.alleles = NULL, sec.without.impr = 5){
+j.max.index <- function(n, names, values, markers, div.weight, div.measure,
+                        fav.alleles = NULL, G = NULL, sec.without.impr = 5){
   
   # convert parameters
   n <- as.integer(n)
@@ -16,12 +17,17 @@ j.max.index <- function(n, names, values, markers, div.weight, div.measure, fav.
   } else {
     fav.alleles <- as.integer(fav.alleles)
   }
+  if(is.null(G)){
+    G <- .jnull(class = "[[D")
+  } else {
+    G <- .jarray(G, dispatch = TRUE)
+  }
   sec.without.impr <- as.integer(sec.without.impr)
 
   # call java API
   selected.names <- .jcall(j.api(),
                            "[S", "selectWeighted",
-                           n, names, values, markers, fav.alleles,
+                           n, names, values, markers, fav.alleles, G,
                            div.weight, div.measure, sec.without.impr)
   
   # sort for reproducible results
@@ -49,6 +55,10 @@ j.LOG.all <- function(){
 
 j.LOG.fav <- function(){
   .jnew(j.gs("obj/LOGfav"))
+}
+
+j.OC <- function(){
+  .jnew(j.gs("obj/AverageCoancestry"))
 }
 
 #############

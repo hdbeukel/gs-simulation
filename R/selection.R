@@ -42,8 +42,8 @@ select.fixed.size.oc <- function(n, values, markers, generation, delta.F, verbos
 
 # select by maximizing weighted index of mean breeding value and diversity
 select.weighted.index <- function(n, values, markers, div.weight,
-                                  div.measure = c("HEall", "HEfav", "LOGall", "LOGfav"),
-                                  fav.alleles = NULL, ...){
+                                  div.measure = c("LOGall", "OC", "HEall", "HEfav", "LOGfav"),
+                                  fav.alleles = NULL, G = NULL, ...){
   # check input
   if(!is.numeric(n)){
     stop("n should be an integer (selection size)")
@@ -57,6 +57,9 @@ select.weighted.index <- function(n, values, markers, div.weight,
   if(!is.null(fav.alleles) && !is.numeric(fav.alleles)){
     stop("fav.alleles should be a 0/1 vector")
   }
+  if(!is.null(G) && (!is.matrix(G) || !is.numeric(G) || !isSymmetric(G))){
+    stop("G should be a symmetric genomic relationship matrix")
+  }
   if(!is.numeric(div.weight) || div.weight < 0 || div.weight > 1){
     stop("div.weight should be a number in [0,1]")
   }
@@ -68,8 +71,10 @@ select.weighted.index <- function(n, values, markers, div.weight,
     div.measure <- j.HE.fav()
   } else if (div.measure == "LOGall"){
     div.measure <- j.LOG.all()
-  } else {
+  } else if (div.measure == "LOGfav") {
     div.measure <- j.LOG.fav()
+  } else {
+    div.measure <- j.OC()
   }
   # run optimization
   selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles)

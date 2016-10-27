@@ -119,7 +119,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, div.weight,
-               div.measure = c("HEall", "HEfav", "LOGall", "LOGfav"),
+               div.measure = c("LOGall", "OC", "HEall", "HEfav", "LOGfav"),
                type = c("index", "split"), ...){
   
   # get selected type
@@ -127,13 +127,14 @@ CGS <- function(founders, heritability, base.pop = NULL,
   
   if(type == "index"){
     # maximize weighted index
-    sel.crit <- function(n, values, markers, fav.alleles, ...){
+    sel.crit <- function(n, values, markers, fav.alleles, G, ...){
       select.weighted.index(n = n,
                             values = values,
                             markers = markers,
                             div.weight = div.weight,
                             div.measure = div.measure,
-                            fav.alleles = fav.alleles)
+                            fav.alleles = fav.alleles,
+                            G = G)
     }
   } else {
     # split & combine: highest quality + most diverse individuals
@@ -272,10 +273,12 @@ GS <- function(founders, heritability, base.pop = NULL,
   # select based on estimated values
   message("|- Select")
   evaluated.base.pop <- predict.values(gp.trained.model, evaluated.base.pop, generation = 1)
+  M <- gp.design.matrix(evaluated.base.pop)
   selected.names <- selection.criterion(n = num.select,
                                         values = evaluated.base.pop$estGeneticValues,
-                                        markers = gp.design.matrix(evaluated.base.pop),
+                                        markers = M,
                                         fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
+                                        G = genomic.relationship.matrix(M),
                                         generation = 1)
   selected.pop <- restrict.population(evaluated.base.pop, selected.names)
 
@@ -301,10 +304,12 @@ GS <- function(founders, heritability, base.pop = NULL,
   # select based on estimated values
   message("|- Select (no model update)")
   offspring <- predict.values(gp.trained.model, offspring, generation = 2)
+  M <- gp.design.matrix(offspring)
   selected.names <- selection.criterion(n = num.select,
                                        values = offspring$estGeneticValues,
-                                       markers = gp.design.matrix(offspring),
+                                       markers = M,
                                        fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
+                                       G = genomic.relationship.matrix(M),
                                        generation = 2)
   selected.offspring <- restrict.population(offspring, selected.names)
   
@@ -341,10 +346,12 @@ GS <- function(founders, heritability, base.pop = NULL,
     # select from offspring based on estimated values using updated GP model
     message("|- Select")
     offspring <- predict.values(gp.trained.model, offspring, generation = s)
+    M <- gp.design.matrix(offspring)
     selected.names <- selection.criterion(n = num.select,
                                          values = offspring$estGeneticValues,
-                                         markers = gp.design.matrix(offspring),
+                                         markers = M,
                                          fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
+                                         G = genomic.relationship.matrix(M),
                                          generation = s)
     selected.offspring <- restrict.population(offspring, selected.names)
     # store season
