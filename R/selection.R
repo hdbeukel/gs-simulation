@@ -77,7 +77,7 @@ select.weighted.index <- function(n, values, markers, div.weight,
     div.measure <- j.OC()
   }
   # run optimization
-  selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles)
+  selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles, G)
   return(selected.names)
 }
 
