@@ -1,7 +1,10 @@
 
 package org.jamesframework.gs.simulation.obj;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Random;
+import java.util.Scanner;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.junit.BeforeClass;
 
@@ -11,7 +14,7 @@ public class ObjectiveTest {
     protected static PopulationData DATA;
     
     @BeforeClass
-    public static void beforeClass() {
+    public static void beforeClass() throws IOException {
         
         // generate random DATA
         
@@ -34,7 +37,20 @@ public class ObjectiveTest {
             favAlleles[m] = RG.nextBoolean() ? 1 : 0;
         }
         
-        DATA = new PopulationData(names, values, markerdata, favAlleles);
+        // read arbitrary G matrix
+        double[][] G = new double[individuals][individuals];
+        Scanner sc = new Scanner(Paths.get(ObjectiveTest.class.getResource("/G.txt").getPath()));
+        int i = 0, j = 0;
+        while(sc.hasNext()){
+            G[i][j] = sc.nextDouble();
+            j++;
+            if(j == individuals){
+                i++;
+                j = 0;
+            }
+        }
+        
+        DATA = new PopulationData(names, values, markerdata, favAlleles, G);
         
     }
     

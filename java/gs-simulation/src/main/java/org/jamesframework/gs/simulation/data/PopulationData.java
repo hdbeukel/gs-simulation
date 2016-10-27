@@ -20,10 +20,11 @@ public class PopulationData implements IntegerIdentifiedData {
     private final double[] values;
     private final int[][] markers;
     private final int[] favourable;
+    private final double[][] G;
         
     private final Set<Integer> ids;
 
-    public PopulationData(String[] names, double[] values, int[][] markers, int[] favourable) {
+    public PopulationData(String[] names, double[] values, int[][] markers, int[] favourable, double[][] G) {
         // check sizes
         int numInd = names.length;
         int numMarkers = markers[0].length;
@@ -38,11 +39,22 @@ public class PopulationData implements IntegerIdentifiedData {
             throw new IllegalArgumentException("Length of favourable allele array does not correspond to "
                                              + "number of columns in marker matrix.");
         }
+        if(G != null){
+            if(G.length != numInd){
+                throw new IllegalArgumentException("Number of rows of G does not equal number of individuals.");
+            }
+            for(int r = 0; r < numInd; r++){
+                if(G[r].length != numInd){
+                    throw new IllegalArgumentException("Number of columns of G does not equal number of individuals.");
+                }
+            }
+        }
         // store
         this.names = names;
         this.values = values;
         this.markers = markers;
         this.favourable = favourable;
+        this.G = G;
         // infer IDs
         ids = IntStream.range(0, names.length)
                        .boxed()
@@ -68,6 +80,10 @@ public class PopulationData implements IntegerIdentifiedData {
     
     public int[] getFavourableAlleles(){
         return favourable;
+    }
+    
+    public double[][] getG(){
+        return G;
     }
     
     public int numAccessions(){

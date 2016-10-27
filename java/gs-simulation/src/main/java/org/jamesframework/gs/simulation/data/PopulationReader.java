@@ -3,7 +3,6 @@ package org.jamesframework.gs.simulation.data;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -16,7 +15,7 @@ import java.util.Scanner;
  */
 public class PopulationReader {
 
-    public PopulationData read(Path valueFile, Path markerFile, Path favAlleleFile) throws IOException {
+    public PopulationData read(Path valueFile, Path markerFile, Path favAlleleFile, Path GFile) throws IOException {
         
         Scanner sc;
         
@@ -39,13 +38,14 @@ public class PopulationReader {
             favAlleleMap.put(name, favAllele);
         }
         
-        // initialize marker matrix + name, value and fav allele arrays
+        // initialize marker matrix + name, value and fav allele arrays, G matrix
         int numAccessions = valueMap.size();
         int numMarkers = favAlleleMap.size();
         int[][] markers = new int[numAccessions][numMarkers];
         String[] names = new String[numAccessions];
         double[] values = new double[numAccessions];
         int[] favAlleles = new int[numMarkers];
+        double[][] G = new double[numAccessions][numAccessions];
         
         // read marker names in order in which they occur in marker matrix
         sc = new Scanner(markerFile);
@@ -72,8 +72,21 @@ public class PopulationReader {
             i++;
         }
         
+        // read G matrix
+        sc = new Scanner(GFile);
+        sc.useLocale(Locale.US);
+        int r = 0, c = 0;
+        while(sc.hasNext()){
+            G[r][c] = sc.nextDouble();
+            c++;
+            if(c == numAccessions){
+                r++;
+                c = 0;
+            }
+        }
+        
         // initialize data
-        PopulationData data = new PopulationData(names, values, markers, favAlleles);
+        PopulationData data = new PopulationData(names, values, markers, favAlleles, G);
         
         return data;
         

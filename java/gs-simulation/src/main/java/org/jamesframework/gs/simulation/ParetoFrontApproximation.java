@@ -18,6 +18,7 @@ import org.jamesframework.gs.simulation.api.API;
 import org.jamesframework.gs.simulation.api.NormalizedObjectives;
 import org.jamesframework.gs.simulation.data.PopulationData;
 import org.jamesframework.gs.simulation.data.PopulationReader;
+import org.jamesframework.gs.simulation.obj.AverageCoancestry;
 import org.jamesframework.gs.simulation.obj.HEfav;
 import org.jamesframework.gs.simulation.obj.HEall;
 import org.jamesframework.gs.simulation.obj.LOGall;
@@ -34,15 +35,21 @@ public class ParetoFrontApproximation {
         String valueFile = args[0];
         String markerFile = args[1];
         String favAlleleFile = args[2];
-        String divMeasure = args[3].toUpperCase();
-        double weightDelta = Double.parseDouble(args[4]);
-        int subsetSize = Integer.parseInt(args[5]);
-        int repeats = Integer.parseInt(args[6]);
-        int timeWithoutImpr = Integer.parseInt(args[7]);
-        boolean normalized = Boolean.parseBoolean(args[8]);
+        String GFile = args[3];
+        String divMeasure = args[4].toUpperCase();
+        double weightDelta = Double.parseDouble(args[5]);
+        int subsetSize = Integer.parseInt(args[6]);
+        int repeats = Integer.parseInt(args[7]);
+        int timeWithoutImpr = Integer.parseInt(args[8]);
+        boolean normalized = Boolean.parseBoolean(args[9]);
         // read data
         PopulationReader reader = new PopulationReader();
-        PopulationData data = reader.read(Paths.get(valueFile), Paths.get(markerFile), Paths.get(favAlleleFile));
+        PopulationData data = reader.read(
+                Paths.get(valueFile), 
+                Paths.get(markerFile), 
+                Paths.get(favAlleleFile),
+                Paths.get(GFile)
+        );
 
         // create diversity objective
         Objective<SubsetSolution, PopulationData> divObj;
@@ -55,8 +62,10 @@ public class ParetoFrontApproximation {
                 break;
             case "LOGFAV": divObj = new LOGfav();
                 break;
+            case "OC": divObj = new AverageCoancestry();
+                break;
             default: throw new IllegalArgumentException("Unknown diversity measure: " + divMeasure + ". "
-                                                      + "Please specify one of HEall, HEfav, LOGall or LOGfav.");
+                                                      + "Please specify one of HEall, HEfav, LOGall, LOGfav or OC.");
         }
         
         Objective<SubsetSolution, PopulationData> valObj = new MeanBreedingValue();
