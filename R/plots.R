@@ -1154,7 +1154,7 @@ plot.multi <- function(simulations, plot.function, param.list = list(), xlim, yl
 plot.simulation.variable <- function(replicates,
                                      extract.values,
                                      ylab, shift = 0,
-                                     ci = 0.95,
+                                     ci = NA,
                                      type = c("generations", "seasons"),
                                      add=FALSE, pch=23,
                                      bg="black", lty=2,
