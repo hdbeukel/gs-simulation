@@ -514,10 +514,6 @@ optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbos
         ones <- rep(1, n)
         P <- Goo.inv - (Goo.inv %*% ones %*% t(ones) %*% Goo.inv) / Goo.inv.sum
         
-        if(length(i.fixed.max) == 14 && length(i.fixed.zero) == 178){
-          browser()
-        }
-        
         # check wether inbreeding constraint is satisfiable
         lambda.min.inbr <- 2 * (1 - sum(c.fixed) + t(ones) %*% Goo.inv %*% Gof %*% c.fixed) / Goo.inv.sum
         c.min.inbr <- 1/2 * Goo.inv %*% (ones %*% lambda.min.inbr - Gof %*% c.fixed)
@@ -556,7 +552,7 @@ optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbos
     # merge fixed and optimized contributions
     c[i.opt] <- c.opt
     c[i.fixed] <- c.fixed
-    
+
     # eliminate most negative contribution, if any
     if(any(c < 0)){
       elim <- which.min(c)
