@@ -394,7 +394,8 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
 # organized into subfolders according to
 #  1) the two included heritabilities
 #  2) the applied diversity measure and weight (each combination of the given measures and weights)
-plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HEall", "HEfav", "LOGall", "LOGfav"),
+plot.CGS <- function(div.weights = seq(0.35, 0.80, 0.05), # seq(0.35, 1.0, 0.05),
+                     div.measures = c("LOGall", "OC"), # c("HEall", "HEfav", "LOGall", "LOGfav"),
                      heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30)){
   
   # check: two heritabilities
@@ -422,10 +423,10 @@ plot.CGS <- function(div.weights = seq(0.35, 1.0, 0.05), div.measures = c("HEall
       
       # heritability/TP settings
       settings <- list(
-        #list(h = low.h, add.tp = 0),
-        list(h = low.h, add.tp = 800)
-        #list(h = high.h, add.tp = 0),
-        #list(h = high.h, add.tp = 800)
+        list(h = low.h, add.tp = 0),
+        list(h = low.h, add.tp = 800),
+        list(h = high.h, add.tp = 0),
+        list(h = high.h, add.tp = 800)
       )
       
       # load data
