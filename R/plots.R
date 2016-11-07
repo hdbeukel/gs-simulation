@@ -1489,7 +1489,7 @@ plot.tp.size <- function(replicates,
 # plot number of favourable QTL lost
 plot.num.fav.QTL.lost <- function(replicates,
                                   ylab = "Number favourable QTL lost",
-                                  cumulative = FALSE,
+                                  cumulative = TRUE,
                                   ...){
   
   # set function to extract number of favourable QTL lost
