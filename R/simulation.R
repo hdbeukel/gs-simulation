@@ -522,16 +522,16 @@ optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbos
         P <- Goo.inv - (Goo.inv %*% ones %*% t(ones) %*% Goo.inv) / Goo.inv.sum
         
         # check wether inbreeding constraint is satisfiable
-        lambda.min.inbr <- 2 * (1 - sum(c.fixed) + t(ones) %*% Goo.inv %*% Gof %*% c.fixed) / Goo.inv.sum
-        c.min.inbr <- 1/2 * Goo.inv %*% (ones %*% lambda.min.inbr - Gof %*% c.fixed)
-        min.inbr <- 1/2 * (t(c.min.inbr) %*% Goo %*% c.min.inbr 
-                           + 2 * t(c.min.inbr) %*% Gof %*% c.fixed
-                           + t(c.fixed) %*% Gff %*% c.fixed)
-        if(verbose){
-          message(sprintf(
-            "Minimum attainable average coancestry = %.6f", min.inbr
-          ))
-        }
+        # lambda.min.inbr <- 2 * (1 - sum(c.fixed) + t(ones) %*% Goo.inv %*% Gof %*% c.fixed) / Goo.inv.sum
+        # c.min.inbr <- 1/2 * Goo.inv %*% (ones %*% lambda.min.inbr - Gof %*% c.fixed)
+        # min.inbr <- 1/2 * (t(c.min.inbr) %*% Goo %*% c.min.inbr 
+        #                    + 2 * t(c.min.inbr) %*% Gof %*% c.fixed
+        #                    + t(c.fixed) %*% Gff %*% c.fixed)
+        # if(verbose){
+        #   message(sprintf(
+        #     "Minimum attainable average coancestry = %.6f", min.inbr
+        #   ))
+        # }
         
         # compute lambda 0
         a <- as.numeric(t(values) %*% P %*% values)
