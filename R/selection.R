@@ -29,7 +29,7 @@ select.highest.optimal.contribution <- function(n, values, markers, generation, 
   return(selected.names)
 }
 
-select.fixed.size.oc <- function(n, values, markers, generation, delta.F, adaptive = FALSE, verbose = FALSE, ...){
+select.fixed.size.oc <- function(n, values, markers, generation, delta.F, adaptive = TRUE, verbose = FALSE, ...){
   # compute fixed size OC
   C <- delta.F
   if(adaptive){
