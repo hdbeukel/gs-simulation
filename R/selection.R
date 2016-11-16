@@ -23,19 +23,17 @@ select.highest.score <- function(n, values, ...){
 # selects the n individuals with the highest optimal contributions according to Meuwissen 1997
 select.highest.optimal.contribution <- function(n, values, markers, generation, delta.F, ...){
   # compute optimal contributions
-  c <- optimal.contributions(values, markers, 1 - (1 - delta.F)^generation)
+  C <- 1 - (1 - delta.F)^generation
+  c <- optimal.contributions(values, markers, C)
   # select individuals with highest contribution
   selected.names <- names(head(sort(c, decreasing = TRUE), n=n))
   return(selected.names)
 }
 
-select.fixed.size.oc <- function(n, values, markers, generation, delta.F, adaptive = TRUE, verbose = FALSE, ...){
+select.fixed.size.oc <- function(n, values, markers, generation, delta.F, verbose = FALSE, ...){
   # compute fixed size OC
-  C <- delta.F
-  if(adaptive){
-    C <- 1 - (1 - delta.F)^generation
-  }
-  c <- optimal.contributions(values, markers, C, cmin = 1/n, cmax = 1/n, verbose = verbose)
+  C <- 1 - (1 - delta.F)^generation
+  c <- optimal.contributions(values, markers, C, size = n, verbose = verbose)
   # retrieve and check
   selected.names <- names(c[c > 0])
   if(length(selected.names) != n){

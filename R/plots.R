@@ -1159,6 +1159,7 @@ plot.simulation.variable <- function(replicates,
                                      type = c("generations", "seasons"),
                                      add=FALSE, pch=23,
                                      bg="black", lty=2,
+                                     max.na = 0.1,
                                      ...){
   
   # check input
@@ -1195,7 +1196,9 @@ plot.simulation.variable <- function(replicates,
   }
   
   # compute averages and standard error + CI across replicates
+  na <- apply(values, 2, function(col){sum(is.na(col))})/nrow(values)
   value.avg <- colMeans(values, na.rm = TRUE)
+  value.avg[na > max.na] <- NA
   value.std.err <- apply(values, 2, sd, na.rm = TRUE)/sqrt(num.rep)
   if(!is.na(ci)){
     value.ci.halfwidth <- qt(ci+(1-ci)/2, df = num.rep-1) * value.std.err

@@ -149,19 +149,38 @@ CGS <- function(founders, heritability, base.pop = NULL,
 }
 
 # optimal contributions simulation
-OC <- function(founders, heritability, base.pop = NULL,
+OC1 <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
 
   sel.crit <- function(n, values, markers, generation, ...){
+    select.highest.optimal.contribution(n = n,
+                                        values = values,
+                                        markers = markers,
+                                        generation = generation,
+                                        delta.F = delta.F)
+  }
+  
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = sel.crit,
+            gp.method, extract.metadata, store.all.pops, ...))
+  
+}
+OC2 <- function(founders, heritability, base.pop = NULL,
+                num.QTL=1000, QTL.effects = c("normal", "jannink"),
+                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+                store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
+  
+  sel.crit <- function(n, values, markers, generation, ...){
     select.fixed.size.oc(n = n,
-                        values = values,
-                        markers = markers,
-                        generation = generation,
-                        delta.F = delta.F,
-                        verbose = verbose)
+                         values = values,
+                         markers = markers,
+                         generation = generation,
+                         delta.F = delta.F,
+                         verbose = verbose)
   }
   
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -443,11 +462,19 @@ equal.contributions <- function(values, ...){
 # returns vector with optimal contributions, maximizing expected response
 # with a predefined rate of inbreeding according to Meuwissen 1997
 # (adjusted for plant breeding with constraint 1'c_t = 1 instead of Q'c_t = 1/2)
-optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbose = FALSE){
+optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE){
   
-  message("[OC] Maximum expected coancestry = ", C)
+  cmin <- 0
+  cmax <- 1
+  if(!is.na(size)){
+    # fixed size equal contribution setting
+    cmin <- cmax <- 1/size
+  }
+  
+  message("[OC] Allowed average coancestry = ", C)
   
   tol <- 1e-10
+  warned <- FALSE
   
   all.values <- values
   all.markers <- markers
@@ -541,16 +568,21 @@ optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbos
         )
         lambda.0.sq <- 1/4 * a/b
         if(lambda.0.sq < 0){
-          stop("Constraints can not be satisfied")
+          if(!warned){
+            warning("Allowed coancestry ", C, " can not be satisfied! Setting contributions to minimize coancestry.")
+            warned <- TRUE
+          }
+          lambda.min.inbr <- 2 * (1 - sum(c.fixed) + t(ones) %*% Goo.inv %*% Gof %*% c.fixed) / Goo.inv.sum
+          c.min.inbr <- 1/2 * Goo.inv %*% (ones %*% lambda.min.inbr - Gof %*% c.fixed)
+          c.opt <- c.min.inbr
+        } else {
+          lambda.0 <- sqrt(lambda.0.sq)
+          # compute lambda
+          a <- as.numeric(t(ones) %*% Goo.inv %*% (values - 2*lambda.0 * Gof %*% c.fixed) - 2*lambda.0*s)
+          lambda <- a / Goo.inv.sum
+          # compute optimal contributions
+          c.opt <- Goo.inv %*% (values - 2*lambda.0 * Gof %*% c.fixed - lambda) / (2*lambda.0)
         }
-        lambda.0 <- sqrt(lambda.0.sq)
-        
-        # compute lambda
-        a <- as.numeric(t(ones) %*% Goo.inv %*% (values - 2*lambda.0 * Gof %*% c.fixed) - 2*lambda.0*s)
-        lambda <- a / Goo.inv.sum
-        
-        # compute optimal contributions
-        c.opt <- Goo.inv %*% (values - 2*lambda.0 * Gof %*% c.fixed - lambda) / (2*lambda.0)
         
       }
       
@@ -598,6 +630,7 @@ optimal.contributions <- function(values, markers, C, cmin = 0, cmax = 1, verbos
       length(i.fixed.max), n.all, cmax
     ))
   }
+  message("[OC] Realized average coancestry = ", c %*% G %*% c / 2)
   
   # return final contributions
   names(c) <- names(all.values)
