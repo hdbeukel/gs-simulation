@@ -569,11 +569,11 @@ optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE
         lambda.0.sq <- 1/4 * a/b
         if(lambda.0.sq < 0){
           if(!warned){
-            message("[OC] Allowed coancestry ", C, " can not be satisfied! Setting contributions to minimize coancestry.")
+            message("[OC] Allowed coancestry ", C, " can not be satisfied! Assigning contributions to minimize coancestry.")
             warned <- TRUE
           }
           lambda.min.inbr <- 2 * (1 - sum(c.fixed) + t(ones) %*% Goo.inv %*% Gof %*% c.fixed) / Goo.inv.sum
-          c.min.inbr <- 1/2 * Goo.inv %*% (ones %*% lambda.min.inbr - Gof %*% c.fixed)
+          c.min.inbr <- Goo.inv %*% (ones * lambda.min.inbr/2 - Gof %*% c.fixed)
           c.opt <- c.min.inbr
         } else {
           lambda.0 <- sqrt(lambda.0.sq)
