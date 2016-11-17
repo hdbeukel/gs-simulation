@@ -111,15 +111,17 @@ if(sim.function.name == "PS"){
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method,
                      div.measure, div.weight, CGS.type)
-} else if(sim.function.name == "OC") {
+} else if(sim.function.name == "OC1" || sim.function.name == "OC2") {
   out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s/dF-%.5f",
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method, delta.F)
-} else {
+} else if(sim.function.name == "WGS" || sim.function.name == "WGS2") {
   # WGS or WGS2
   out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s",
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method)
+} else {
+  stop("Error setting output directory.")
 }
 file.name <- paste(it, "RDS", sep=".")
 if(!is.na(custom.seed)){
