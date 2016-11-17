@@ -474,7 +474,6 @@ optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE
   message("[OC] Allowed average coancestry = ", C)
   
   tol <- 1e-10
-  warned <- FALSE
   
   all.values <- values
   all.markers <- markers
@@ -568,10 +567,7 @@ optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE
         )
         lambda.0.sq <- 1/4 * a/b
         if(lambda.0.sq < 0){
-          if(!warned){
-            message("[OC] Allowed coancestry ", C, " can not be satisfied! Assigning contributions to minimize coancestry.")
-            warned <- TRUE
-          }
+          message("[OC] Allowed coancestry ", C, " can not be satisfied! Minimizing coancestry now.")
           lambda.min.inbr <- 2 * (1 - sum(c.fixed) + t(ones) %*% Goo.inv %*% Gof %*% c.fixed) / Goo.inv.sum
           c.min.inbr <- Goo.inv %*% (ones * lambda.min.inbr/2 - Gof %*% c.fixed)
           c.opt <- c.min.inbr

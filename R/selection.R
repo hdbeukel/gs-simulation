@@ -30,9 +30,12 @@ select.highest.optimal.contribution <- function(n, values, markers, generation, 
   return(selected.names)
 }
 
-select.fixed.size.oc <- function(n, values, markers, generation, delta.F, verbose = FALSE, ...){
+select.fixed.size.oc <- function(n, values, markers, generation, delta.F, adaptive = FALSE, verbose = FALSE, ...){
   # compute fixed size OC
   C <- 1 - (1 - delta.F)^generation
+  if(!adaptive){
+    C <- delta.F
+  }
   c <- optimal.contributions(values, markers, C, size = n, verbose = verbose)
   # retrieve and check
   selected.names <- names(c[c > 0])
