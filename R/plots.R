@@ -24,9 +24,11 @@ load.simulation.results <- function(dir, file.pattern = "bp-*.RDS") {
 ##########################################
 
 # averaged over all replicates and all combinationsn of h2 + additional TP
-infer.avg.final.gain <- function(type = c("GS", "WGS", "CGS"),
-                                 # ignored for type GS/WGS
-                                 div.measure = c("HEall", "HEfav", "LOGall", "LOGfav"), div.weight){
+infer.avg.final.gain <- function(type = c("GS", "WGS", "CGS", "OC2"),
+                                 # only for type CGS
+                                 div.measure = c("HEall", "HEfav", "LOGall", "LOGfav", "OC"), div.weight,
+                                 # only for type OC2
+                                 delta.F = 0.05){
   
   # process arguments
   type <- match.arg(type)
@@ -36,6 +38,9 @@ infer.avg.final.gain <- function(type = c("GS", "WGS", "CGS"),
   if(type == "CGS"){
     # CGS
     dirs <- Sys.glob(sprintf("out/CGS/30-seasons/h2-*/addTP-*/normal-effects/BRR/%s-%.2f/index", div.measure, div.weight))
+  } else if (type == "OC2") {
+    # OC2
+    dirs <- Sys.glob(sprintf("out/OC2/30-seasons/h2-*/addTP-*/normal-effects/BRR/dF-%.5f", delta.F))
   } else {
     # GS/WGS
     dirs <- Sys.glob(sprintf("out/%s/30-seasons/h2-*/addTP-*/normal-effects/BRR", type))
@@ -63,7 +68,7 @@ infer.avg.final.gain <- function(type = c("GS", "WGS", "CGS"),
   
 }
 
-infer.CGS.avg.final.gains <- function(div.measure = c("HEall", "HEfav", "LOGall", "LOGfav"),
+infer.CGS.avg.final.gains <- function(div.measure = c("HEall", "HEfav", "LOGall", "LOGfav", "OC"),
                                       div.weights = seq(0.35, 1.0, 0.05)){
   
   # process arguments
@@ -74,6 +79,18 @@ infer.CGS.avg.final.gains <- function(div.measure = c("HEall", "HEfav", "LOGall"
     return(infer.avg.final.gain(type = "CGS", div.measure = div.measure, div.weight = w))
   })
   names(avg.final.gains) <- div.weights
+  
+  return(avg.final.gains)
+  
+}
+
+infer.OC2.avg.final.gains <- function(delta.F = seq(0.35, 0.70, 0.05)){
+  
+  avg.final.gains <- sapply(delta.F, function(dF){
+    message("Processing delta F = ", dF, " ...")
+    return(infer.avg.final.gain(type = "OC2", delta.F = dF))
+  })
+  names(avg.final.gains) <- delta.F
   
   return(avg.final.gains)
   
@@ -394,7 +411,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
 # organized into subfolders according to
 #  1) the two included heritabilities
 #  2) the applied diversity measure and weight (each combination of the given measures and weights)
-plot.CGS <- function(div.weights = seq(0.35, 0.80, 0.05), # seq(0.35, 1.0, 0.05),
+plot.CGS <- function(div.weights = seq(0.35, 0.70, 0.05), # seq(0.35, 1.0, 0.05),
                      div.measures = "OC", #c("LOGall", "OC"), # c("HEall", "HEfav", "LOGall", "LOGfav"),
                      heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30)){
   
@@ -423,10 +440,10 @@ plot.CGS <- function(div.weights = seq(0.35, 0.80, 0.05), # seq(0.35, 1.0, 0.05)
       
       # heritability/TP settings
       settings <- list(
-        list(h = low.h, add.tp = 0)#,
-        #list(h = low.h, add.tp = 800),
-        #list(h = high.h, add.tp = 0),
-        #list(h = high.h, add.tp = 800)
+        list(h = low.h, add.tp = 0),
+        list(h = low.h, add.tp = 800),
+        list(h = high.h, add.tp = 0),
+        list(h = high.h, add.tp = 800)
       )
       
       # load data
@@ -523,7 +540,7 @@ plot.CGS <- function(div.weights = seq(0.35, 0.80, 0.05), # seq(0.35, 1.0, 0.05)
 
 # stores PDF plots in "figures/simulation/GS-WGS",
 # within a subfolder according to the two included heritabilities
-plot.GS.vs.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
+plot.GS.vs.WGS.vs.WGS2 <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
   
   # check: two heritabilities
   if(length(heritability) != 2){
