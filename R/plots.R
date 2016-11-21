@@ -110,7 +110,7 @@ create.pdf <- function(file, plot.fun, width = 14, height = 10.5){
 
 get.plot.functions <- function(){
   plot.functions <- list(
-    list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
+    gain = list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
          legend = "bottomright", ylim =  c(0, 0.35)),
     # list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
     #      legend = "bottomright", ylim = c(0, 1.0)),
@@ -118,7 +118,7 @@ get.plot.functions <- function(){
     #      legend = "bottomright", ylim = c(0.50, 0.625)),
     # list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
     #       legend = "bottomleft", ylim = c(0.3, 0.9)),
-    list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = "Inbreeding rate",
+    inbreeding = list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = "Inbreeding rate",
          legend = "topleft", ylim = c(0, 0.8))#,
     # list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
     #      legend = "topright", ylim = c(0, 0.035)),
