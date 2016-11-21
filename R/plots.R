@@ -84,7 +84,7 @@ infer.CGS.avg.final.gains <- function(div.measure = c("HEall", "HEfav", "LOGall"
   
 }
 
-infer.OC2.avg.final.gains <- function(delta.F = seq(0.35, 0.70, 0.05)){
+infer.OC2.avg.final.gains <- function(delta.F = seq(0.01, 0.05, 0.01)){
   
   avg.final.gains <- sapply(delta.F, function(dF){
     message("Processing delta F = ", dF, " ...")
