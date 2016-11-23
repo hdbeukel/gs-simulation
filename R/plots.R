@@ -28,7 +28,7 @@ infer.avg.final.gain <- function(type = c("GS", "WGS", "CGS", "OC2"),
                                  # only for type CGS
                                  div.measure = c("HEall", "HEfav", "LOGall", "LOGfav", "OC"), div.weight,
                                  # only for type OC2
-                                 delta.F = 0.05){
+                                 delta.F = 0.06){
   
   # process arguments
   type <- match.arg(type)
@@ -84,7 +84,7 @@ infer.CGS.avg.final.gains <- function(div.measure = c("HEall", "HEfav", "LOGall"
   
 }
 
-infer.OC2.avg.final.gains <- function(delta.F = seq(0.01, 0.05, 0.01)){
+infer.OC2.avg.final.gains <- function(delta.F = seq(0.01, 0.06, 0.01)){
   
   avg.final.gains <- sapply(delta.F, function(dF){
     message("Processing delta F = ", dF, " ...")
@@ -167,7 +167,7 @@ get.plot.functions <- function(){
 #  2) the given optimal strategy name
 #  3) whether confidence intervals are included (ci)
 plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
-                         OC.delta.F = 0.0003, CGS.alpha = 0.35,
+                         OC.delta.F = 0.06, RA.alpha = 0.35, OC.alpha = 0.35,
                          heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
                          xlim = c(0,30), ci = NA, main.plots = TRUE,
                          MDS.plots = FALSE, MDS.movies = FALSE){
@@ -215,13 +215,15 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
       
       # determine data directory names
       dir.template <- sprintf("out/%%s/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.tp)
-      # CGS results with selected weight
-      CGS.dir.template <- paste(sprintf(dir.template, "CGS"), "%s-%.2f/index", sep = "/")
-      CGS.dir <- sprintf(CGS.dir.template, "LOGall", CGS.alpha)
+      # IND-RA results with selected weight
+      IND.dir.template <- paste(sprintf(dir.template, "CGS"), "%s-%.2f/index", sep = "/")
+      IND.RA.dir <- sprintf(IND.dir.template, "LOGall", RA.alpha)
+      # IND-OC results with selected weight
+      IND.OC.dir <- sprintf(IND.dir.template, "OC", OC.alpha)
       # corresponding GS results
       GS.dir <- sprintf(dir.template, "GS")
       # corresponding OC results
-      OC.dir.template <- paste(sprintf(dir.template, "OC"), "dF-%.5f", sep = "/")
+      OC.dir.template <- paste(sprintf(dir.template, "OC2"), "dF-%.5f", sep = "/")
       OC.dir <- sprintf(OC.dir.template, OC.delta.F)
       # corresponding WGS results
       WGS.dir <- sprintf(dir.template, "WGS")
@@ -230,8 +232,12 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
       #    1) GS
       #    2) WGS
       #    3) OC
-      #    4) CGS
-      data <- lapply(c(GS.dir, WGS.dir, OC.dir, CGS.dir), load.simulation.results, file.pattern)
+      #    4) IND-RA
+      #    5) IND-OC
+      data <- lapply(
+        c(GS.dir, WGS.dir, OC.dir, IND.RA.dir, IND.OC.dir),
+        load.simulation.results, file.pattern
+      )
       
       return(list(data = data, h = h, tp = tp))
       
@@ -242,7 +248,8 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
       list(lty = 1, bg = "black", pch = 21), # GS
       list(lty = 2, bg = "grey", pch = 24), # WGS
       list(lty = 3, bg = "grey", pch = 25), # OC
-      list(lty = 4, bg = "white",  pch = 23)  # SET
+      list(lty = 4, bg = "white",  pch = 23), # IND-RA
+      list(lty = 4, bg = "grey",  pch = 23)  # IND-OC
     )
     
     # set curve names
@@ -254,8 +261,10 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     names[[2]] <- bquote(WGS)
     # OC
     names[[3]] <- bquote(OC ~ (paste(Delta, F) == .(sprintf("%.5f", OC.delta.F))))
-    # CGS
-    names[[4]] <- bquote(SET ~ (alpha == .(sprintf("%.2f", CGS.alpha))))
+    # IND-RA
+    names[[4]] <- bquote("IND-RA" ~ (alpha == .(sprintf("%.2f", RA.alpha))))
+    # IND-OC
+    names[[5]] <- bquote("IND-OC" ~ (alpha == .(sprintf("%.2f", OC.alpha))))
     # convert to expressions
     names <- as.expression(names)
     
@@ -357,7 +366,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
     )
     
     types <- list(
-      "qtl",
+      #"qtl",
       "markers"
     )
     
@@ -378,7 +387,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
               par(mfrow = c(3,3))
               gen <- c(1, seq(2, 30, 4))
               plot.MDS.populations.CGS.opt(type,
-                                           OC.delta.F, CGS.alpha,
+                                           OC.delta.F, RA.alpha, OC.alpha,
                                            gen, bp, setting$h2, setting$addTP)
               
             }, width = 12, height = 12)
@@ -394,7 +403,7 @@ plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
               
               gen <- 1:30
               plot.MDS.populations.CGS.opt(type,
-                                           OC.delta.F, CGS.alpha,
+                                           OC.delta.F, RA.alpha, OC.alpha,
                                            gen, bp, setting$h2, setting$addTP, include.gain = TRUE)
               
             }, video.name = file, ani.height = 500, ani.width = 1000, interval = 0.5, autobrowse = FALSE)
@@ -660,7 +669,7 @@ plot.GS.WGS.WGS2 <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RD
 # stores PDF plots in "figures/simulation/GS-WGS-OC-[delta.F]",
 # within a subfolder according to the two included heritabilities
 plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
-                           delta.F = c(0.03, 0.05)){
+                           delta.F = c(0.03, 0.06)){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -773,7 +782,7 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
 # stores PDF plots in "figures/simulation/WGS-OC-[delta.F]",
 # within a subfolder according to the two included heritabilities
 plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30),
-                        ci = NA, delta.F = c(0.03, 0.05)){
+                        ci = NA, delta.F = c(0.03, 0.06)){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -1142,7 +1151,7 @@ plot.OC.SET <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
 # within a subfolder according to the heritability and TP size
 plot.GS.WGS.OC.IND <- function(heritability = 0.2, add.TP = 800, file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
                                scenarios = list(
-                                 high.short.term.gain = list(delta.F = 0.05, RA.alpha = 0.35, OC.alpha = 0.35),
+                                 high.short.term.gain = list(delta.F = 0.06, RA.alpha = 0.35, OC.alpha = 0.35),
                                  max.long.term.gain = list(delta.F = 0.03, RA.alpha = 0.45, OC.alpha = 0.60),
                                  same.inbreeding = list(delta.F = 0.02, RA.alpha = 0.35, OC.alpha = 0.65)
                                )){
@@ -1237,7 +1246,7 @@ plot.GS.WGS.OC.IND <- function(heritability = 0.2, add.TP = 800, file.pattern = 
 # within a subfolder according to the heritability and TP size
 plot.OC.IND <- function(heritability = 0.2, add.TP = 800, file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
                         scenarios = list(
-                         high.short.term.gain = list(delta.F = 0.05, RA.alpha = 0.35, OC.alpha = 0.35),
+                         high.short.term.gain = list(delta.F = 0.06, RA.alpha = 0.35, OC.alpha = 0.35),
                          max.long.term.gain = list(delta.F = 0.03, RA.alpha = 0.45, OC.alpha = 0.60),
                          same.inbreeding = list(delta.F = 0.02, RA.alpha = 0.35, OC.alpha = 0.65)
                        )){
@@ -2047,14 +2056,14 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
 }
 
 plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
-                                         OC.delta.F = 0.0003, CGS.alpha = 0.35,
+                                         OC.delta.F = 0.06, RA.alpha = 0.35, OC.alpha = 0.35,
                                          generations, bp, h2, addTP, include.gain = FALSE){
   
   type <- match.arg(type)
   
   # load data
   message("Load data ...")
-  # GS/WGS(2)
+  # GS & WGS(2)
   GS.data <- readRDS(
     sprintf("out/GS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
   )
@@ -2066,11 +2075,15 @@ plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
   )
   # OC
   OC.data <- readRDS(
-    sprintf("out/OC/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f/bp-%d-1.RDS", h2, addTP, OC.delta.F, bp)
+    sprintf("out/OC2/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f/bp-%d-1.RDS", h2, addTP, OC.delta.F, bp)
   )
-  # CGS
-  CGS.data <- readRDS(
-    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index/bp-%d-1.RDS", h2, addTP, CGS.alpha, bp)
+  # IND-RA
+  IND.RA.data <- readRDS(
+    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index/bp-%d-1.RDS", h2, addTP, RA.alpha, bp)
+  )
+  # IND-OC
+  IND.OC.data <- readRDS(
+    sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/OC-%.2f/index/bp-%d-1.RDS", h2, addTP, OC.alpha, bp)
   )
   
   # plot
@@ -2078,13 +2091,14 @@ plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
   
   plot.MDS.populations(
     type = type,
-    list(GS.data, WGS.data, WGS2.data, OC.data, CGS.data),
+    list(GS.data, WGS.data, WGS2.data, OC.data, IND.RA.data, IND.OC.data),
     generations = generations, method.names = c(
       "GS",
       "WGS",
       "WGS2",
       "OC",
-      "SET"
+      "IND-RA",
+      "IND-OC"
     ),
     include.gain = include.gain
   )
