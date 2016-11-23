@@ -415,6 +415,22 @@ get.favourable.qtl.allele.frequencies <- function(pop){
   return(freqs)
 }
 
+# get sum of absolute value of lost and retained QTL effects (*real* QTL only)
+get.abs.qtl.effects <- function(pop){
+  # retrieve absolute value of QTL effects
+  abs.eff <- abs(get.qtl.effects(pop))
+  # get favourable QTL allele frequencies
+  fav.allele.freqs <- get.favourable.qtl.allele.frequencies(pop)
+  # sum absolute value of effect of QTL whose favourable allele is lost
+  lost <- which(fav.allele.freqs == 0)
+  sum.abs.lost <- sum(abs.eff[lost])
+  # same for those retained
+  ret <- which(fav.allele.freqs > 0)
+  sum.abs.ret <- sum(abs.eff[ret])
+  # return both values
+  return(list(lost = sum.abs.lost, retained = sum.abs.ret))
+}
+
 infer.genetic.values = function(pop){
   # assert: QTLs assigned
   if(attr(pop$hypred$genome, 'num.add.qtl.chr') == 0){

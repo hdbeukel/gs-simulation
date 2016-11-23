@@ -762,13 +762,17 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       
       # 5) QTL favourable allele frequencies
       metadata[[s+1]]$candidates$fav.QTL.allele.freqs <- get.favourable.qtl.allele.frequencies(candidates)
-      # 6) QTL - marker LD
-      metadata[[s+1]]$candidates$QTL.marker.LD <- QTL.marker.highest.LD(candidates)
+      # 6) absolute effects lost and retained
+      metadata[[s+1]]$candidates$abs.QTL.effects.lost <- get.abs.qtl.effects(candidates)$lost
+      metadata[[s+1]]$candidates$abs.QTL.effects.retained <- get.abs.qtl.effects(candidates)$retained
       # 7) number of favourable QTL lost
       num.lost <- sum(get.favourable.qtl.allele.frequencies(candidates) == 0)
       metadata[[s+1]]$candidates$num.fav.QTL.lost <- num.lost
       
-      # 8) store full marker data (only if requested to store all populations)
+      # 8) QTL - marker LD
+      metadata[[s+1]]$candidates$QTL.marker.LD <- QTL.marker.highest.LD(candidates)
+      
+      # 9) store full marker data (only if requested to store all populations)
       if(store.all.pops){
         metadata[[s+1]]$candidates$markers <- gp.design.matrix(candidates)
         metadata[[s+1]]$candidates$qtl <- get.qtl.allele.matrix(candidates)
