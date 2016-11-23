@@ -28,7 +28,7 @@ infer.avg.final.gain <- function(type = c("GS", "WGS", "CGS", "OC2"),
                                  # only for type CGS
                                  div.measure = c("HEall", "HEfav", "LOGall", "LOGfav", "OC"), div.weight,
                                  # only for type OC2
-                                 delta.F = 0.06){
+                                 delta.F = 0.05){
   
   # process arguments
   type <- match.arg(type)
@@ -84,7 +84,7 @@ infer.CGS.avg.final.gains <- function(div.measure = c("HEall", "HEfav", "LOGall"
   
 }
 
-infer.OC2.avg.final.gains <- function(delta.F = seq(0.01, 0.06, 0.01)){
+infer.OC2.avg.final.gains <- function(delta.F = seq(0.01, 0.05, 0.01)){
   
   avg.final.gains <- sapply(delta.F, function(dF){
     message("Processing delta F = ", dF, " ...")
@@ -111,16 +111,16 @@ create.pdf <- function(file, plot.fun, width = 14, height = 10.5){
 get.plot.functions <- function(){
   plot.functions <- list(
     list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
-         legend = "bottomright", ylim =  c(0, 0.3)),
+         legend = "bottomright", ylim =  c(0, 0.35)),
     # list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
     #      legend = "bottomright", ylim = c(0, 1.0)),
     freq = list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq",
                 title = "Mean QTL favourable allele frequency",
-                legend = "bottomright", ylim = c(0.50, 0.60)),
+                legend = "bottomright", ylim = c(0.50, 0.62)),
     # list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
     #       legend = "bottomleft", ylim = c(0.3, 0.9)),
     list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = "Inbreeding rate",
-         legend = "topleft", ylim = c(-0.1, 0.8))#,
+         legend = "topleft", ylim = c(-0.1, 0.7))#,
     # list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
     #      legend = "topright", ylim = c(0, 0.035)),
     # lost = list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost",
@@ -167,7 +167,7 @@ get.plot.functions <- function(){
 #  2) the given optimal strategy name
 #  3) whether confidence intervals are included (ci)
 plot.CGS.opt <- function(strategy.name = "OPT-high-short-term-gain",
-                         OC.delta.F = 0.06, RA.alpha = 0.35, OC.alpha = 0.35,
+                         OC.delta.F = 0.05, RA.alpha = 0.35, OC.alpha = 0.35,
                          heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS",
                          xlim = c(0,30), ci = NA, main.plots = TRUE,
                          MDS.plots = FALSE, MDS.movies = FALSE){
@@ -669,7 +669,7 @@ plot.GS.WGS.WGS2 <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RD
 # stores PDF plots in "figures/simulation/GS-WGS-OC-[delta.F]",
 # within a subfolder according to the two included heritabilities
 plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
-                           delta.F = c(0.03, 0.06)){
+                           delta.F = c(0.03, 0.05)){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -782,7 +782,7 @@ plot.GS.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS"
 # stores PDF plots in "figures/simulation/WGS-OC-[delta.F]",
 # within a subfolder according to the two included heritabilities
 plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30),
-                        ci = NA, delta.F = c(0.03, 0.06)){
+                        ci = NA, delta.F = c(0.03, 0.05)){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -870,7 +870,7 @@ plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
       ylim <- plot.fun$ylim
       height <- 5.5
       if(plot.fun$name == "inbreeding-rate"){
-        ylim[2] <- 0.4
+        ylim[2] <- 0.5
         height <- 4
       }
       
@@ -1151,7 +1151,7 @@ plot.OC.SET <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
 # within a subfolder according to the heritability and TP size
 plot.GS.WGS.OC.IND <- function(heritability = 0.2, add.TP = 800, file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
                                scenarios = list(
-                                 high.short.term.gain = list(delta.F = 0.06, RA.alpha = 0.35, OC.alpha = 0.35),
+                                 high.short.term.gain = list(delta.F = 0.05, RA.alpha = 0.35, OC.alpha = 0.35),
                                  max.long.term.gain = list(delta.F = 0.03, RA.alpha = 0.45, OC.alpha = 0.60),
                                  same.inbreeding = list(delta.F = 0.02, RA.alpha = 0.35, OC.alpha = 0.65)
                                )){
@@ -1246,7 +1246,7 @@ plot.GS.WGS.OC.IND <- function(heritability = 0.2, add.TP = 800, file.pattern = 
 # within a subfolder according to the heritability and TP size
 plot.OC.IND <- function(heritability = 0.2, add.TP = 800, file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
                         scenarios = list(
-                         high.short.term.gain = list(delta.F = 0.06, RA.alpha = 0.35, OC.alpha = 0.35),
+                         high.short.term.gain = list(delta.F = 0.05, RA.alpha = 0.35, OC.alpha = 0.35),
                          max.long.term.gain = list(delta.F = 0.03, RA.alpha = 0.45, OC.alpha = 0.60),
                          same.inbreeding = list(delta.F = 0.02, RA.alpha = 0.35, OC.alpha = 0.65)
                        )){
@@ -1394,7 +1394,7 @@ plot.simulation.variable <- function(replicates,
                                      type = c("generations", "seasons"),
                                      add=FALSE, pch=23,
                                      bg="black", lty=2,
-                                     max.na = 0.9,
+                                     max.na = 0.8,
                                      ...){
   
   # check input
@@ -2056,7 +2056,7 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
 }
 
 plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
-                                         OC.delta.F = 0.06, RA.alpha = 0.35, OC.alpha = 0.35,
+                                         OC.delta.F = 0.05, RA.alpha = 0.35, OC.alpha = 0.35,
                                          generations, bp, h2, addTP, include.gain = FALSE){
   
   type <- match.arg(type)
