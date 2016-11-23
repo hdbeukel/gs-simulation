@@ -866,13 +866,13 @@ plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
       
       file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
       
-      # reduce ylim and height for inbreeding plots
       ylim <- plot.fun$ylim
       height <- 5.5
-      if(plot.fun$name == "inbreeding-rate"){
-        ylim[2] <- 0.5
-        height <- 4
-      }
+      # reduce ylim and height for inbreeding plots
+      # if(plot.fun$name == "inbreeding-rate"){
+      #   ylim[2] <- 0.5
+      #   height <- 4
+      # }
       
       # combine small/large TP plots
       # create.pdf(file, function(){
@@ -1394,7 +1394,7 @@ plot.simulation.variable <- function(replicates,
                                      type = c("generations", "seasons"),
                                      add=FALSE, pch=23,
                                      bg="black", lty=2,
-                                     max.na = 0.8,
+                                     max.na = 0.5,
                                      ...){
   
   # check input
