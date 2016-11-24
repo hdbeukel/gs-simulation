@@ -115,8 +115,8 @@ if(sim.function.name == "PS"){
   out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s/dF-%.5f",
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method, delta.F)
-} else if(sim.function.name == "WGS" || sim.function.name == "WGS2") {
-  # WGS or WGS2
+} else if(sim.function.name == "GS" || sim.function.name == "WGS" || sim.function.name == "WGS2") {
+  # GS, WGS or WGS2
   out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s",
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method)
