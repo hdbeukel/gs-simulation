@@ -15,7 +15,10 @@
 !/data/oregon-markers.txt
 !/java/
 /java/**/target/
+!/scripts/
+/scripts/*
 !/scripts/run.R
+!/scripts/gen-MDS-pops.R
 !/hpc/
 !/figures/
 /hpc/run*
