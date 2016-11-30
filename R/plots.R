@@ -2109,7 +2109,7 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
       pch = 24,
       col = sel.col,
       pt.bg = sel.col,
-      text.width = max(sapply(method.names, strwidth))*1.1
+      text.width = max(sapply(method.names, strwidth))
     )
     
     # gain progress bars
