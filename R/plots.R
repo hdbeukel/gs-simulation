@@ -114,16 +114,18 @@ get.plot.functions <- function(){
          legend = "bottomright", ylim =  c(0, 0.35)),
     # list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
     #      legend = "bottomright", ylim = c(0, 1.0)),
-    freq = list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq",
-                title = "Mean QTL favourable allele frequency",
-                legend = "bottomright", ylim = c(0.50, 0.62)),
+    # freq = list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq",
+    #             title = "Mean QTL favorable allele frequency",
+    #             legend = "bottomright", ylim = c(0.50, 0.62)),
     # list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
     #       legend = "bottomleft", ylim = c(0.3, 0.9)),
     list(f = plot.inbreeding.rate, name = "inbreeding-rate", title = "Inbreeding rate",
          legend = "topleft", ylim = c(-0.1, 0.7))#,
     # list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
     #      legend = "topright", ylim = c(0, 0.035)),
-    # lost = list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favourable QTL lost",
+    # lost = list(f = plot.total.QTL.effect.lost, name = "QT-effect-lost", title = "Total QTL effect lost",
+    #             legend = "bottomright", ylim = c(0, 250)),
+    # lost = list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favorable QTL lost",
     #             legend = "bottomright", ylim = c(0, 450))#,
     # list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
     #      legend = "bottomright", ylim = c(0.1, 0.45)),
@@ -1675,7 +1677,7 @@ plot.effect.sign.mismatches <- function(replicates,
       if(!is.null(season$gp)){
         # extract QTL-marker LD table
         QTL.marker.LD <- season$gp$qtl.marker.ld
-        # infer MAFs from favourable allele freqs
+        # infer MAFs from favorable allele freqs
         # NOTE: restrict to considered markers only
         #       based on *names* (indices include QTL and dummies)
         fav.freqs <- season$gp$fav.marker.allele.freqs
@@ -1729,13 +1731,13 @@ plot.tp.size <- function(replicates,
   
 }
 
-# plot number of favourable QTL lost
+# plot number of favorable QTL lost
 plot.num.fav.QTL.lost <- function(replicates,
-                                  ylab = "Number favourable QTL lost",
+                                  ylab = "Number favorable QTL lost",
                                   cumulative = TRUE,
                                   ...){
   
-  # set function to extract number of favourable QTL lost
+  # set function to extract number of favorable QTL lost
   extract.num.fav.QTL.lost <- function(seasons){
     # initialize result vector
     num.lost <- rep(NA, length(seasons))
@@ -1757,6 +1759,68 @@ plot.num.fav.QTL.lost <- function(replicates,
   
   # call generic variable plot function
   plot.simulation.variable(replicates, extract.values =  extract.num.fav.QTL.lost, ylab = ylab, ...)
+  
+}
+
+# plot total QTL effect lost
+plot.total.QTL.effect.lost <- function(replicates,
+                                        ylab = "Total QTL effect lost",
+                                        cumulative = TRUE,
+                                        ...){
+  
+  # set function to extract total QTL effect lost
+  extract.total.QTL.effect.lost <- function(seasons){
+    # initialize result vector
+    eff.lost <- rep(NA, length(seasons))
+    # extract number lost for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether selection candidates have been produced in this season
+      if(!is.null(season$candidates)){
+        # extract and store number
+        eff.lost[s] <- season$candidates$abs.QTL.effects.lost
+      }
+    }
+    if(!cumulative){
+      eff.lost[1:2] <- 0
+      eff.lost <- diff(eff.lost)
+    }
+    return(eff.lost)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.total.QTL.effect.lost, ylab = ylab, ...)
+  
+}
+
+# plot total QTL effect retained
+plot.total.QTL.effect.retained <- function(replicates,
+                                       ylab = "Total QTL effect retained",
+                                       cumulative = TRUE,
+                                       ...){
+  
+  # set function to extract total QTL effect retained
+  extract.total.QTL.effect.retained <- function(seasons){
+    # initialize result vector
+    eff.retained <- rep(NA, length(seasons))
+    # extract number lost for each season
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether selection candidates have been produced in this season
+      if(!is.null(season$candidates)){
+        # extract and store number
+        eff.retained[s] <- season$candidates$abs.QTL.effects.retained
+      }
+    }
+    if(!cumulative){
+      eff.retained[1:2] <- 0
+      eff.retained <- diff(eff.retained)
+    }
+    return(eff.retained)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.total.QTL.effect.retained, ylab = ylab, ...)
   
 }
 
@@ -1789,12 +1853,12 @@ plot.proportion.fixed.QTL <- function(replicates,
   
 }
 
-# plot mean QTL favourable allele frequency in selection candidates, averaged over all QTL
+# plot mean QTL favorable allele frequency in selection candidates, averaged over all QTL
 plot.mean.QTL.fav.allele.freq <- function(replicates,
-                                          ylab = "Mean QTL favourable allele frequency",
+                                          ylab = "Mean QTL favorable allele frequency",
                                           ...){
   
-  # set function to extract mean QTL favourable allele frequency
+  # set function to extract mean QTL favorable allele frequency
   extract.mean.QTL.fav.allele.freq <- function(seasons){
     # initialize result vector
     mean.QTL.fav.allele.freq <- rep(NA, length(seasons))
@@ -1814,12 +1878,12 @@ plot.mean.QTL.fav.allele.freq <- function(replicates,
   
 }
 
-# plot mean SNP favourable allele frequency in selection candidates, averaged over all SNP
+# plot mean SNP favorable allele frequency in selection candidates, averaged over all SNP
 plot.mean.marker.fav.allele.freq <- function(replicates,
-                                             ylab = "Mean marker favourable allele frequency",
+                                             ylab = "Mean marker favorable allele frequency",
                                              ...){
   
-  # set function to extract mean marker favourable allele frequency
+  # set function to extract mean marker favorable allele frequency
   extract.mean.marker.fav.allele.freq <- function(seasons){
     # initialize result vector
     mean.marker.fav.allele.freq <- rep(NA, length(seasons))
