@@ -2109,7 +2109,7 @@ plot.MDS.populations <- function(type = c("markers", "qtl"), simulations, genera
       pch = 24,
       col = sel.col,
       pt.bg = sel.col,
-      text.width = max(sapply(method.names, strwidth))
+      text.width = max(sapply(method.names, strwidth))*1.2
     )
     
     # gain progress bars
@@ -2135,16 +2135,16 @@ plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
   
   # load data
   message("Load data ...")
-  # GS & WGS(2)
+  # GS & WGS
   GS.data <- readRDS(
     sprintf("out/GS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
   )
   WGS.data <- readRDS(
     sprintf("out/WGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
   )
-  WGS2.data <- readRDS(
-    sprintf("out/WGS2/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
-  )
+  # WGS2.data <- readRDS(
+  #   sprintf("out/WGS2/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/bp-%d-1.RDS", h2, addTP, bp)
+  # )
   # OC
   OC.data <- readRDS(
     sprintf("out/OC2/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f/bp-%d-1.RDS", h2, addTP, OC.delta.F, bp)
@@ -2163,11 +2163,10 @@ plot.MDS.populations.CGS.opt <- function(type = c("markers", "qtl"),
   
   plot.MDS.populations(
     type = type,
-    list(GS.data, WGS.data, WGS2.data, OC.data, IND.RA.data, IND.OC.data),
+    list(GS.data, WGS.data, OC.data, IND.RA.data, IND.OC.data),
     generations = generations, method.names = c(
       "GS",
       "WGS",
-      "WGS2",
       "OC",
       "IND-RA",
       "IND-OC"
