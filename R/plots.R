@@ -558,7 +558,7 @@ plot.CGS <- function(div.weights = seq(0.35, 0.70, 0.05), # seq(0.35, 1.0, 0.05)
 
 # stores PDF plots in "figures/simulation/GS-WGS",
 # within a subfolder according to the two included heritabilities
-plot.GS.WGS.WGS2 <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
+plot.GS.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -569,6 +569,114 @@ plot.GS.WGS.WGS2 <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RD
   high.h <- max(heritability)
   
   fig.dir <- sprintf("figures/simulation/GS-WGS/h2-%.1f-%.1f", low.h, high.h)
+  
+  # create output directory
+  if(!dir.exists(fig.dir)){
+    message(sprintf("Create output directory \"%s\"", fig.dir))
+    dir.create(fig.dir, recursive = T)
+  }
+  
+  message("Load data ...")
+  
+  # load data
+  dirs.low.h2 <- sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", low.h)))
+  dirs.high.h2 <- sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h)))
+  data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
+  data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
+  # combine data:
+  # -- low h2 --
+  #  1)  GS, h2: low, add TP: 0
+  #  2)  GS, h2: low, add TP: 800
+  #  3) WGS, h2: low, add TP: 0
+  #  4) WGS, h2: low, add TP: 800
+  # -- high h2 --
+  #  7)  GS, h2: high, add TP: 0
+  #  8)  GS, h2: high, add TP: 800
+  #  9) WGS, h2: high, add TP: 0
+  # 10) WGS, h2: high, add TP: 800
+  data <- c(data.low.h2, data.high.h2)
+  # group small and large TP results
+  small.TP <- data[c(1,3,5,7)]
+  large.TP <- data[c(2,4,6,8)]
+  results <- list(
+    list(data = small.TP, title.suffix = "(TP = 200)"),
+    list(data = large.TP, title.suffix = "(TP = 1000)")
+  )
+  
+  # set graphical parameters
+  params <- list(
+    # GS, h2 = low
+    list(lty = 1, bg = "black", pch = 24),
+    # WGS, h2 = low
+    list(lty = 2, bg = "white", pch = 24),
+    # GS, h2 = high
+    list(lty = 1, bg = "black", pch = 21),
+    # WGS, h2 = high
+    list(lty = 2, bg = "white", pch = 21)
+  )
+  # set curve names
+  names <- c(
+    bquote(GS ~ (h^2 == .(low.h))),
+    bquote(WGS ~ (h^2 == .(low.h))),
+    bquote(GS ~ (h^2 == .(high.h))),
+    bquote(WGS ~ (h^2 == .(high.h)))
+  )
+  names <- sapply(names, as.expression)
+  
+  message("Create plots ...")
+  
+  # setup plot functions
+  plot.functions <- get.plot.functions()
+  
+  # create plots
+  for(plot.fun in plot.functions){
+    
+    file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+    
+    # combine small/large TP plots
+    # create.pdf(file, function(){
+    #   par(mfrow = c(1,2))
+    #   for(res in results){
+    #     plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+    #     title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+    #     add.legend(names, params, pos = plot.fun$legend)
+    #   }
+    # }, height = 5.5)
+    
+    # separate plots for small and large TP
+    
+    create.pdf(sprintf("%s/%s-TP200.pdf", fig.dir, plot.fun$name), function(){
+      res <- results[[1]]
+      plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+      title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+      add.legend(names, params, pos = plot.fun$legend)
+    }, height = 5.5, width = 7)
+    
+    create.pdf(sprintf("%s/%s-TP1000.pdf", fig.dir, plot.fun$name), function(){
+      res <- results[[2]]
+      plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+      title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+      add.legend(names, params, pos = plot.fun$legend)
+    }, height = 5.5, width = 7)
+    
+    
+  }
+  
+}
+
+# stores PDF plots in "figures/simulation/GS-WGS-WGS2",
+# within a subfolder according to the two included heritabilities
+plot.GS.WGS.WGS2 <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
+  
+  # check: two heritabilities
+  if(length(heritability) != 2){
+    stop("'heritability' should be a vector of length 2")
+  }
+  # extract low and high heritabilities
+  low.h <- min(heritability)
+  high.h <- max(heritability)
+  
+  fig.dir <- sprintf("figures/simulation/GS-WGS-WGS2/h2-%.1f-%.1f", low.h, high.h)
   
   # create output directory
   if(!dir.exists(fig.dir)){
