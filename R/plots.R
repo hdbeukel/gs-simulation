@@ -980,6 +980,15 @@ plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
     # create plots
     for(plot.fun in plot.functions){
       
+      # add target delta F line in inbreeding plots
+      if(plot.fun$name == "inbreeding-rate"){
+        f <- plot.fun$f
+        g <- function(...){
+          f(..., deltaF.line = dF)
+        }
+        plot.fun$f <- g
+      }
+      
       file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
       
       ylim <- plot.fun$ylim
@@ -1427,6 +1436,15 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         # create plots
         for(plot.fun in plot.functions){
           
+          # add target delta F line in inbreeding plots
+          if(plot.fun$name == "inbreeding-rate"){
+            f <- plot.fun$f
+            g <- function(...){
+              f(..., deltaF.line = dF)
+            }
+            plot.fun$f <- g
+          }
+          
           file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
           
           create.pdf(sprintf("%s/%s.pdf", fig.dir, plot.fun$name), function(){
@@ -1691,6 +1709,7 @@ plot.genetic.standard.deviation <- function(replicates,
 # plot inbreeding rate of selection candidates
 plot.inbreeding.rate <- function(replicates,
                                  ylab = "Inbreeding rate",
+                                 deltaF.line = NA,
                                  ...){
   
   # set function to extract inbreeding rate
@@ -1714,6 +1733,11 @@ plot.inbreeding.rate <- function(replicates,
   
   # call generic variable plot function
   plot.simulation.variable(replicates, extract.values =  extract.inbr.rate, ylab = ylab, shift = 1, ...)
+  # add inbreeding line if requested
+  if(!is.na(deltaF.line)){
+    abline(h = deltaF.line, lty = 2)
+    text(x = 28.5, y = deltaF.line, labels = bquote(paste(Delta, F) == .(deltaF.line)), pos = 1)
+  }
   
 }
 
