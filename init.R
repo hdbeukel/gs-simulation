@@ -8,7 +8,7 @@ library(Hmisc)       # version used: 3.17-2
 library(rJava)       # version used: 0.9-8
 library(setRNG)      # version used: 2013.9-1
 library(animation)   # version used: 2.4
-require(synbreed)    # version used: 0.10-5 (only for data preprocessing)
+library(synbreed)    # version used: 0.10-5
 
 # set path to BEAGLE used by synbreed
 beaglePath <- "beaglejar"
