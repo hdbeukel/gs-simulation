@@ -3,6 +3,6 @@ Genomic selection simulation
 
 Simulation code and data for:
 
-"Diversity Management in Genomic Selection: A Group is More than a Sum of its Individuals."
+"Protecting Against Loss of Rare Alleles Increases Long-term Gain of Genomic Selection."
 
 Submitted to [Genetics](http://www.genetics.org).
