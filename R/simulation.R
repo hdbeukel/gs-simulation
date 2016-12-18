@@ -686,6 +686,13 @@ inbreeding.rate.sonesson <- function(pop, prev.pop){
   return(delta.F)
 }
 
+heterozygosity <- function(pop){
+  M <- gp.design.matrix(pop)
+  freqs <- maf(Z, encoding = "dh")
+  he <- mean(2*freqs*(1-freqs))
+  return(he)
+}
+
 # compute inbreeding rate delta F based on markers (cfr. Jannink)
 inbreeding.rate.jannink <- function(pop, prev.pop){
   cur.fixed <- proportion.fixed.markers(pop)
@@ -764,6 +771,8 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       
       # 4) inbreeding rate (marker based, cfr. Jannink)
       if(!is.null(prev.candidates)){
+        metadata[[s+1]]$candidates$HE.prev <- heterozygosity(prev.candidates)
+        metadata[[s+1]]$candidates$HE.cur <- heterozygosity(candidates)
         metadata[[s+1]]$candidates$inbreeding <- inbreeding.rate(candidates, prev.candidates)
       }
       
