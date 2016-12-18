@@ -1726,9 +1726,17 @@ plot.inbreeding.rate <- function(replicates,
         inbr <- season$candidates$inbreeding
         if(!is.null(inbr)){
           if(relative){
-            inbr.rate[s] <- inbr$rel
+            if(is.list(inbr)){
+              inbr.rate[s] <- inbr$rel
+            } else {
+              inbr.rate[s] <- inbr # old data
+            }
           } else {
-            inbr.rate[s] <- inbr$abs
+            if(is.list(inbr)){
+              inbr.rate[s] <- inbr$abs
+            } else {
+              stop("Data for absolute delta F not available.")
+            }
           }
         }
       }
