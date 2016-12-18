@@ -180,6 +180,7 @@ OC2 <- function(founders, heritability, base.pop = NULL,
                          markers = markers,
                          generation = generation,
                          delta.F = delta.F,
+                         adaptive = TRUE,
                          verbose = verbose)
   }
   
@@ -635,16 +636,22 @@ optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE
 }
 
 # make genomic relationship matrix G from marker matrix M (0/1 DHs)
-genomic.relationship.matrix <- function (M){
+genomic.relationship.matrix <- function(M){
   # convert to 0/2 format
   M <- 2*M
-  # center
-  pfreq <- colMeans(M)/2
-  Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
-  #compute G
-  G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
-  #G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
+  # init synbreed data (recodes scores as number of copies of *minor* allele)
+  data <- codeGeno(create.gpData(geno = M))
+  # compute G
+  G <- kin(data, ret = "realized")
   return(G)
+  
+  # center
+  # pfreq <- colMeans(M)/2
+  # Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
+  # compute G
+  #G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
+  #G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
+  #return(G)
 }
 
 make.positive.definite <- function(X, tol = 1e-6) {

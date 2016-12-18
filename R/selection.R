@@ -32,7 +32,10 @@ select.highest.optimal.contribution <- function(n, values, markers, generation, 
 
 select.fixed.size.oc <- function(n, values, markers, generation, delta.F, adaptive = FALSE, verbose = FALSE, ...){
   # compute fixed size OC
-  C <- 1 - (1 - delta.F)^generation
+  # C <- 1 - (1 - delta.F)^generation
+  freqs <- colMeans(markers)
+  he <- mean(2*freqs*(1-freqs))
+  C <- delta.F * he
   if(!adaptive){
     C <- delta.F
   }
