@@ -1709,6 +1709,7 @@ plot.genetic.standard.deviation <- function(replicates,
 # plot inbreeding rate of selection candidates
 plot.inbreeding.rate <- function(replicates,
                                  ylab = "Inbreeding rate",
+                                 relative = TRUE,
                                  deltaF.line = NA,
                                  ...){
   
@@ -1724,7 +1725,11 @@ plot.inbreeding.rate <- function(replicates,
         # extract and store inbreeding rate (if available)
         inbr <- season$candidates$inbreeding
         if(!is.null(inbr)){
-          inbr.rate[s] <- inbr
+          if(relative){
+            inbr.rate[s] <- inbr$rel
+          } else {
+            inbr.rate[s] <- inbr$abs
+          }
         }
       }
     }
@@ -1732,7 +1737,7 @@ plot.inbreeding.rate <- function(replicates,
   }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values =  extract.inbr.rate, ylab = ylab, shift = 1, ...)
+  plot.simulation.variable(replicates, extract.values = extract.inbr.rate, ylab = ylab, shift = 1, ...)
   # add inbreeding line if requested
   if(!is.na(deltaF.line)){
     abline(h = deltaF.line, lty = 2)
