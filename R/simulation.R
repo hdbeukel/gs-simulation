@@ -688,7 +688,7 @@ inbreeding.rate.sonesson <- function(pop, prev.pop){
 
 heterozygosity <- function(pop){
   M <- gp.design.matrix(pop)
-  freqs <- maf(Z, encoding = "dh")
+  freqs <- maf(M, encoding = "dh")
   he <- mean(2*freqs*(1-freqs))
   return(he)
 }
@@ -771,9 +771,14 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       
       # 4) inbreeding rate (marker based, cfr. Jannink)
       if(!is.null(prev.candidates)){
-        metadata[[s+1]]$candidates$HE.prev <- heterozygosity(prev.candidates)
-        metadata[[s+1]]$candidates$HE.cur <- heterozygosity(candidates)
-        metadata[[s+1]]$candidates$inbreeding <- inbreeding.rate(candidates, prev.candidates)
+        HE.prev <- heterozygosity(prev.candidates)
+        HE.cur <- heterozygosity(candidates)
+        Fprev <- 1 - 2*HE.prev
+        Fcur <- 1 - 2*HE.cur
+        metadata[[s+1]]$candidates$HE.prev <- HE.prev
+        metadata[[s+1]]$candidates$HE.cur <- HE.cur
+        metadata[[s+1]]$candidates$inbreeding$abs <- (Fcur - Fprev)
+        metadata[[s+1]]$candidates$inbreeding$rel <- (Fcur - Fprev) / (1 - Fprev)
       }
       
       # 5) QTL favourable allele frequencies
