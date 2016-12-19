@@ -133,8 +133,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
                             markers = markers,
                             div.weight = div.weight,
                             div.measure = div.measure,
-                            fav.alleles = fav.alleles,
-                            G = G)
+                            fav.alleles = fav.alleles)
     }
   } else {
     # split & combine: highest quality + most diverse individuals
@@ -168,6 +167,7 @@ OC1 <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, ...))
   
 }
+# OC: absolute
 OC2a <- function(founders, heritability, base.pop = NULL,
                  num.QTL=1000, QTL.effects = c("normal", "jannink"),
                  F1.size=200, add.TP=0, num.select=20, num.seasons=30,
@@ -189,6 +189,30 @@ OC2a <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, ...))
   
 }
+# OC: absolute + Sonesson G (scaled w.r.t. HE, independently per marker)
+OC2s <- function(founders, heritability, base.pop = NULL,
+                 num.QTL=1000, QTL.effects = c("normal", "jannink"),
+                 F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                 gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+                 store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
+  
+  sel.crit <- function(n, values, markers, generation, ...){
+    select.fixed.size.oc(n = n,
+                         values = values,
+                         markers = markers,
+                         generation = generation,
+                         delta.F = delta.F,
+                         adaptive = FALSE,
+                         sonesson = TRUE,
+                         verbose = verbose)
+  }
+  
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = sel.crit,
+            gp.method, extract.metadata, store.all.pops, ...))
+  
+}
+# OC: relative
 OC2r <- function(founders, heritability, base.pop = NULL,
                  num.QTL=1000, QTL.effects = c("normal", "jannink"),
                  F1.size=200, add.TP=0, num.select=20, num.seasons=30,
@@ -319,7 +343,6 @@ GS <- function(founders, heritability, base.pop = NULL,
                                         values = evaluated.base.pop$estGeneticValues,
                                         markers = M,
                                         fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
-                                        G = genomic.relationship.matrix(M),
                                         generation = 1)
   selected.pop <- restrict.population(evaluated.base.pop, selected.names)
 
@@ -350,7 +373,6 @@ GS <- function(founders, heritability, base.pop = NULL,
                                        values = offspring$estGeneticValues,
                                        markers = M,
                                        fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
-                                       G = genomic.relationship.matrix(M),
                                        generation = 2)
   selected.offspring <- restrict.population(offspring, selected.names)
   
@@ -392,7 +414,6 @@ GS <- function(founders, heritability, base.pop = NULL,
                                          values = offspring$estGeneticValues,
                                          markers = M,
                                          fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
-                                         G = genomic.relationship.matrix(M),
                                          generation = s)
     selected.offspring <- restrict.population(offspring, selected.names)
     # store season
@@ -484,7 +505,7 @@ equal.contributions <- function(values, ...){
 # returns vector with optimal contributions, maximizing expected response
 # with a predefined rate of inbreeding according to Meuwissen 1997
 # (adjusted for plant breeding with constraint 1'c_t = 1 instead of Q'c_t = 1/2)
-optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE){
+optimal.contributions <- function(values, markers, C, size = NA, sonesson = FALSE, verbose = FALSE){
   
   cmin <- 0
   cmax <- 1
@@ -515,7 +536,7 @@ optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE
   c <- rep(-1, n.all)
 
   # compute G
-  G <- genomic.relationship.matrix(all.markers)
+  G <- genomic.relationship.matrix(all.markers, sonesson)
   
   # continue until cmin and cmax are satisfied
   while(length(i.opt) > 0 && (any(c > cmax + tol) || any(c < 0) || any(c[c > 0] < cmin - tol))){
@@ -657,21 +678,35 @@ optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE
 }
 
 # make genomic relationship matrix G from marker matrix M (0/1 DHs)
-genomic.relationship.matrix <- function(M){
+genomic.relationship.matrix <- function(M, sonesson = FALSE){
   # convert to 0/2 format
   M <- 2*M
-  
-  # init synbreed data (recodes scores as number of copies of *minor* allele)
-  # data <- codeGeno(create.gpData(geno = M))
-  # compute G
-  # G <- kin(data, ret = "realized")
-
-  # center
+  # compute frequencies and heterozygosity
   pfreq <- colMeans(M)/2
-  Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
+  he <- 2*pfreq*(1-pfreq)
+  # return Nan matrix if all markers are fixed
+  if(sum(he > 0) == 0){
+    G <- matrix(NaN, nrow = nrow(M), ncol = nrow(M))
+    return(G)
+  }
+  # drop fixed markers if any
+  M <- M[, he > 0]
+  pfreq <- pfreq[he > 0]
+  he <- he[he > 0]
+  sqrt.he <- sqrt(he)
+  # center
+  if(sonesson){
+    center <- function(row){(row - 2*pfreq)/sqrt.he}
+  } else {
+    center <- function(row){row - 2*pfreq}
+  }
+  Z <- t(apply(M, 1, center))
   # compute G
-  G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
-  #G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
+  if(sonesson){
+    G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
+  } else {
+    G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
+  }
   return(G)
 }
 
@@ -875,8 +910,10 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       names(c) <- names(candidates$geneticValues)
       c[selection.names] <- 1/length(selection.names)
       G <- genomic.relationship.matrix(candidates.markers)
+      G.son <- genomic.relationship.matrix(candidates.markers, sonesson = TRUE)
       metadata[[s+1]]$selection$c <- c
       metadata[[s+1]]$selection$cgc <- c %*% G %*% c / 2
+      metadata[[s+1]]$selection$cgc.son <- c %*% G.son %*% c / 2
       
     }
     
