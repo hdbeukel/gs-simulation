@@ -6,7 +6,7 @@
 # should be run from project root directory, with 'Rscript scripts/run.R <args>'
 
 # command line arguments:
-#  1:  simulation type ("PS", "GS", "WGS", "WGS2", "CGS", "OC1", "OC2")
+#  1:  simulation type ("PS", "GS", "WGS", "WGS2", "CGS", "OC1", "OC2a", "OC2r")
 #  2:  number of seasons
 #  3:  heritability
 #  4:  additional TP size, ignored for PS
@@ -28,10 +28,10 @@
 #      and the bp number is included in the output file name
 #
 # output file written to:
-#  - GS, WGS:  out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/*<11>.RDS
-#  - CGS:      out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/<7>-<8>/<9>/*<11>.RDS
-#  - OC1, OC2: out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/dF-<10>/*<11>.RDS
-#  - PS:       out/<1>/<2>-seasons/h2-<3>/<5>-effects/*<11>.RDS
+#  - GS, WGS: out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/*<11>.RDS
+#  - CGS:     out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/<7>-<8>/<9>/*<11>.RDS
+#  - OC:      out/<1>/<2>-seasons/h2-<3>/addTP-<4>/<5>-effects/<6>/dF-<10>/*<11>.RDS
+#  - PS:      out/<1>/<2>-seasons/h2-<3>/<5>-effects/*<11>.RDS
 # if seed or BP index are specified, they are prepended to the file name
 
 # load scripts
@@ -111,7 +111,7 @@ if(sim.function.name == "PS"){
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method,
                      div.measure, div.weight, CGS.type)
-} else if(sim.function.name == "OC1" || sim.function.name == "OC2") {
+} else if(sim.function.name == "OC1" || sim.function.name == "OC2a" || sim.function.name == "OC2r") {
   out.dir <- sprintf("out/%s/%d-seasons/h2-%.1f/addTP-%d/%s-effects/%s/dF-%.5f",
                      sim.function.name, num.seasons, heritability,
                      add.TP, QTL.effects, gp.method, delta.F)

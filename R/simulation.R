@@ -168,11 +168,32 @@ OC1 <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, ...))
   
 }
-OC2 <- function(founders, heritability, base.pop = NULL,
-                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
-                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
-                store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
+OC2a <- function(founders, heritability, base.pop = NULL,
+                 num.QTL=1000, QTL.effects = c("normal", "jannink"),
+                 F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                 gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+                 store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
+  
+  sel.crit <- function(n, values, markers, generation, ...){
+    select.fixed.size.oc(n = n,
+                         values = values,
+                         markers = markers,
+                         generation = generation,
+                         delta.F = delta.F,
+                         adaptive = FALSE,
+                         verbose = verbose)
+  }
+  
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = sel.crit,
+            gp.method, extract.metadata, store.all.pops, ...))
+  
+}
+OC2r <- function(founders, heritability, base.pop = NULL,
+                 num.QTL=1000, QTL.effects = c("normal", "jannink"),
+                 F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                 gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+                 store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
   
   sel.crit <- function(n, values, markers, generation, ...){
     select.fixed.size.oc(n = n,
@@ -734,7 +755,11 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
     
     # get current and next season (if any)
     season <- seasons[[s+1]]
+    prev.season <- NULL
     next.season <- NULL
+    if(s >= 1){
+      prev.season <- seasons[[s]]
+    }
     if(s+2 <= (num.seasons+1)){
       next.season <- seasons[[s+2]]
     }
@@ -769,7 +794,7 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
         metadata[[s+1]]$candidates$estGeneticValues <- evaluated.candidates$estGeneticValues
       }
       
-      # 4) inbreeding rate (marker based, cfr. Jannink)
+      # 4) inbreeding rate
       if(!is.null(prev.candidates)){
         HE.prev <- heterozygosity(prev.candidates)
         HE.cur <- heterozygosity(candidates)
@@ -819,9 +844,11 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       if(!is.null(metadata[[s+1]]$candidates)){
         # selection was made from candidates produced in same season (GS/WGS)
         candidates <- metadata[[s+1]]$candidates
+        candidates.markers <- gp.design.matrix(season$cross.inbreed$pop.out)
       } else {
         # selection was made from candidates produced in previous generation (PS + first season of GS/WGS) 
         candidates <- metadata[[s]]$candidates
+        candidates.markers <- gp.design.matrix(prev.season$cross.inbreed$pop.out)
       }
       
       # store variables
@@ -842,6 +869,14 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
         metadata[[s+1]]$selection$markers <- gp.design.matrix(selection)
         metadata[[s+1]]$selection$qtl <- get.qtl.allele.matrix(selection)
       }
+      
+      # 5) store cGc/2 value
+      c <- rep(0, length(candidates$geneticValues))
+      names(c) <- names(candidates$geneticValues)
+      c[selection.names] <- 1/length(selection.names)
+      G <- genomic.relationship.matrix(candidates.markers)
+      metadata[[s+1]]$selection$c <- c
+      metadata[[s+1]]$selection$cgc <- c %*% G %*% c / 2
       
     }
     

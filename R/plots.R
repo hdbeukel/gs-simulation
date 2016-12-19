@@ -131,7 +131,7 @@ get.plot.functions <- function(){
     #      legend = "topright", ylim = c(0, 0.035)),
     # lost = list(f = plot.total.QTL.effect.lost, name = "QT-effect-lost", title = "Total QTL effect lost",
     #             legend = "bottomright", ylim = c(0, 250)),
-    # lost = list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favorable QTL lost",
+    # lost = list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favorable QTL alleles lost",
     #             legend = "bottomright", ylim = c(0, 450))#,
     # list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
     #      legend = "bottomright", ylim = c(0.1, 0.45)),
@@ -1676,6 +1676,47 @@ plot.genetic.gain <- function(replicates,
   
 }
 
+# plot realized cGc/2
+plot.cgc <- function(replicates,
+                     ylab = "Realized cGc/2",
+                     ...){
+  
+  # set function to extract cGc/2
+  extract.cgc <- function(seasons){
+    # extract number of seasons
+    num.seasons <- length(seasons)-1
+    # initialize cgc vector
+    cgc <- rep(NA, length(seasons))
+    # retrieve values
+    for(s in 1:num.seasons){
+      season <- seasons[[s+1]]
+      if(!is.null(season$selection$cgc)){
+        cgc[s+1] <- season$selection$cgc
+      }
+    }
+    return(cgc)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values = extract.cgc, ylab = ylab, shift = 1, ...)
+  
+}
+
+extract.he <- function(seasons){
+  # extract number of seasons
+  num.seasons <- length(seasons)-1
+  # initialize he vector
+  he <- rep(NA, length(seasons))
+  # retrieve values
+  for(s in 1:length(seasons)){
+    season <- seasons[[s]]
+    if(!is.null(season$candidates$HE.cur)){
+      he[s] <- season$candidates$HE.cur
+    }
+  }
+  return(he)
+}
+
 # plot genetic standard deviation among selection candidates
 plot.genetic.standard.deviation <- function(replicates,
                                             ylab = "Genetic standard deviation",
@@ -1881,7 +1922,7 @@ plot.tp.size <- function(replicates,
 
 # plot number of favorable QTL lost
 plot.num.fav.QTL.lost <- function(replicates,
-                                  ylab = "Number of favorable QTL lost",
+                                  ylab = "Number of favorable QTL alleles lost",
                                   cumulative = TRUE,
                                   ...){
   
