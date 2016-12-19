@@ -1,5 +1,7 @@
 .*
 /*/
+/run-*
+missing.sh
 *.txt
 *.md
 !.gitignore
