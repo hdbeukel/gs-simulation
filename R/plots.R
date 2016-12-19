@@ -1679,6 +1679,8 @@ plot.genetic.gain <- function(replicates,
 # plot realized cGc/2
 plot.cgc <- function(replicates,
                      ylab = "Realized cGc/2",
+                     target.dF = NA,
+                     relative = TRUE,
                      ...){
   
   # set function to extract cGc/2
@@ -1698,7 +1700,19 @@ plot.cgc <- function(replicates,
   }
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values = extract.cgc, ylab = ylab, shift = 1, ...)
+  #plot.simulation.variable(replicates, extract.values = extract.cgc, ylab = ylab, shift = 1, ...)
+  # add target line if requested
+  if(!is.na(target.dF)){
+    x <- 1:length(replicates[[1]]) - 1
+    target.cgc <- rep(target.dF, times = length(x))
+    target.cgc[1] <- NA
+    if(relative){
+      he <- colMeans(matrix(unlist(lapply(replicates, extract.he)), nrow = length(replicates), byrow = TRUE))
+      target.cgc <- target.dF * 2*he
+    }
+    lines(x, target.cgc, lty = 2, col = "red", lwd = 2)
+  }
+  
   
 }
 
@@ -1709,9 +1723,13 @@ extract.he <- function(seasons){
   he <- rep(NA, length(seasons))
   # retrieve values
   for(s in 1:length(seasons)){
-    season <- seasons[[s]]
-    if(!is.null(season$candidates$HE.cur)){
-      he[s] <- season$candidates$HE.cur
+    if(s == 2){
+      he[s] <- seasons[[3]]$candidates$HE.prev
+    } else {
+      season <- seasons[[s]]
+      if(!is.null(season$candidates$HE.cur)){
+        he[s] <- season$candidates$HE.cur
+      }
     }
   }
   return(he)
