@@ -1700,7 +1700,7 @@ plot.cgc <- function(replicates,
   }
   
   # call generic variable plot function
-  #plot.simulation.variable(replicates, extract.values = extract.cgc, ylab = ylab, shift = 1, ...)
+  plot.simulation.variable(replicates, extract.values = extract.cgc, ylab = ylab, shift = 1, ...)
   # add target line if requested
   if(!is.na(target.dF)){
     x <- 1:length(replicates[[1]]) - 1

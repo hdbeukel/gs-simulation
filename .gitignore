@@ -18,10 +18,6 @@ missing.sh
 !/java/
 /java/**/target/
 !/scripts/
-/scripts/*
-!/scripts/run.R
-!/scripts/gen-MDS-pops.R
-!/scripts/A-vs-G.R
 !/hpc/
 !/figures/
 /hpc/run*
