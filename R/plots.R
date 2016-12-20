@@ -1681,6 +1681,7 @@ plot.cgc <- function(replicates,
                      ylab = "Realized cGc/2",
                      target.dF = NA,
                      relative = TRUE,
+                     sonesson = FALSE,
                      ...){
   
   # set function to extract cGc/2
@@ -1693,7 +1694,11 @@ plot.cgc <- function(replicates,
     for(s in 1:num.seasons){
       season <- seasons[[s+1]]
       if(!is.null(season$selection$cgc)){
-        cgc[s+1] <- season$selection$cgc
+        if(!sonesson){
+          cgc[s+1] <- season$selection$cgc
+        } else {
+          cgc[s+1] <- season$selection$cgc.son
+        }
       }
     }
     return(cgc)

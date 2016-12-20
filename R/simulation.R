@@ -735,27 +735,47 @@ make.positive.definite <- function(X, tol = 1e-6) {
 }
 
 # compute inbreeding rate delta F based on markers (cfr. Sonesson)
-inbreeding.rate.sonesson <- function(pop, prev.pop){
-  # get minor allele frequencies of of both populations
-  Z.cur <- gp.design.matrix(pop)
-  Z.prev <- gp.design.matrix(prev.pop)
-  freqs.cur <- maf(Z.cur, encoding = "dh")
-  freqs.prev <- maf(Z.prev, encoding = "dh")
-  # compute average homozygosity
-  hom <- function(f){
-    f^2 + (1-f)^2
+inbreeding.rate <- function(pop, prev.pop, type = c("IBS", "IBD"), relative = TRUE){
+  
+  # get heterozygosity of both populations
+  he.cur <- heterozygosity(pop, type = type)
+  he.prev <- heterozygosity(prev.pop, type = type)
+  # compute decrease in heterozygosity
+  delta.F <- he.prev - he.cur
+  # make relative if requested
+  if(relative){
+    delta.F <- delta.F / he.prev
   }
-  hom.cur <- mean(sapply(freqs.cur, hom))
-  hom.prev <- mean(sapply(freqs.prev, hom))
-  # delta F is relative increase in average homozygosity
-  delta.F <- (hom.cur - hom.prev) / (1.0 - hom.prev)
   return(delta.F)
 }
 
-heterozygosity <- function(pop){
-  M <- gp.design.matrix(pop)
-  freqs <- maf(M, encoding = "dh")
-  he <- mean(2*freqs*(1-freqs))
+heterozygosity <- function(pop, type = c("IBS", "IBD")){
+  type <- match.arg(type)
+  # get allele frequencies
+  if(type == "IBS"){
+    # use existing marker panel (true SNPs)
+    Z <- gp.design.matrix(pop)
+    freqs <- maf(Z, encoding = "dh")
+    # recode to general format with both allele frequencies
+    freqs <- lapply(freqs, function(f){c(f, 1-f)})
+  } else {
+    # use artificial IBD markers
+    ibd.markers <- pop$dh[,get.IBD.indices(pop)]
+    # function to extract frequencies
+    extract.freqs <- function(alleles){
+      table(alleles)/length(alleles)
+    }
+    # extract frequencies
+    freqs <- apply(ibd.markers, 2, extract.freqs)
+  }
+  # functions to compute homozygosity
+  hom <- function(freqs){
+    sum(freqs^2)
+  }
+  # compute average marker homozygosity
+  homozygosity <- mean(sapply(freqs, hom))
+  # infer heterozygosity
+  he <- 1 - homozygosity
   return(he)
 }
 
@@ -766,9 +786,6 @@ inbreeding.rate.jannink <- function(pop, prev.pop){
   delta.F <- (cur.fixed - prev.fixed) / (1.0 - prev.fixed)
   return(delta.F)
 }
-
-# select inbreeding rate formula
-inbreeding.rate <- inbreeding.rate.sonesson
 
 proportion.fixed.markers <- function(pop){
   M <- gp.design.matrix(pop)
@@ -841,14 +858,16 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       
       # 4) inbreeding rate
       if(!is.null(prev.candidates)){
-        HE.prev <- heterozygosity(prev.candidates)
-        HE.cur <- heterozygosity(candidates)
-        Fprev <- 1 - 2*HE.prev
-        Fcur <- 1 - 2*HE.cur
-        metadata[[s+1]]$candidates$HE.prev <- HE.prev
-        metadata[[s+1]]$candidates$HE.cur <- HE.cur
-        metadata[[s+1]]$candidates$inbreeding$abs <- (Fcur - Fprev)
-        metadata[[s+1]]$candidates$inbreeding$rel <- (Fcur - Fprev) / (1 - Fprev)
+        for(type in c("IBS", "IBD")){
+          HE.prev <- heterozygosity(prev.candidates, type = type)
+          HE.cur <- heterozygosity(candidates, type = type)
+          inbr.rel <- inbreeding.rate(candidates, prev.candidates, type = type, rel = TRUE)
+          inbr.abs <- inbreeding.rate(candidates, prev.candidates, type = type, rel = FALSE)
+          metadata[[s+1]]$candidates$inbreding[[type]]$HE.prev <- HE.prev
+          metadata[[s+1]]$candidates$inbreding[[type]]$HE.cur <- HE.cur
+          metadata[[s+1]]$candidates$inbreding[[type]]$rel <- inbr.rel
+          metadata[[s+1]]$candidates$inbreding[[type]]$abs <- inbr.abs        
+        }
       }
       
       # 5) QTL favourable allele frequencies
@@ -958,7 +977,8 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       mean.LD <- mean(QTL.marker.LD$LD)
       # retrieve polymorphic QTL and corresponding marker effects
       # (!! based on marker *names*, *not* indices, as the latter
-      #  include QTL and dummies which were dropped for GP analysis)
+      #  include QTL, dummies and IBD markers which were dropped
+      #  for GP analysis)
       all.names <- rownames(gp.tp$map)
       all.marker.effects <- gp.get.effects(gp.model)
       all.qtl.effects <- get.qtl.effects(gp.tp)
