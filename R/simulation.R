@@ -863,10 +863,10 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
           HE.cur <- heterozygosity(candidates, type = type)
           inbr.rel <- inbreeding.rate(candidates, prev.candidates, type = type, rel = TRUE)
           inbr.abs <- inbreeding.rate(candidates, prev.candidates, type = type, rel = FALSE)
-          metadata[[s+1]]$candidates$inbreding[[type]]$HE.prev <- HE.prev
-          metadata[[s+1]]$candidates$inbreding[[type]]$HE.cur <- HE.cur
-          metadata[[s+1]]$candidates$inbreding[[type]]$rel <- inbr.rel
-          metadata[[s+1]]$candidates$inbreding[[type]]$abs <- inbr.abs        
+          metadata[[s+1]]$candidates$inbreeding[[type]]$HE.prev <- HE.prev
+          metadata[[s+1]]$candidates$inbreeding[[type]]$HE.cur <- HE.cur
+          metadata[[s+1]]$candidates$inbreeding[[type]]$rel <- inbr.rel
+          metadata[[s+1]]$candidates$inbreeding[[type]]$abs <- inbr.abs        
         }
       }
       

@@ -1773,9 +1773,12 @@ plot.genetic.standard.deviation <- function(replicates,
 # plot inbreeding rate of selection candidates
 plot.inbreeding.rate <- function(replicates,
                                  ylab = "Inbreeding rate",
+                                 type = c("IBS", "IBD"),
                                  relative = TRUE,
                                  deltaF.line = NA,
                                  ...){
+  
+  type <- match.arg(type)
   
   # set function to extract inbreeding rate
   extract.inbr.rate <- function(seasons){
@@ -1790,17 +1793,13 @@ plot.inbreeding.rate <- function(replicates,
         inbr <- season$candidates$inbreeding
         if(!is.null(inbr)){
           if(relative){
-            if(is.list(inbr)){
-              inbr.rate[s] <- inbr$rel
-            } else {
-              inbr.rate[s] <- inbr # old data
+            if(!is.list(inbr)){
+              # old data
+              inbr.rate[s] <- inbr
             }
+            inbr.rate[s] <- inbr[[type]]$rel
           } else {
-            if(is.list(inbr)){
-              inbr.rate[s] <- inbr$abs
-            } else {
-              stop("Data for absolute delta F not available.")
-            }
+            inbr.rate[s] <- inbr[[type]]$abs
           }
         }
       }
