@@ -40,7 +40,7 @@ suppressMessages(source("init.R"))
 options(java.parameters = "-Xmx1g")
 
 # load founder dataset
-founders <- readRDS("data/founders.RDS")
+founders <- readRDS("data/founders-IBD.RDS")
 
 # get command line arguments
 args <- commandArgs(trailingOnly = TRUE)
@@ -81,7 +81,7 @@ message(sprintf("RNG Normal kind: %s", getRNG()$normal.kind))
 # load fixed base population if requested
 fixed.bp <- as.numeric(args[14])
 if(!is.na(fixed.bp)){
-  base.pop <- readRDS(sprintf("data/fixed-bp/bp-%d.RDS", fixed.bp))
+  base.pop <- readRDS(sprintf("data/fixed-bp-IBD/bp-%d.RDS", fixed.bp))
 } else {
   base.pop <- NULL
 }

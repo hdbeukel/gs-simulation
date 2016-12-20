@@ -11,9 +11,12 @@ missing.sh
 !*.R
 !/R*/
 !/beaglejar/
+!/data/
 !/data/fixed-bp/
+!/data/fixed-bp-IBD/
 !/data/barley-map.txt
 !/data/founders.RDS
+!/data/founders-IBD.RDS
 !/data/oregon-markers.txt
 !/java/
 /java/**/target/

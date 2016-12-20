@@ -545,7 +545,7 @@ create.founders <- function(){
   founders <- prepare(cleaned$map, haplotypes$hap1, haplotypes$hap2)
   
   # store and return founders
-  saveRDS(founders, "data/founders-with-IBD.RDS")
+  saveRDS(founders, "data/founders-IBD.RDS")
   return(founders)
   
 }
