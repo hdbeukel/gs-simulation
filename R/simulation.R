@@ -92,6 +92,16 @@ PS <- function(founders, heritability, base.pop = NULL,
   
 }
 
+# random selection
+RS <- function(founders, heritability, base.pop = NULL,
+              num.QTL=1000, QTL.effects = c("normal", "jannink"),
+              F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+              gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+              store.all.pops = FALSE, ...){
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = select.random,
+            gp.method, extract.metadata, store.all.pops, ...))
+}
 # weighted genomic selection (cfr. Jannink)
 WGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),

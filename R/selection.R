@@ -9,6 +9,16 @@ select.all <- function(n, values, ...){
   return(names(values))
 }
 
+# random selection of requested size
+select.random <- function(n, values, ...){
+  # check input
+  if(is.null(names(values))){
+    stop("values should be named by individual")
+  }
+  sel <- sample(names(values), size = n)
+  return(sel)
+}
+
 # selection criterion that selects the n plants with the highest value
 # (phenotype, estimated genetic value, weighted genetic value, ...)
 select.highest.score <- function(n, values, ...){
