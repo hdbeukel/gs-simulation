@@ -1791,15 +1791,28 @@ plot.inbreeding.rate <- function(replicates,
       if(!is.null(season$candidates)){
         # extract and store inbreeding rate (if available)
         inbr <- season$candidates$inbreeding
+        if(is.list(inbr) && is.null(inbr[[type]]) && type == "IBD"){
+          stop("Old data: no IBD based inbreeding available.")
+        }
         if(!is.null(inbr)){
           if(relative){
             if(!is.list(inbr)){
-              # old data
+              # old data (relative, IBS)
               inbr.rate[s] <- inbr
             }
-            inbr.rate[s] <- inbr[[type]]$rel
+            if(is.null(inbr[[type]])){
+              # old data (IBS, rel/abs)
+              inbr.rate[s] <- inbr$rel
+            } else {
+              inbr.rate[s] <- inbr[[type]]$rel
+            }
           } else {
-            inbr.rate[s] <- inbr[[type]]$abs
+            if(is.null(inbr[[type]])){
+              # old data (IBS, rel/abs)
+              inbr.rate[s] <- inbr$abs
+            } else {
+              inbr.rate[s] <- inbr[[type]]$abs
+            }
           }
         }
       }
