@@ -14,6 +14,8 @@ missing.sh
 !/data/
 !/data/fixed-bp/
 !/data/fixed-bp-IBD/
+/data/fixed-bp-minnesota/
+/data/founders-minnesota.RDS
 !/data/barley-map.txt
 !/data/founders.RDS
 !/data/founders-IBD.RDS
