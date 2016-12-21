@@ -1721,7 +1721,8 @@ plot.cgc <- function(replicates,
   
 }
 
-extract.he <- function(seasons){
+extract.he <- function(seasons, type = c("IBS", "IBD")){
+  type <- match.arg(type)
   # extract number of seasons
   num.seasons <- length(seasons)-1
   # initialize he vector
@@ -1729,11 +1730,11 @@ extract.he <- function(seasons){
   # retrieve values
   for(s in 1:length(seasons)){
     if(s == 2){
-      he[s] <- seasons[[3]]$candidates$HE.prev
+      he[s] <- seasons[[3]]$candidates$inbreeding[[type]]$HE.prev
     } else {
       season <- seasons[[s]]
-      if(!is.null(season$candidates$HE.cur)){
-        he[s] <- season$candidates$HE.cur
+      if(!is.null(season$candidates$inbreeding[[type]]$HE.cur)){
+        he[s] <- season$candidates$inbreeding[[type]]$HE.cur
       }
     }
   }
@@ -1791,10 +1792,10 @@ plot.inbreeding.rate <- function(replicates,
       if(!is.null(season$candidates)){
         # extract and store inbreeding rate (if available)
         inbr <- season$candidates$inbreeding
-        if((!is.list(inbr) || is.null(inbr[[type]])) && type == "IBD"){
-          stop("Old data: no IBD based inbreeding available.")
-        }
         if(!is.null(inbr)){
+          if((!is.list(inbr) || is.null(inbr[[type]])) && type == "IBD"){
+            stop("Old data: no IBD based inbreeding available.")
+          }
           if(relative){
             if(!is.list(inbr)){
               # old data (relative, IBS)
