@@ -9,6 +9,16 @@ select.all <- function(n, values, ...){
   return(names(values))
 }
 
+# random selection of requested size
+select.random <- function(n, values, ...){
+  # check input
+  if(is.null(names(values))){
+    stop("values should be named by individual")
+  }
+  sel <- sample(names(values), size = n)
+  return(sel)
+}
+
 # selection criterion that selects the n plants with the highest value
 # (phenotype, estimated genetic value, weighted genetic value, ...)
 select.highest.score <- function(n, values, ...){
@@ -30,7 +40,8 @@ select.highest.optimal.contribution <- function(n, values, markers, generation, 
   return(selected.names)
 }
 
-select.fixed.size.oc <- function(n, values, markers, generation, delta.F, adaptive = FALSE, verbose = FALSE, ...){
+select.fixed.size.oc <- function(n, values, markers, generation, delta.F,
+                                 adaptive = FALSE, sonesson = FALSE, verbose = FALSE, ...){
   # compute fixed size OC
   # C <- 1 - (1 - delta.F)^generation
   C <- delta.F
@@ -39,7 +50,7 @@ select.fixed.size.oc <- function(n, values, markers, generation, delta.F, adapti
     he <- mean(2*freqs*(1-freqs))
     C <- delta.F * 2*he
   }
-  c <- optimal.contributions(values, markers, C, size = n, verbose = verbose)
+  c <- optimal.contributions(values, markers, C, size = n, sonesson = sonesson, verbose = verbose)
   # retrieve and check
   selected.names <- names(c[c > 0])
   if(length(selected.names) != n){
@@ -51,7 +62,7 @@ select.fixed.size.oc <- function(n, values, markers, generation, delta.F, adapti
 # select by maximizing weighted index of mean breeding value and diversity
 select.weighted.index <- function(n, values, markers, div.weight,
                                   div.measure = c("LOGall", "OC", "HEall", "HEfav", "LOGfav"),
-                                  fav.alleles = NULL, G = NULL, ...){
+                                  fav.alleles = NULL, ...){
   # check input
   if(!is.numeric(n)){
     stop("n should be an integer (selection size)")
@@ -81,10 +92,16 @@ select.weighted.index <- function(n, values, markers, div.weight,
     div.measure <- j.LOG.all()
   } else if (div.measure == "LOGfav") {
     div.measure <- j.LOG.fav()
-  } else {
+  } else if (div.measure == "OC") {
     div.measure <- j.OC()
+  } else {
+    stop("Unknown diversity measure:", div.measure)
   }
   # run optimization
+  G <- NULL
+  if(div.measure == "OC"){
+    G <- genomic.relationship.matrix(markers)
+  }
   selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles, G)
   return(selected.names)
 }

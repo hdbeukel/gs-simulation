@@ -11,7 +11,7 @@
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-               F1.size=200, num.select=20, num.seasons=30,
+               F1.size=200, num.select=40, num.seasons=30,
                selection.criterion=select.highest.score,
                extract.metadata = TRUE,
                store.all.pops = FALSE,
@@ -92,10 +92,20 @@ PS <- function(founders, heritability, base.pop = NULL,
   
 }
 
+# random selection
+RS <- function(founders, heritability, base.pop = NULL,
+              num.QTL=1000, QTL.effects = c("normal", "jannink"),
+              F1.size=200, add.TP=0, num.select=40, num.seasons=30,
+              gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+              store.all.pops = FALSE, ...){
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = select.random,
+            gp.method, extract.metadata, store.all.pops, ...))
+}
 # weighted genomic selection (cfr. Jannink)
 WGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               F1.size=200, add.TP=0, num.select=40, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, ...){
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -105,7 +115,7 @@ WGS <- function(founders, heritability, base.pop = NULL,
 # weighted genomic selection (cfr. Liu and Woolliams)
 WGS2 <- function(founders, heritability, base.pop = NULL,
                 num.QTL=1000, QTL.effects = c("normal", "jannink"),
-                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                F1.size=200, add.TP=0, num.select=40, num.seasons=30,
                 gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                 store.all.pops = FALSE, ...){
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -116,7 +126,7 @@ WGS2 <- function(founders, heritability, base.pop = NULL,
 # combinatorial genomic selection
 CGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               F1.size=200, add.TP=0, num.select=40, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, div.weight,
                div.measure = c("LOGall", "OC", "HEall", "HEfav", "LOGfav"),
@@ -133,8 +143,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
                             markers = markers,
                             div.weight = div.weight,
                             div.measure = div.measure,
-                            fav.alleles = fav.alleles,
-                            G = G)
+                            fav.alleles = fav.alleles)
     }
   } else {
     # split & combine: highest quality + most diverse individuals
@@ -151,7 +160,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
 # optimal contributions simulation
 OC1 <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               F1.size=200, add.TP=0, num.select=40, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
 
@@ -168,9 +177,10 @@ OC1 <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, ...))
   
 }
+# OC: absolute
 OC2a <- function(founders, heritability, base.pop = NULL,
                  num.QTL=1000, QTL.effects = c("normal", "jannink"),
-                 F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                 F1.size=200, add.TP=0, num.select=40, num.seasons=30,
                  gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                  store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
   
@@ -189,9 +199,33 @@ OC2a <- function(founders, heritability, base.pop = NULL,
             gp.method, extract.metadata, store.all.pops, ...))
   
 }
+# OC: absolute + Sonesson G (scaled w.r.t. HE, independently per marker)
+OC2s <- function(founders, heritability, base.pop = NULL,
+                 num.QTL=1000, QTL.effects = c("normal", "jannink"),
+                 F1.size=200, add.TP=0, num.select=40, num.seasons=30,
+                 gp.method = c("BRR", "RR"), extract.metadata = TRUE,
+                 store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
+  
+  sel.crit <- function(n, values, markers, generation, ...){
+    select.fixed.size.oc(n = n,
+                         values = values,
+                         markers = markers,
+                         generation = generation,
+                         delta.F = delta.F,
+                         adaptive = FALSE,
+                         sonesson = TRUE,
+                         verbose = verbose)
+  }
+  
+  return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
+            add.TP, num.select, num.seasons, selection.criterion = sel.crit,
+            gp.method, extract.metadata, store.all.pops, ...))
+  
+}
+# OC: relative
 OC2r <- function(founders, heritability, base.pop = NULL,
                  num.QTL=1000, QTL.effects = c("normal", "jannink"),
-                 F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                 F1.size=200, add.TP=0, num.select=40, num.seasons=30,
                  gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                  store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
   
@@ -219,7 +253,7 @@ OC2r <- function(founders, heritability, base.pop = NULL,
 #               + (2) cross, inbreed & select (on predicted values)
 GS <- function(founders, heritability, base.pop = NULL,
               num.QTL=1000, QTL.effects = c("normal", "jannink"),
-              F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+              F1.size=200, add.TP=0, num.select=40, num.seasons=30,
               selection.criterion = select.highest.score,
               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
               store.all.pops = FALSE, weights = weights.none,
@@ -319,7 +353,6 @@ GS <- function(founders, heritability, base.pop = NULL,
                                         values = evaluated.base.pop$estGeneticValues,
                                         markers = M,
                                         fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
-                                        G = genomic.relationship.matrix(M),
                                         generation = 1)
   selected.pop <- restrict.population(evaluated.base.pop, selected.names)
 
@@ -350,7 +383,6 @@ GS <- function(founders, heritability, base.pop = NULL,
                                        values = offspring$estGeneticValues,
                                        markers = M,
                                        fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
-                                       G = genomic.relationship.matrix(M),
                                        generation = 2)
   selected.offspring <- restrict.population(offspring, selected.names)
   
@@ -392,7 +424,6 @@ GS <- function(founders, heritability, base.pop = NULL,
                                          values = offspring$estGeneticValues,
                                          markers = M,
                                          fav.alleles = get.favourable.alleles(gp.get.effects(gp.trained.model)),
-                                         G = genomic.relationship.matrix(M),
                                          generation = s)
     selected.offspring <- restrict.population(offspring, selected.names)
     # store season
@@ -484,7 +515,7 @@ equal.contributions <- function(values, ...){
 # returns vector with optimal contributions, maximizing expected response
 # with a predefined rate of inbreeding according to Meuwissen 1997
 # (adjusted for plant breeding with constraint 1'c_t = 1 instead of Q'c_t = 1/2)
-optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE){
+optimal.contributions <- function(values, markers, C, size = NA, sonesson = FALSE, verbose = FALSE){
   
   cmin <- 0
   cmax <- 1
@@ -515,7 +546,7 @@ optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE
   c <- rep(-1, n.all)
 
   # compute G
-  G <- genomic.relationship.matrix(all.markers)
+  G <- genomic.relationship.matrix(all.markers, sonesson)
   
   # continue until cmin and cmax are satisfied
   while(length(i.opt) > 0 && (any(c > cmax + tol) || any(c < 0) || any(c[c > 0] < cmin - tol))){
@@ -657,21 +688,35 @@ optimal.contributions <- function(values, markers, C, size = NA, verbose = FALSE
 }
 
 # make genomic relationship matrix G from marker matrix M (0/1 DHs)
-genomic.relationship.matrix <- function(M){
+genomic.relationship.matrix <- function(M, sonesson = FALSE){
   # convert to 0/2 format
   M <- 2*M
-  
-  # init synbreed data (recodes scores as number of copies of *minor* allele)
-  # data <- codeGeno(create.gpData(geno = M))
-  # compute G
-  # G <- kin(data, ret = "realized")
-
-  # center
+  # compute frequencies and heterozygosity
   pfreq <- colMeans(M)/2
-  Z <- t(apply(M, 1, function(row) { row - 2*pfreq }))
+  he <- 2*pfreq*(1-pfreq)
+  # return Nan matrix if all markers are fixed
+  if(sum(he > 0) == 0){
+    G <- matrix(NaN, nrow = nrow(M), ncol = nrow(M))
+    return(G)
+  }
+  # drop fixed markers if any
+  M <- M[, he > 0]
+  pfreq <- pfreq[he > 0]
+  he <- he[he > 0]
+  sqrt.he <- sqrt(he)
+  # center
+  if(sonesson){
+    center <- function(row){(row - 2*pfreq)/sqrt.he}
+  } else {
+    center <- function(row){row - 2*pfreq}
+  }
+  Z <- t(apply(M, 1, center))
   # compute G
-  G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
-  #G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
+  if(sonesson){
+    G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
+  } else {
+    G <- Z %*% t(Z) / (2*sum(pfreq*(1-pfreq))) # Van Raden 2008
+  }
   return(G)
 }
 
@@ -690,27 +735,47 @@ make.positive.definite <- function(X, tol = 1e-6) {
 }
 
 # compute inbreeding rate delta F based on markers (cfr. Sonesson)
-inbreeding.rate.sonesson <- function(pop, prev.pop){
-  # get minor allele frequencies of of both populations
-  Z.cur <- gp.design.matrix(pop)
-  Z.prev <- gp.design.matrix(prev.pop)
-  freqs.cur <- maf(Z.cur, encoding = "dh")
-  freqs.prev <- maf(Z.prev, encoding = "dh")
-  # compute average homozygosity
-  hom <- function(f){
-    f^2 + (1-f)^2
+inbreeding.rate <- function(pop, prev.pop, type = c("IBS", "IBD"), relative = TRUE){
+  
+  # get heterozygosity of both populations
+  he.cur <- heterozygosity(pop, type = type)
+  he.prev <- heterozygosity(prev.pop, type = type)
+  # compute decrease in heterozygosity
+  delta.F <- he.prev - he.cur
+  # make relative if requested
+  if(relative){
+    delta.F <- delta.F / he.prev
   }
-  hom.cur <- mean(sapply(freqs.cur, hom))
-  hom.prev <- mean(sapply(freqs.prev, hom))
-  # delta F is relative increase in average homozygosity
-  delta.F <- (hom.cur - hom.prev) / (1.0 - hom.prev)
   return(delta.F)
 }
 
-heterozygosity <- function(pop){
-  M <- gp.design.matrix(pop)
-  freqs <- maf(M, encoding = "dh")
-  he <- mean(2*freqs*(1-freqs))
+heterozygosity <- function(pop, type = c("IBS", "IBD")){
+  type <- match.arg(type)
+  # get allele frequencies
+  if(type == "IBS"){
+    # use existing marker panel (true SNPs)
+    Z <- gp.design.matrix(pop)
+    freqs <- maf(Z, encoding = "dh")
+    # recode to general format with both allele frequencies
+    freqs <- lapply(freqs, function(f){c(f, 1-f)})
+  } else {
+    # use artificial IBD markers
+    ibd.markers <- pop$dh[,get.IBD.indices(pop)]
+    # function to extract frequencies
+    extract.freqs <- function(alleles){
+      table(alleles)/length(alleles)
+    }
+    # extract frequencies
+    freqs <- apply(ibd.markers, 2, extract.freqs)
+  }
+  # functions to compute homozygosity
+  hom <- function(freqs){
+    sum(freqs^2)
+  }
+  # compute average marker homozygosity
+  homozygosity <- mean(sapply(freqs, hom))
+  # infer heterozygosity
+  he <- 1 - homozygosity
   return(he)
 }
 
@@ -721,9 +786,6 @@ inbreeding.rate.jannink <- function(pop, prev.pop){
   delta.F <- (cur.fixed - prev.fixed) / (1.0 - prev.fixed)
   return(delta.F)
 }
-
-# select inbreeding rate formula
-inbreeding.rate <- inbreeding.rate.sonesson
 
 proportion.fixed.markers <- function(pop){
   M <- gp.design.matrix(pop)
@@ -796,14 +858,16 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       
       # 4) inbreeding rate
       if(!is.null(prev.candidates)){
-        HE.prev <- heterozygosity(prev.candidates)
-        HE.cur <- heterozygosity(candidates)
-        Fprev <- 1 - 2*HE.prev
-        Fcur <- 1 - 2*HE.cur
-        metadata[[s+1]]$candidates$HE.prev <- HE.prev
-        metadata[[s+1]]$candidates$HE.cur <- HE.cur
-        metadata[[s+1]]$candidates$inbreeding$abs <- (Fcur - Fprev)
-        metadata[[s+1]]$candidates$inbreeding$rel <- (Fcur - Fprev) / (1 - Fprev)
+        for(type in c("IBS", "IBD")){
+          HE.prev <- heterozygosity(prev.candidates, type = type)
+          HE.cur <- heterozygosity(candidates, type = type)
+          inbr.rel <- inbreeding.rate(candidates, prev.candidates, type = type, rel = TRUE)
+          inbr.abs <- inbreeding.rate(candidates, prev.candidates, type = type, rel = FALSE)
+          metadata[[s+1]]$candidates$inbreeding[[type]]$HE.prev <- HE.prev
+          metadata[[s+1]]$candidates$inbreeding[[type]]$HE.cur <- HE.cur
+          metadata[[s+1]]$candidates$inbreeding[[type]]$rel <- inbr.rel
+          metadata[[s+1]]$candidates$inbreeding[[type]]$abs <- inbr.abs        
+        }
       }
       
       # 5) QTL favourable allele frequencies
@@ -875,8 +939,10 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       names(c) <- names(candidates$geneticValues)
       c[selection.names] <- 1/length(selection.names)
       G <- genomic.relationship.matrix(candidates.markers)
+      G.son <- genomic.relationship.matrix(candidates.markers, sonesson = TRUE)
       metadata[[s+1]]$selection$c <- c
       metadata[[s+1]]$selection$cgc <- c %*% G %*% c / 2
+      metadata[[s+1]]$selection$cgc.son <- c %*% G.son %*% c / 2
       
     }
     
@@ -911,7 +977,8 @@ extract.metadata <- function(seasons, store.all.pops = FALSE){
       mean.LD <- mean(QTL.marker.LD$LD)
       # retrieve polymorphic QTL and corresponding marker effects
       # (!! based on marker *names*, *not* indices, as the latter
-      #  include QTL and dummies which were dropped for GP analysis)
+      #  include QTL, dummies and IBD markers which were dropped
+      #  for GP analysis)
       all.names <- rownames(gp.tp$map)
       all.marker.effects <- gp.get.effects(gp.model)
       all.qtl.effects <- get.qtl.effects(gp.tp)

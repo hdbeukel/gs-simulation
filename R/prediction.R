@@ -3,7 +3,7 @@
 # PREPARE DESIGN MATRIX #
 #########################
 
-# create design matrix (0/1, strip dummies, strip real QTL)
+# create design matrix (0/1, strip dummies, strip real QTL, strip IBD)
 gp.design.matrix = function(pop){
   # assert: dummies present
   if(!pop$hypred$dummiesAdded){
@@ -17,12 +17,8 @@ gp.design.matrix = function(pop){
   if(is.null(pop$dh)){
     stop("pop is required to be a DH population")
   }
-  # get indices of dummy markers and *real* QTL (dummy QTLs can stay, no real effect there)
-  real.qtl.indices = pop$hypred$realQTL
-  dummy.indices = get.dummy.indices(pop)
-  qtl.or.dummy = c(real.qtl.indices, dummy.indices)
-  # get DH marker data without dummies and QTL
-  matrix = pop$dh[,-qtl.or.dummy]
+  # get DH marker data of true SNPs only
+  matrix = pop$dh[,get.SNP.indices(pop)]
   
   return(matrix)
 }
@@ -30,16 +26,16 @@ gp.design.matrix = function(pop){
 # restrict design matrix to subset of all individuals
 # names = names of chosen individuals
 # G     = full design matrix (ind x markers)
-gp.restrict.design.matrix = function(names, G){
-  if(!all(names %in% rownames(G))){
+gp.restrict.design.matrix = function(names, M){
+  if(!all(names %in% rownames(M))){
     stop ("not all chosen individuals have genotypes")
   }
   # select individuals
-  GDesign = G[names,]
+  MDesign <- M[names,]
   # set row and column names
-  rownames(GDesign) = names
-  colnames(GDesign) = colnames(G)
-  return(GDesign)
+  rownames(MDesign) <- names
+  colnames(MDesign) <- colnames(M)
+  return(MDesign)
 }
 
 ####################################

@@ -121,6 +121,11 @@ add.dummies <- function(data){
     data$hypred$genome <- hypred.genome
   }
   
+  # update IBD marker indices
+  if(!is.null(data$IBDMarkers)){
+    data$IBDMarkers <- which(grepl("^IBD", rownames(data$map)))
+  }
+  
   # change dummy flag
   data$hypred$dummiesAdded <- TRUE
   
@@ -228,6 +233,31 @@ get.dummy.indices <- function(pop){
   return(dummy.indices)
 }
 
+get.IBD.indices <- function(pop){
+  return(pop$IBDMarkers)
+}
+
+# get indices of true SNPs, i.e. without
+# 1) QTL
+# 2) dummy markers for hypred
+# 3) artificial IBD markers
+get.SNP.indices <- function(pop){
+  # get indices of dummy markers
+  dummy.indices <- get.dummy.indices(pop)
+  # get indices of *real* QTL (dummy QTLs can stay, no real effect there)
+  real.qtl.indices <- pop$hypred$realQTL
+  # get indices of IBD markers
+  IBD.indices <- pop$IBDMarkers
+  discard <- c(dummy.indices, real.qtl.indices, IBD.indices)
+  all.indices <- 1:(pop$numMarkers)
+  snp.indices <- setdiff(all.indices, discard)
+  return(snp.indices)
+}
+
+get.QTL.indices <- function(pop){
+  return(pop$hypred$realQTL)
+}
+
 #######################################
 # ASSIGN QTL AND INFER GENETIC VALUES #
 #######################################
@@ -272,33 +302,40 @@ assign.qtl <- function(pop, num.qtl,
   real.qtl.per.chrom[as.numeric(names(real.qtl.per.chrom.table))] <- real.qtl.per.chrom.table
   hypred.qtl.per.chrom <- max(real.qtl.per.chrom)
   dummy.qtl.per.chrom <- hypred.qtl.per.chrom - real.qtl.per.chrom
-  # get ranges of non dummy markers
-  non.dummy.starts <- pop$hypred$chromBounds[,1]
-  non.dummy.stops <- pop$hypred$chromBounds[,2] - pop$hypred$chrNumDummies
-  non.dummy.ranges <- cbind(non.dummy.starts, non.dummy.stops)
-  # get genotypes
+  # get genotypes (including dummies and IBDs)
   if(!is.null(pop$dh)){
     genotypes <- pop$dh * 2
   } else {
     genotypes <- pop$geno
   }
+  # get true SNP indices (no dummies, no IBD's)
+  SNP.indices <- get.SNP.indices(pop)
   # infer positions of possible fixed markers
-  mafs <- maf(genotypes, encoding = "012")
-  fixed <- which(mafs == 0)
-  # pick real QTL indices per chromosome (NOT allowed to be dummy markers)
+  # (wrt to full genome including dummies and IBD's)
+  mafs <- maf(genotypes[,SNP.indices], encoding = "012")
+  # first take names
+  fixed <- names(mafs)[mafs == 0]
+  # now revert to column indices in full matrix
+  fixed <- which(colnames(genotypes) %in% fixed)
+  # pick real QTL indices per chromosome
   real.qtl.indices <- sort(unlist(sapply(1:num.chroms, function(c){
-    # QTL candidates on current chromosome
-    candidates <- setdiff(seq(non.dummy.ranges[c,1], non.dummy.ranges[c,2]), fixed)
+    chrom.bounds <- pop$hypred$chromBounds[c,]
+    # restrict SNP indices to current chromosome
+    candidates <- SNP.indices[SNP.indices %in% seq(chrom.bounds[1], chrom.bounds[2])]
+    # remove any fixed markers
+    candidates <- setdiff(candidates, fixed)
     # sample real QTL indices
     sample(candidates, real.qtl.per.chrom[c])
   })))
-  # pick dummy QTL indices per chromosome (can be dummy markers, don't care)
+  # pick dummy QTL indices per chromosome
+  # (can be dummy markers, don't care -- but NOT real QTL nor IBD markers)
   full.chrom.ranges <- pop$hypred$chromBounds
   dummy.qtl.indices <- sort(unlist(sapply(1:num.chroms, function(c){
     # get candidiates
     candidates <- seq(full.chrom.ranges[c,1], full.chrom.ranges[c,2])
-    # remove indices which are already picked as real QTL
-    candidates <- setdiff(candidates, real.qtl.indices)
+    # remove artificial IBD markers and those already picked as real QTL
+    remove <- c(real.qtl.indices, pop$IBDMarkers)
+    candidates <- setdiff(candidates, remove)
     # sample dummy QTL indices
     sample(candidates, dummy.qtl.per.chrom[c])
   })))
@@ -739,12 +776,10 @@ QTL.marker.highest.LD <- function(pop){
   }
   
   # get QTL indices
-  QTL.indices <- pop$hypred$realQTL
+  QTL.indices <- get.QTL.indices(pop)
   num.QTL <- length(QTL.indices)
-  # get dummy marker indices
-  dummy.indices <- get.dummy.indices(pop)
-  # infer non QTL non dummy indices
-  SNP.indices <- setdiff(1:pop$numMarkers, c(QTL.indices, dummy.indices))
+  # get SNP indices
+  SNP.indices <- get.SNP.indices(pop)
   
   # initialize result vectors
   highest.LD.marker.indices <- rep(NA, num.QTL)

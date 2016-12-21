@@ -323,9 +323,9 @@ clean.data <- function(markers, map,
   # 10: pack data
   cleaned.data <- list(markers = markers, map = map)
     
-  message("--------------------------------------------------------------------------------------------------------------\n",
+  message("----------------------------------------------------------------------------\n",
           "CLEANED DATA SET: ", nrow(markers), " genotypes, ", ncol(markers), " markers\n",
-          "--------------------------------------------------------------------------------------------------------------")
+          "----------------------------------------------------------------------------")
   
   return(cleaned.data)
   
@@ -387,21 +387,28 @@ phase <- function(markers, map){
 #     1) "chr": chromosome number (integer)
 #     2) "pos": position in cM
 #  - hap1, hap2: 0/1 haplotype matrices (ind x markers; named)
-#  - dh: TRUE for doubled haploids; ignores hap2
-prepare <- function(map, hap1, hap2, dh = FALSE){
+prepare <- function(map, hap1, hap2 = hap1, add.IBD = TRUE){
+  
+  # combine data
+  data <- list(map = map, hap1 = hap1, hap2 = hap2)
+  
+  if(add.IBD){
+    # 0: add artificial IBD markers with unique founder alleles
+    data <- add.IBD.markers(data)
+  }
   
   # 1: process map
   
   # infer number of chromosomes
-  chromosomes <- unique(map$chr)
+  chromosomes <- unique(data$map$chr)
   num.chromosomes <- length(chromosomes)
   # compute chromosome lengths
   chr.lengths <- sapply(chromosomes, function(c){
-    max(map[map$chr == c, 2])
+    max(data$map[data$map$chr == c, 2])
   })
   # compute number of markers per chromosome
   chr.num.markers <- sapply(chromosomes, function(c){
-    sum(map$c == c)
+    sum(data$map$c == c)
   })
   # compute chromosome bounds
   chrom.ends <- cumsum(chr.num.markers)
@@ -409,20 +416,16 @@ prepare <- function(map, hap1, hap2, dh = FALSE){
   chrom.bounds <- cbind(chrom.starts, chrom.ends)
   
   # 2: pack data
-    
-  if(dh){
-    prepared.data <- list(isDH = TRUE, dh = hap1)
-  } else {
-    geno <- hap1 + hap2
-    haplotypes <- list(hap1 = hap1, hap2 = hap2)
-    prepared.data <- list(isDH = FALSE, geno = geno, phasedGeno = haplotypes)
-  }
-  prepared.data <- c(prepared.data, list(map = map,
+  geno <- data$hap1 + data$hap2
+  haplotypes <- list(hap1 = data$hap1, hap2 = data$hap2)
+  prepared.data <- list(isDH = FALSE, geno = geno, phasedGeno = haplotypes)
+  prepared.data <- c(prepared.data, list(map = data$map,
                                          numGenotypes = nrow(geno),
                                          numMarkers = ncol(geno),
                                          numChroms = num.chromosomes,
                                          chrLengths = chr.lengths,
-                                         chrNumMarkers = chr.num.markers))
+                                         chrNumMarkers = chr.num.markers,
+                                         IBDMarkers = data$IBD.markers))
   
   message("Packed data")
   
@@ -446,6 +449,76 @@ prepare <- function(map, hap1, hap2, dh = FALSE){
   
   return(prepared.data)
   
+}
+
+# add artificial IBD markers with unique founder alleles at 10cM distance across the genome
+add.IBD.markers <- function(data, d=10){
+  
+  # number of individuals
+  n <- nrow(data$hap1)
+  
+  map.extended <- NULL
+  hap1.extended <- matrix(ncol = 0, nrow = n)
+  hap2.extended <- matrix(ncol = 0, nrow = n)
+
+  # process chromosomes independently
+  for(c in unique(data$map$chr)){
+    message("Adding IBD markers to chromosome ", c, " ...")
+    # get part of map for current chromsome
+    chrom.map <- data$map[data$map$chr == c,]
+    # get part of marker data for current chromosome
+    chrom.hap1 <- data$hap1[,rownames(chrom.map)]
+    chrom.hap2 <- data$hap2[,rownames(chrom.map)]
+    # determine positions of IBD markers
+    IBD.pos <- seq(from = d/2, to = max(chrom.map$pos), by = d)
+    # insert IBD markers one by one
+    for(pos in IBD.pos){
+      # find index of first marker after this position
+      succ <- which(chrom.map$pos > pos)[1]
+      # add IBD position to map
+      IBD.map.row <- c(
+        c,  # chromosome number
+        pos # position
+      )
+      chrom.map <- rbind(
+        chrom.map[1:(succ-1), ],
+        IBD.map.row,
+        chrom.map[succ:nrow(chrom.map), ]
+      )
+      IBD.marker.name <- paste("IBD", c, pos, sep = "_")
+      rownames(chrom.map)[succ] <- IBD.marker.name
+      # add unique IBD alleles to marker data
+      hap1.alleles <- seq(from = 1, by = 2, length.out = n)
+      hap2.alleles <- seq(from = 2, by = 2, length.out = n)
+      chrom.hap1 <- cbind(
+        chrom.hap1[,1:(succ-1)],
+        hap1.alleles,
+        chrom.hap1[,succ:ncol(chrom.hap1)]
+      )
+      chrom.hap2 <- cbind(
+        chrom.hap2[,1:(succ-1)],
+        hap2.alleles,
+        chrom.hap2[,succ:ncol(chrom.hap2)]
+      )
+      colnames(chrom.hap1)[succ] <- colnames(chrom.hap2)[succ] <- IBD.marker.name
+    }
+    # add extended chromosome to extended data
+    if(is.null(map.extended)){
+      map.extended <- chrom.map
+    } else {
+      map.extended <- rbind(map.extended, chrom.map)
+    }
+    hap1.extended <- cbind(hap1.extended, chrom.hap1)
+    hap2.extended <- cbind(hap2.extended, chrom.hap2)
+  }
+  
+  data.extended <- list(
+    map = map.extended,
+    hap1 = hap1.extended,
+    hap2 = hap2.extended,
+    IBD.markers = which(grepl("^IBD", rownames(map.extended)))
+  )
+  return(data.extended)
 }
 
 ##############################
@@ -472,7 +545,7 @@ create.founders <- function(){
   founders <- prepare(cleaned$map, haplotypes$hap1, haplotypes$hap2)
   
   # store and return founders
-  saveRDS(founders, "data/founders.RDS")
+  saveRDS(founders, "data/founders-IBD.RDS")
   return(founders)
   
 }

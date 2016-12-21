@@ -1681,10 +1681,14 @@ plot.cgc <- function(replicates,
                      ylab = "Realized cGc/2",
                      target.dF = NA,
                      relative = TRUE,
+                     sonesson = FALSE,
                      ...){
   
+  # set cgc extraction parameters
+  extract <- function(...){extract.cgc(..., sonesson = sonesson)}
+  
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values = extract.cgc, ylab = ylab, shift = 1, ...)
+  plot.simulation.variable(replicates, extract.values = extract, ylab = ylab, shift = 1, ...)
   # add target line if requested
   if(!is.na(target.dF)){
     x <- 1:length(replicates[[1]]) - 1
@@ -1701,7 +1705,7 @@ plot.cgc <- function(replicates,
 }
 
 # function to extract cGc/2
-extract.cgc <- function(seasons){
+extract.cgc <- function(seasons, sonesson = FALSE){
   # extract number of seasons
   num.seasons <- length(seasons)-1
   # initialize cgc vector
@@ -1710,14 +1714,19 @@ extract.cgc <- function(seasons){
   for(s in 1:num.seasons){
     season <- seasons[[s+1]]
     if(!is.null(season$selection$cgc)){
-      cgc[s+1] <- season$selection$cgc
+      if(!sonesson){
+        cgc[s+1] <- season$selection$cgc
+      } else {
+        cgc[s+1] <- season$selection$cgc.son
+      }
     }
   }
   return(cgc)
 }
 
 # function to extract expected heterozygosity
-extract.he <- function(seasons){
+extract.he <- function(seasons, type = c("IBS", "IBD")){
+  type <- match.arg(type)
   # extract number of seasons
   num.seasons <- length(seasons)-1
   # initialize he vector
@@ -1725,11 +1734,11 @@ extract.he <- function(seasons){
   # retrieve values
   for(s in 1:length(seasons)){
     if(s == 2){
-      he[s] <- seasons[[3]]$candidates$HE.prev
+      he[s] <- seasons[[3]]$candidates$inbreeding[[type]]$HE.prev
     } else {
       season <- seasons[[s]]
-      if(!is.null(season$candidates$HE.cur)){
-        he[s] <- season$candidates$HE.cur
+      if(!is.null(season$candidates$inbreeding[[type]]$HE.cur)){
+        he[s] <- season$candidates$inbreeding[[type]]$HE.cur
       }
     }
   }
@@ -1785,12 +1794,13 @@ plot.genetic.standard.deviation <- function(replicates,
 # plot inbreeding rate of selection candidates
 plot.inbreeding.rate <- function(replicates,
                                  ylab = "Inbreeding rate",
+                                 type = c("IBS", "IBD"),
                                  relative = TRUE,
                                  deltaF.line = NA,
                                  ...){
   
   # set inbreeding rate extraction parameters
-  extract.inbr <- function(...){extract.inbr.rate(..., relative = relative)}
+  extract.inbr <- function(...){extract.inbr.rate(..., type = type, relative = relative)}
   
   # call generic variable plot function
   plot.simulation.variable(replicates, extract.values = extract.inbr, ylab = ylab, shift = 1, ...)
@@ -1803,7 +1813,8 @@ plot.inbreeding.rate <- function(replicates,
 }
 
 # function to extract inbreeding rate
-extract.inbr.rate <- function(seasons, relative = TRUE){
+extract.inbr.rate <- function(seasons, type = c("IBS", "IBD"), relative = TRUE){
+  type <- match.arg(type)
   # initialize result vector
   inbr.rate <- rep(NA, length(seasons))
   # extract inbreeding rate for each season
@@ -1814,17 +1825,27 @@ extract.inbr.rate <- function(seasons, relative = TRUE){
       # extract and store inbreeding rate (if available)
       inbr <- season$candidates$inbreeding
       if(!is.null(inbr)){
+        if((!is.list(inbr) || is.null(inbr[[type]])) && type == "IBD"){
+          stop("Old data: no IBD based inbreeding available.")
+        }
         if(relative){
-          if(is.list(inbr)){
+          if(!is.list(inbr)){
+            # old data (relative, IBS)
+            inbr.rate[s] <- inbr
+          } else if(is.null(inbr[[type]])){
+            # old data (IBS, rel/abs)
             inbr.rate[s] <- inbr$rel
           } else {
-            inbr.rate[s] <- inbr # old data
+            inbr.rate[s] <- inbr[[type]]$rel
           }
         } else {
-          if(is.list(inbr)){
+          if(!is.list(inbr)){
+            stop("Old data: no absolute inbreeding available.")
+          } else if(is.null(inbr[[type]])){
+            # old data (IBS, rel/abs)
             inbr.rate[s] <- inbr$abs
           } else {
-            stop("Data for absolute delta F not available.")
+            inbr.rate[s] <- inbr[[type]]$abs
           }
         }
       }
