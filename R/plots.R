@@ -1683,22 +1683,6 @@ plot.cgc <- function(replicates,
                      relative = TRUE,
                      ...){
   
-  # set function to extract cGc/2
-  extract.cgc <- function(seasons){
-    # extract number of seasons
-    num.seasons <- length(seasons)-1
-    # initialize cgc vector
-    cgc <- rep(NA, length(seasons))
-    # retrieve values
-    for(s in 1:num.seasons){
-      season <- seasons[[s+1]]
-      if(!is.null(season$selection$cgc)){
-        cgc[s+1] <- season$selection$cgc
-      }
-    }
-    return(cgc)
-  }
-  
   # call generic variable plot function
   plot.simulation.variable(replicates, extract.values = extract.cgc, ylab = ylab, shift = 1, ...)
   # add target line if requested
@@ -1716,6 +1700,23 @@ plot.cgc <- function(replicates,
   
 }
 
+# function to extract cGc/2
+extract.cgc <- function(seasons){
+  # extract number of seasons
+  num.seasons <- length(seasons)-1
+  # initialize cgc vector
+  cgc <- rep(NA, length(seasons))
+  # retrieve values
+  for(s in 1:num.seasons){
+    season <- seasons[[s+1]]
+    if(!is.null(season$selection$cgc)){
+      cgc[s+1] <- season$selection$cgc
+    }
+  }
+  return(cgc)
+}
+
+# function to extract expected heterozygosity
 extract.he <- function(seasons){
   # extract number of seasons
   num.seasons <- length(seasons)-1
@@ -1733,6 +1734,22 @@ extract.he <- function(seasons){
     }
   }
   return(he)
+}
+
+# plot dF - cGc/2 vs HE
+plot.cgc.dF.HE <- function(replicates){
+  # extract all cGc/2, dF and HE values
+  cgc <- unlist(lapply(replicates, function(seasons){
+    extract.cgc(seasons)[2:(length(seasons)-1)]
+  }))
+  dF <- unlist(lapply(replicates, function(seasons){
+    extract.inbr.rate(seasons)[3:length(seasons)]
+  }))
+  he <- unlist(lapply(replicates, function(seasons){
+    extract.he(seasons)[2:(length(seasons)-1)]
+  }))
+  # plot
+  plot(x = he, y = dF - cgc, xlab = "Expected heterozygosity", ylab = "dF - cGc/2")
 }
 
 # plot genetic standard deviation among selection candidates
@@ -1772,45 +1789,48 @@ plot.inbreeding.rate <- function(replicates,
                                  deltaF.line = NA,
                                  ...){
   
-  # set function to extract inbreeding rate
-  extract.inbr.rate <- function(seasons){
-    # initialize result vector
-    inbr.rate <- rep(NA, length(seasons))
-    # extract inbreeding rate for each season
-    for(s in 1:length(seasons)){
-      season <- seasons[[s]]
-      # check whether selection candidates have been produced in this season
-      if(!is.null(season$candidates)){
-        # extract and store inbreeding rate (if available)
-        inbr <- season$candidates$inbreeding
-        if(!is.null(inbr)){
-          if(relative){
-            if(is.list(inbr)){
-              inbr.rate[s] <- inbr$rel
-            } else {
-              inbr.rate[s] <- inbr # old data
-            }
-          } else {
-            if(is.list(inbr)){
-              inbr.rate[s] <- inbr$abs
-            } else {
-              stop("Data for absolute delta F not available.")
-            }
-          }
-        }
-      }
-    }
-    return(inbr.rate)
-  }
+  # set inbreeding rate extraction parameters
+  extract.inbr <- function(...){extract.inbr.rate(..., relative = relative)}
   
   # call generic variable plot function
-  plot.simulation.variable(replicates, extract.values = extract.inbr.rate, ylab = ylab, shift = 1, ...)
+  plot.simulation.variable(replicates, extract.values = extract.inbr, ylab = ylab, shift = 1, ...)
   # add inbreeding line if requested
   if(!is.na(deltaF.line)){
     abline(h = deltaF.line, lty = 2)
     text(x = 28.5, y = deltaF.line, labels = bquote(paste(Delta, F) == .(deltaF.line)), pos = 1)
   }
   
+}
+
+# function to extract inbreeding rate
+extract.inbr.rate <- function(seasons, relative = TRUE){
+  # initialize result vector
+  inbr.rate <- rep(NA, length(seasons))
+  # extract inbreeding rate for each season
+  for(s in 1:length(seasons)){
+    season <- seasons[[s]]
+    # check whether selection candidates have been produced in this season
+    if(!is.null(season$candidates)){
+      # extract and store inbreeding rate (if available)
+      inbr <- season$candidates$inbreeding
+      if(!is.null(inbr)){
+        if(relative){
+          if(is.list(inbr)){
+            inbr.rate[s] <- inbr$rel
+          } else {
+            inbr.rate[s] <- inbr # old data
+          }
+        } else {
+          if(is.list(inbr)){
+            inbr.rate[s] <- inbr$abs
+          } else {
+            stop("Data for absolute delta F not available.")
+          }
+        }
+      }
+    }
+  }
+  return(inbr.rate)
 }
 
 # plot QTL - marker LD in selection candidates, averaged over all polymorphic QTL
