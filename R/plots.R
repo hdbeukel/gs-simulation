@@ -125,9 +125,13 @@ get.plot.functions <- function(){
     #             legend = "bottomright", ylim = c(0.50, 0.93)),
     # list(f = plot.mean.QTL.marker.LD, name = "LD", title = "Mean polymorphic QTL - marker LD",
     #       legend = "bottomleft", ylim = c(0.3, 0.9)),
-    list(f = plot.inbreeding.rate, name = "inbreeding-rate-IBS", title = "Inbreeding rate",
+    list(f = function(...){
+          plot.inbreeding.rate(..., type = "IBS")
+         }, name = "inbreeding-rate-IBS", title = "Inbreeding rate (IBS)",
          legend = "topleft", ylim = c(-0.1, 0.4)),
-    list(f = plot.inbreeding.rate, name = "inbreeding-rate-IBD", title = "Inbreeding rate",
+    list(f = function(...){
+          plot.inbreeding.rate(..., type = "IBD")
+         }, name = "inbreeding-rate-IBD", title = "Inbreeding rate (IBD)",
          legend = "topleft", ylim = c(-0.1, 0.4)),
     # list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
     #      legend = "topright", ylim = c(0, 0.035)),
@@ -560,7 +564,7 @@ plot.CGS <- function(div.weights = seq(0.35, 0.70, 0.05), # seq(0.35, 1.0, 0.05)
 
 # stores PDF plots in "figures/simulation/GS-WGS",
 # within a subfolder according to the two included heritabilities
-plot.GS.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
+plot.GS.WGS <- function(heritability = c(0.2, 0.5), target.dF = 0.05, file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
   
   # check: two heritabilities
   if(length(heritability) != 2){
@@ -646,6 +650,15 @@ plot.GS.WGS <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
     # }, height = 5.5)
     
     # separate plots for small and large TP
+    
+    # add target delta F line in inbreeding plots
+    if(grepl("^inbreeding-rate", plot.fun$name)){
+      f <- plot.fun$f
+      g <- function(...){
+        f(..., deltaF.line = target.dF)
+      }
+      plot.fun$f <- g
+    }
     
     create.pdf(sprintf("%s/%s-TP200.pdf", fig.dir, plot.fun$name), function(){
       res <- results[[1]]
@@ -983,7 +996,7 @@ plot.WGS.OC <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", x
     for(plot.fun in plot.functions){
       
       # add target delta F line in inbreeding plots
-      if(plot.fun$name == "inbreeding-rate"){
+      if(grepl("^inbreeding-rate", plot.fun$name)){
         f <- plot.fun$f
         g <- function(...){
           f(..., deltaF.line = dF)
@@ -1439,7 +1452,7 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         for(plot.fun in plot.functions){
           
           # add target delta F line in inbreeding plots
-          if(plot.fun$name == "inbreeding-rate"){
+          if(grepl("^inbreeding-rate", plot.fun$name)){
             f <- plot.fun$f
             g <- function(...){
               f(..., deltaF.line = dF)
