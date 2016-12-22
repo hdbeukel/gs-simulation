@@ -76,9 +76,6 @@ select.weighted.index <- function(n, values, markers, div.weight,
   if(!is.null(fav.alleles) && !is.numeric(fav.alleles)){
     stop("fav.alleles should be a 0/1 vector")
   }
-  if(!is.null(G) && (!is.matrix(G) || !is.numeric(G) || !isSymmetric(G))){
-    stop("G should be a symmetric genomic relationship matrix")
-  }
   if(!is.numeric(div.weight) || div.weight < 0 || div.weight > 1){
     stop("div.weight should be a number in [0,1]")
   }
