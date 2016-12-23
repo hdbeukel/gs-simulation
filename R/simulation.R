@@ -700,7 +700,7 @@ genomic.relationship.matrix <- function(M, sonesson = FALSE){
     return(G)
   }
   # drop fixed markers if any
-  M <- M[, he > 0]
+  M <- M[, he > 0, drop = F]
   pfreq <- pfreq[he > 0]
   he <- he[he > 0]
   sqrt.he <- sqrt(he)
@@ -710,7 +710,12 @@ genomic.relationship.matrix <- function(M, sonesson = FALSE){
   } else {
     center <- function(row){row - 2*pfreq}
   }
-  Z <- t(apply(M, 1, center))
+  Z <- apply(M, 1, center)
+  if(is.matrix(Z)){
+    Z <- t(Z)
+  } else {
+    Z <- as.matrix(Z)
+  }
   # compute G
   if(sonesson){
     G <- Z %*% t(Z) / ncol(M) # Sonesson 2012
