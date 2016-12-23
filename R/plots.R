@@ -1675,8 +1675,9 @@ plot.GS.WGS.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         
         # retrieve scenario parameters
         dF <- scenario$delta.F
-        OC.alpha <- scenario$OC.alpha
         RA.alpha <- scenario$RA.alpha
+        HE.alpha <- scenario$HE.alpha
+        OC.alpha <- scenario$OC.alpha
         
         message(sprintf("Target delta F: %.5f", dF))
         message(sprintf("IND-RA alpha: %.2f", RA.alpha))
@@ -1782,8 +1783,9 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         
         # retrieve scenario parameters
         dF <- scenario$delta.F
-        OC.alpha <- scenario$OC.alpha
         RA.alpha <- scenario$RA.alpha
+        HE.alpha <- scenario$HE.alpha
+        OC.alpha <- scenario$OC.alpha
         
         message(sprintf("Target delta F: %.5f", dF))
         message(sprintf("IND-RA alpha: %.2f", RA.alpha))
@@ -1826,6 +1828,101 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         # set curve names
         names <- c(
           bquote(GOCS ~ (C[t+1] == .(dF))),
+          bquote("IND-OC" ~ (alpha == .(sprintf("%.2f", OC.alpha)))),
+          bquote("IND-RA" ~ (alpha == .(sprintf("%.2f", RA.alpha)))),
+          bquote("IND-HE" ~ (alpha == .(sprintf("%.2f", HE.alpha))))
+        )
+        names <- sapply(names, as.expression)
+        
+        message("Create plots ...")
+        
+        # setup plot functions
+        plot.functions <- get.plot.functions()
+        
+        # create plots
+        for(plot.fun in plot.functions){
+          
+          # add target delta F line in inbreeding plots
+          if(grepl("^inbreeding-rate", plot.fun$name)){
+            f <- plot.fun$f
+            g <- function(...){
+              f(..., deltaF.line = dF)
+            }
+            plot.fun$f <- g
+          }
+          
+          file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+          
+          create.pdf(sprintf("%s/%s.pdf", fig.dir, plot.fun$name), function(){
+            plot.multi(data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+            title(bquote(.(plot.fun$title) ~ (.(substitute(list(h^2 == .h2, TP == .tp), list(.h2 = h, .tp = tp))))))
+            add.legend(names, params, pos = plot.fun$legend)
+          }, height = 5.5, width = 7)
+          
+        }
+        
+      }
+    }
+  }
+  
+}
+
+# stores PDF plots in "figures/simulation/IND.RA-[alpha]-IND.HE-[alpha]-IND.OC-[alpha]",
+# within a subfolder according to the heritability and TP size
+plot.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
+                     file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
+                     scenarios = list(
+                       high.short.term.gain = list(RA.alpha = 0.35, HE.alpha = 0.35, OC.alpha = 0.35),
+                       #max.long.term.gain = list(RA.alpha = 0.45, HE.alpha = 0.45, OC.alpha = 0.60),
+                       same.inbreeding = list(RA.alpha = 0.35, HE.alpha = 0.35, OC.alpha = 0.65)
+                     )){
+  
+  for(h in heritability){
+    for(add.tp in add.TP){
+      tp <- add.tp + 200
+      for(scenario in scenarios){
+        
+        # retrieve scenario parameters
+        RA.alpha <- scenario$RA.alpha
+        HE.alpha <- scenario$HE.alpha
+        OC.alpha <- scenario$OC.alpha
+        
+        message(sprintf("IND-RA alpha: %.2f", RA.alpha))
+        message(sprintf("IND-HE alpha: %.2f", HE.alpha))
+        message(sprintf("IND-OC alpha: %.2f", OC.alpha))
+        fig.dir <- sprintf(
+          "figures/simulation/IND.RA-%.2f-IND.HE-%.2f-IND.OC-%.2f/h-%.1f-TP-%d",
+          RA.alpha, HE.alpha, OC.alpha, h, tp
+        )
+        
+        # create output directory
+        if(!dir.exists(fig.dir)){
+          message(sprintf("Create output directory \"%s\"", fig.dir))
+          dir.create(fig.dir, recursive = T)
+        }
+        
+        message("Load data ...")
+        
+        # load data
+        dirs <- c(
+          sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/OC-%.2f/index", h, add.tp, OC.alpha))),
+          sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index", h, add.tp, RA.alpha))),
+          sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HEall-%.2f/index", h, add.tp, HE.alpha)))
+        )
+        # loaded data (in this order): IND-OC, IND-RA, IND-HE
+        data <- lapply(dirs, load.simulation.results, file.pattern)
+        
+        # set graphical parameters
+        params <- list(
+          # IND-OC
+          list(lty = 3, bg = "black", pch = 21),
+          # IND-RA
+          list(lty = 3, bg = "white", pch = 25),
+          # IND-HE
+          list(lty = 3, bg = "white", pch = 24)
+        )
+        # set curve names
+        names <- c(
           bquote("IND-OC" ~ (alpha == .(sprintf("%.2f", OC.alpha)))),
           bquote("IND-RA" ~ (alpha == .(sprintf("%.2f", RA.alpha)))),
           bquote("IND-HE" ~ (alpha == .(sprintf("%.2f", HE.alpha))))
