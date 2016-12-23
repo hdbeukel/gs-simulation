@@ -1698,12 +1698,12 @@ plot.GS.WGS.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         # load data
         dirs <- c(
           sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.tp))),
-          sort(Sys.glob(sprintf("out/OC2/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f", h, add.tp, dF))),
+          sort(Sys.glob(sprintf("out/OC2a/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f", h, add.tp, dF))),
           sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/OC-%.2f/index", h, add.tp, OC.alpha))),
           sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index", h, add.tp, RA.alpha))),
           sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HEall-%.2f/index", h, add.tp, HE.alpha)))
         )
-        # loaded data (in this order): GS, WGS, OC2, IND-OC, IND-RA, IND-HE
+        # loaded data (in this order): GS, WGS, OC2a, IND-OC, IND-RA, IND-HE
         data <- lapply(dirs, load.simulation.results, file.pattern)
         
         # set graphical parameters
@@ -1765,14 +1765,14 @@ plot.GS.WGS.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
   
 }
 
-# stores PDF plots in "figures/simulation/OC-[delta.F]-IND.RA-[alpha]-IND.OC-[alpha]",
+# stores PDF plots in "figures/simulation/OC-[delta.F]-IND.RA-[alpha]-IND.HE-[alpha]-IND.OC-[alpha]",
 # within a subfolder according to the heritability and TP size
 plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
                         file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
                         scenarios = list(
-                          high.short.term.gain = list(delta.F = 0.05, RA.alpha = 0.35, OC.alpha = 0.35),
-                          max.long.term.gain = list(delta.F = 0.03, RA.alpha = 0.45, OC.alpha = 0.60),
-                          same.inbreeding = list(delta.F = 0.02, RA.alpha = 0.35, OC.alpha = 0.65)
+                          high.short.term.gain = list(delta.F = 0.05, RA.alpha = 0.35, HE.alpha = 0.35, OC.alpha = 0.35),
+                          #max.long.term.gain = list(delta.F = 0.03, RA.alpha = 0.45, HE.alpha = 0.45, OC.alpha = 0.60),
+                          same.inbreeding = list(delta.F = 0.02, RA.alpha = 0.35, HE.alpha = 0.35, OC.alpha = 0.65)
                         )){
   
   for(h in heritability){
@@ -1785,12 +1785,13 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         OC.alpha <- scenario$OC.alpha
         RA.alpha <- scenario$RA.alpha
         
-        message(sprintf("Delta F: %.5f", dF))
-        message(sprintf("IND-OC alpha: %.2f", OC.alpha))
+        message(sprintf("Target delta F: %.5f", dF))
         message(sprintf("IND-RA alpha: %.2f", RA.alpha))
+        message(sprintf("IND-HE alpha: %.2f", HE.alpha))
+        message(sprintf("IND-OC alpha: %.2f", OC.alpha))
         fig.dir <- sprintf(
-          "figures/simulation/OC-%.2f-IND.RA-%.2f-IND.OC-%.2f/h-%.1f-TP-%d",
-          dF, RA.alpha, OC.alpha, h, tp
+          "figures/simulation/OC-%.2f-IND.RA-%.2f-IND.HE-%.2f-IND.OC-%.2f/h-%.1f-TP-%d",
+          dF, RA.alpha, HE.alpha, OC.alpha, h, tp
         )
         
         # create output directory
@@ -1803,11 +1804,12 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         
         # load data
         dirs <- c(
-          sort(Sys.glob(sprintf("out/OC2/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f", h, add.tp, dF))),
+          sort(Sys.glob(sprintf("out/OC2a/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f", h, add.tp, dF))),
           sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/OC-%.2f/index", h, add.tp, OC.alpha))),
-          sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index", h, add.tp, RA.alpha)))
+          sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index", h, add.tp, RA.alpha))),
+          sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HEall-%.2f/index", h, add.tp, HE.alpha)))
         )
-        # loaded data (in this order): OC2, IND-OC, IND-RA
+        # loaded data (in this order): OC2a, IND-OC, IND-RA, IND-HE
         data <- lapply(dirs, load.simulation.results, file.pattern)
         
         # set graphical parameters
@@ -1817,13 +1819,16 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
           # IND-OC
           list(lty = 3, bg = "white", pch = 21),
           # IND-RA
-          list(lty = 3, bg = "white", pch = 25)
+          list(lty = 3, bg = "white", pch = 25),
+          # IND-HE
+          list(lty = 3, bg = "grey", pch = 25)
         )
         # set curve names
         names <- c(
-          bquote(OC ~ (paste(Delta, F) == .(dF))),
+          bquote(GOCS ~ (C[t+1] == .(dF))),
           bquote("IND-OC" ~ (alpha == .(sprintf("%.2f", OC.alpha)))),
-          bquote("IND-RA" ~ (alpha == .(sprintf("%.2f", RA.alpha))))
+          bquote("IND-RA" ~ (alpha == .(sprintf("%.2f", RA.alpha)))),
+          bquote("IND-HE" ~ (alpha == .(sprintf("%.2f", HE.alpha))))
         )
         names <- sapply(names, as.expression)
         
