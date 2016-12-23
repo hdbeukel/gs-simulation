@@ -79,7 +79,12 @@ select.weighted.index <- function(n, values, markers, div.weight,
   if(!is.numeric(div.weight) || div.weight < 0 || div.weight > 1){
     stop("div.weight should be a number in [0,1]")
   }
-  # get selected diversity measure
+  # compute G matrix if OC measure selected
+  G <- NULL
+  if(div.measure == "OC"){
+    G <- genomic.relationship.matrix(markers)
+  }
+  # get Java object for selected diversity measure
   div.measure <- match.arg(div.measure)
   if (div.measure == "HEall"){
     div.measure <- j.HE.all()
@@ -95,10 +100,6 @@ select.weighted.index <- function(n, values, markers, div.weight,
     stop("Unknown diversity measure:", div.measure)
   }
   # run optimization
-  G <- NULL
-  if(div.measure == "OC"){
-    G <- genomic.relationship.matrix(markers)
-  }
   selected.names <- j.max.index(n, names(values), values, markers, div.weight, div.measure, fav.alleles, G)
   return(selected.names)
 }
