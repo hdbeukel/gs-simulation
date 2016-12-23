@@ -114,9 +114,9 @@ get.plot.functions <- function(){
          legend = "bottomright", ylim =  c(0, 0.35)),
     # list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
     #      legend = "bottomright", ylim = c(0, 1.0)),
-    freq = list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq",
-                title = "Mean QTL favorable allele frequency",
-                legend = "bottomright", ylim = c(0.50, 0.60)),
+    list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq",
+         title = "Mean QTL favorable allele frequency",
+         legend = "bottomright", ylim = c(0.50, 0.60)),
     # freq = list(f = function(...){
     #               plot.mean.QTL.fav.allele.freq(..., exclude.lost = TRUE)
     #             },
@@ -135,10 +135,12 @@ get.plot.functions <- function(){
     legend = "topleft", ylim = c(-0.1, 0.4)),
     # list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
     #      legend = "topright", ylim = c(0, 0.035)),
-    lost = list(f = plot.total.QTL.effect.lost, name = "QT-effect-lost", title = "Total QTL effect lost",
-                legend = "bottomright", ylim = c(0, 250)),
-    lost = list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favorable QTL alleles lost",
-                legend = "bottomright", ylim = c(0, 450))#,
+    list(f = plot.total.QTL.effect.lost, name = "QT-effect-lost", title = "Total QTL effect lost",
+        legend = "bottomright", ylim = c(0, 250)),
+    list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favorable QTL alleles lost",
+        legend = "bottomright", ylim = c(0, 500)),
+    list(f = plot.num.SNP.alleles.lost, name = "SNP-alleles-lost", title = "Number of SNP alleles lost",
+         legend = "bottomright", ylim = c(0, 1000))
     # list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
     #      legend = "bottomright", ylim = c(0.1, 0.45)),
     # list(
@@ -2654,6 +2656,33 @@ plot.mean.marker.fav.allele.freq <- function(replicates,
   
   # call generic variable plot function
   plot.simulation.variable(replicates, extract.values =  extract.mean.marker.fav.allele.freq, ylab = ylab, shift = 1, ...)
+  
+}
+
+# plot total number of SNP alleles lost during selection
+plot.num.SNP.alleles.lost <- function(replicates,
+                                  ylab = "Number of SNP alleles lost",
+                                  ...){
+  
+  # set function to extract number
+  extract.num.alleles.lost <- function(seasons){
+    # initialize result vector
+    num.lost <- rep(NA, length(seasons))
+    # extract
+    for(s in 1:length(seasons)){
+      season <- seasons[[s]]
+      # check whether season involves GP
+      if(!is.null(season$gp)){
+        fav.freqs <- season$gp$fav.marker.allele.freqs
+        maf <- pmin(fav.freqs, 1.0 - fav.freqs)
+        num.lost[s] <- sum(maf == 0)
+      }
+    }
+    return(num.lost)
+  }
+  
+  # call generic variable plot function
+  plot.simulation.variable(replicates, extract.values =  extract.num.alleles.lost, ylab = ylab, shift = 1, ...)
   
 }
 
