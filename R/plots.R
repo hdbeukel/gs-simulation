@@ -925,6 +925,130 @@ plot.OC.RS <- function(heritability = c(0.2, 0.5), target.dF = 0.05, file.patter
   
 }
 
+# stores PDF plots in "figures/simulation/OC-sel-<size>",
+# within a subfolder according to the two included heritabilities
+plot.OC.sel.size <- function(heritability = c(0.2, 0.5), target.dF = 0.05, sel.size = 40,
+                             file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
+  
+  # check: two heritabilities
+  if(length(heritability) != 2){
+    stop("'heritability' should be a vector of length 2")
+  }
+  # extract low and high heritabilities
+  low.h <- min(heritability)
+  high.h <- max(heritability)
+  
+  fig.dir <- sprintf("figures/simulation/OC-sel-%d/h2-%.1f-%.1f", sel.size, low.h, high.h)
+  
+  # create output directory
+  if(!dir.exists(fig.dir)){
+    message(sprintf("Create output directory \"%s\"", fig.dir))
+    dir.create(fig.dir, recursive = T)
+  }
+  
+  message("Load data ...")
+  
+  # load data
+  dirs.low.h2 <- c(
+    sort(Sys.glob(sprintf("out/OC2a/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", low.h, target.dF))),
+    sort(Sys.glob(sprintf("out/OC2a/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f-sel-%d", low.h, target.dF, sel.size)))
+  )
+  dirs.high.h2 <- c(
+    sort(Sys.glob(sprintf("out/OC2a/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", high.h, target.dF))),
+    sort(Sys.glob(sprintf("out/OC2a/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f-sel-%d", high.h, target.dF, sel.size)))
+  )
+  data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
+  data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
+  # combine data:
+  # -- low h2 --
+  #  1) OC, h2: low, add TP: 0
+  #  2) OC, h2: low, add TP: 800
+  #  3) OC large sel, h2: low, add TP: 0
+  #  4) OC large sel, h2: low, add TP: 800
+  # -- high h2 --
+  #  7) OC, h2: high, add TP: 0
+  #  8) OC, h2: high, add TP: 800
+  #  9) OC large sel, h2: high, add TP: 0
+  # 10) OC large sel, h2: high, add TP: 800
+  data <- c(data.low.h2, data.high.h2)
+  # group small and large TP results
+  small.TP <- data[c(1,3,5,7)]
+  large.TP <- data[c(2,4,6,8)]
+  results <- list(
+    list(data = small.TP, title.suffix = "(TP = 200)"),
+    list(data = large.TP, title.suffix = "(TP = 1000)")
+  )
+  
+  # set graphical parameters
+  params <- list(
+    # OC, h2 = low
+    list(lty = 1, bg = "black", pch = 24),
+    # OC large sel, h2 = low
+    list(lty = 3, bg = "white", pch = 24),
+    # OC, h2 = high
+    list(lty = 1, bg = "black", pch = 21),
+    # OC large sel, h2 = high
+    list(lty = 3, bg = "white", pch = 21)
+  )
+  # set curve names
+  names <- c(
+    bquote(GOCS ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
+    bquote(GOCS ~ .bquote(sel.size) ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
+    bquote(GOCS ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
+    bquote(GOCS ~ .bquote(sel.size) ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ C[t+1] == .(target.dF)))))
+  )
+  names <- sapply(names, as.expression)
+  
+  message("Create plots ...")
+  
+  # setup plot functions
+  plot.functions <- get.plot.functions()
+  
+  # create plots
+  for(plot.fun in plot.functions){
+    
+    file <- sprintf("%s/%s.pdf", fig.dir, plot.fun$name)
+    
+    # combine small/large TP plots
+    # create.pdf(file, function(){
+    #   par(mfrow = c(1,2))
+    #   for(res in results){
+    #     plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+    #     title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+    #     add.legend(names, params, pos = plot.fun$legend)
+    #   }
+    # }, height = 5.5)
+    
+    # separate plots for small and large TP
+    
+    # add target delta F line in inbreeding plots
+    if(grepl("^inbreeding-rate", plot.fun$name)){
+      f <- plot.fun$f
+      g <- function(...){
+        f(..., deltaF.line = target.dF)
+      }
+      plot.fun$f <- g
+    }
+    
+    create.pdf(sprintf("%s/%s-TP200.pdf", fig.dir, plot.fun$name), function(){
+      res <- results[[1]]
+      plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+      title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+      add.legend(names, params, pos = plot.fun$legend)
+    }, height = 5.5, width = 7)
+    
+    create.pdf(sprintf("%s/%s-TP1000.pdf", fig.dir, plot.fun$name), function(){
+      res <- results[[2]]
+      plot.multi(res$data, plot.fun$f, params, ylim = plot.fun$ylim, xlim = xlim, ci = ci)
+      title(bquote(.(plot.fun$title) ~ .(res$title.suffix)))
+      add.legend(names, params, pos = plot.fun$legend)
+    }, height = 5.5, width = 7)
+    
+    
+  }
+  
+}
+
 # stores PDF plots in "figures/simulation/GS-WGS-WGS2",
 # within a subfolder according to the two included heritabilities
 plot.GS.WGS.WGS2 <- function(heritability = c(0.2, 0.5), file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA){
