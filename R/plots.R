@@ -76,6 +76,8 @@ table.genetic.gain <- function(heritability = 0.2, add.TP = 800, file.pattern = 
     # rownames(gains) <- c("GS", "WGS", "GOCS", "IND-OC", "IND-RA", "IND-HE")
     rownames(gains) <- c("GS", "WGS", "GOCS", "IND-OC", "IND-RA") # IND-HE results not yet available
     
+    return(gains)
+    
   })
   
   return(tables)
