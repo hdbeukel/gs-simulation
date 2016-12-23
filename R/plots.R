@@ -19,6 +19,69 @@ load.simulation.results <- function(dir, file.pattern = "bp-*.RDS") {
   return(breeding.cycles)
 }
 
+##########
+# TABLES #
+##########
+
+# create table with genetic gain of all methods
+table.genetic.gain <- function(heritability = 0.2, add.TP = 800, file.pattern = "bp-*.RDS",
+                               scenarios = list(
+                                 high.short.term.gain = list(delta.F = 0.05, RA.alpha = 0.35, HE.alpha = 0.35, OC.alpha = 0.35),
+                                 #max.long.term.gain = list(delta.F = 0.03, RA.alpha = 0.45, HE.alpha = 0.45, OC.alpha = 0.60),
+                                 same.inbreeding = list(delta.F = 0.02, RA.alpha = 0.35, HE.alpha = 0.35, OC.alpha = 0.65)
+                               ),
+                               generations = seq(from = 5, to = 30, by = 5),
+                               scale = c("jannink", "sd"),
+                               cumulative = TRUE,
+                               ...){
+  
+  # process scenarios
+  tables <- lapply(scenarios, function(scenario){
+    
+    # extract parameters
+    dF <- scenario$delta.F
+    RA.alpha <- scenario$RA.alpha
+    HE.alpha <- scenario$HE.alpha
+    OC.alpha <- scenario$OC.alpha
+    
+    # define short variable names
+    h <- heritability
+    
+    # load data
+    dirs <- c(
+      sort(Sys.glob(sprintf("out/[GW]*S/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR", h, add.TP))),
+      sort(Sys.glob(sprintf("out/OC2a/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/dF-%.5f", h, add.TP, dF))),
+      sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/OC-%.2f/index", h, add.TP, OC.alpha))),
+      sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/LOGall-%.2f/index", h, add.TP, RA.alpha))),
+      sort(Sys.glob(sprintf("out/CGS/30-seasons/h2-%.1f/addTP-%d/normal-effects/BRR/HEall-%.2f/index", h, add.TP, HE.alpha)))
+    )
+    # loaded data (in this order): GS, WGS, OC2a, IND-OC, IND-RA, IND-HE
+    data <- lapply(dirs, load.simulation.results, file.pattern)
+    
+    # extract gains for each method
+    gains <- lapply(data, function(runs){
+      # extract gains for each simulation run
+      g <- lapply(runs, extract.gain, scale, cumulative)
+      # average over runs
+      g <- colMeans(matrix(unlist(g), nrow = length(g), byrow = TRUE))
+      # restrict to requested generations
+      g <- g[generations]
+    })
+    
+    # convert to matrix (one row per method)
+    gains <- matrix(unlist(gains), nrow = length(gains), byrow = TRUE)
+    
+    # set column names (generations) and row names (methods)
+    colnames(gains) <- generations
+    # rownames(gains) <- c("GS", "WGS", "GOCS", "IND-OC", "IND-RA", "IND-HE")
+    rownames(gains) <- c("GS", "WGS", "GOCS", "IND-OC", "IND-RA") # IND-HE results not yet available
+    
+  })
+  
+  return(tables)
+  
+}
+
 ##########################################
 # INFER FINAL GAIN OF VARIOUS STRATEGIES #
 ##########################################
