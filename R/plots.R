@@ -1710,9 +1710,9 @@ plot.GS.WGS.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
         # set graphical parameters
         params <- list(
           # GS
-          list(lty = 1, bg = "black", pch = 24),
+          list(lty = 1, bg = "black", pch = 23),
           # WGS
-          list(lty = 2, bg = "grey", pch = 24),
+          list(lty = 2, bg = "grey", pch = 23),
           # OC
           list(lty = 3, bg = "grey", pch = 21),
           # IND-OC
@@ -1720,7 +1720,7 @@ plot.GS.WGS.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
           # IND-RA
           list(lty = 3, bg = "white", pch = 25),
           # IND-HE
-          list(lty = 3, bg = "grey", pch = 25)
+          list(lty = 3, bg = "grey", pch = 24)
         )
         # set curve names
         names <- c(
@@ -1823,7 +1823,7 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
           # IND-RA
           list(lty = 3, bg = "white", pch = 25),
           # IND-HE
-          list(lty = 3, bg = "grey", pch = 25)
+          list(lty = 3, bg = "grey", pch = 24)
         )
         # set curve names
         names <- c(
@@ -1919,7 +1919,7 @@ plot.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
           # IND-RA
           list(lty = 3, bg = "white", pch = 25),
           # IND-HE
-          list(lty = 3, bg = "white", pch = 24)
+          list(lty = 3, bg = "grey", pch = 24)
         )
         # set curve names
         names <- c(
