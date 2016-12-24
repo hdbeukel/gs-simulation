@@ -2392,6 +2392,8 @@ extract.inbr.rate <- function(seasons, type = c("IBS", "IBD"), relative = TRUE){
     # check whether selection candidates have been produced in this season
     if(!is.null(season$candidates)){
       # extract and store inbreeding rate (if available)
+      # NOTE: set IBD-based inbreeding to NA as soon as
+      #       IBS-based inbreeding is NA (all true SNP markers fixed)
       inbr <- season$candidates$inbreeding
       if(!is.null(inbr)){
         if((!is.list(inbr) || is.null(inbr[[type]])) && type == "IBD"){
@@ -2405,7 +2407,10 @@ extract.inbr.rate <- function(seasons, type = c("IBS", "IBD"), relative = TRUE){
             # old data (IBS, rel/abs)
             inbr.rate[s] <- inbr$rel
           } else {
-            inbr.rate[s] <- inbr[[type]]$rel
+            IBS <- inbr$IBS$rel
+            if(!is.na(IBS)){
+              inbr.rate[s] <- inbr[[type]]$rel
+            }
           }
         } else {
           if(!is.list(inbr)){
@@ -2414,7 +2419,10 @@ extract.inbr.rate <- function(seasons, type = c("IBS", "IBD"), relative = TRUE){
             # old data (IBS, rel/abs)
             inbr.rate[s] <- inbr$abs
           } else {
-            inbr.rate[s] <- inbr[[type]]$abs
+            IBS <- inbr$IBS$abs
+            if(!is.na(IBS)){
+              inbr.rate[s] <- inbr[[type]]$abs
+            }
           }
         }
       }
