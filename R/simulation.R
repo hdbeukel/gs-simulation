@@ -11,7 +11,7 @@
 # default selection criterion = pure phenotypic mass selection (highest phenotype value)
 PS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-               F1.size=200, num.select=20, num.seasons=30,
+               F1.size=200, num.select=60, num.seasons=30,
                selection.criterion=select.highest.score,
                extract.metadata = TRUE,
                store.all.pops = FALSE,
@@ -95,7 +95,7 @@ PS <- function(founders, heritability, base.pop = NULL,
 # random selection
 RS <- function(founders, heritability, base.pop = NULL,
               num.QTL=1000, QTL.effects = c("normal", "jannink"),
-              F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+              F1.size=200, add.TP=0, num.select=60, num.seasons=30,
               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
               store.all.pops = FALSE, ...){
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -105,7 +105,7 @@ RS <- function(founders, heritability, base.pop = NULL,
 # weighted genomic selection (cfr. Jannink)
 WGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               F1.size=200, add.TP=0, num.select=60, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, ...){
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -115,7 +115,7 @@ WGS <- function(founders, heritability, base.pop = NULL,
 # weighted genomic selection (cfr. Liu and Woolliams)
 WGS2 <- function(founders, heritability, base.pop = NULL,
                 num.QTL=1000, QTL.effects = c("normal", "jannink"),
-                F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                F1.size=200, add.TP=0, num.select=60, num.seasons=30,
                 gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                 store.all.pops = FALSE, ...){
   return(GS(founders, heritability, base.pop, num.QTL, QTL.effects, F1.size,
@@ -126,7 +126,7 @@ WGS2 <- function(founders, heritability, base.pop = NULL,
 # combinatorial genomic selection
 CGS <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               F1.size=200, add.TP=0, num.select=60, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, div.weight,
                div.measure = c("LOGall", "OC", "HEall", "HEfav", "LOGfav"),
@@ -160,7 +160,7 @@ CGS <- function(founders, heritability, base.pop = NULL,
 # optimal contributions simulation
 OC1 <- function(founders, heritability, base.pop = NULL,
                num.QTL=1000, QTL.effects = c("normal", "jannink"),
-               F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+               F1.size=200, add.TP=0, num.select=60, num.seasons=30,
                gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
 
@@ -180,7 +180,7 @@ OC1 <- function(founders, heritability, base.pop = NULL,
 # OC: absolute
 OC2a <- function(founders, heritability, base.pop = NULL,
                  num.QTL=1000, QTL.effects = c("normal", "jannink"),
-                 F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                 F1.size=200, add.TP=0, num.select=60, num.seasons=30,
                  gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                  store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
   
@@ -202,7 +202,7 @@ OC2a <- function(founders, heritability, base.pop = NULL,
 # OC: absolute + Sonesson G (scaled w.r.t. HE, independently per marker)
 OC2s <- function(founders, heritability, base.pop = NULL,
                  num.QTL=1000, QTL.effects = c("normal", "jannink"),
-                 F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                 F1.size=200, add.TP=0, num.select=60, num.seasons=30,
                  gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                  store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
   
@@ -225,7 +225,7 @@ OC2s <- function(founders, heritability, base.pop = NULL,
 # OC: relative
 OC2r <- function(founders, heritability, base.pop = NULL,
                  num.QTL=1000, QTL.effects = c("normal", "jannink"),
-                 F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+                 F1.size=200, add.TP=0, num.select=60, num.seasons=30,
                  gp.method = c("BRR", "RR"), extract.metadata = TRUE,
                  store.all.pops = FALSE, delta.F, verbose = FALSE, ...){
   
@@ -253,7 +253,7 @@ OC2r <- function(founders, heritability, base.pop = NULL,
 #               + (2) cross, inbreed & select (on predicted values)
 GS <- function(founders, heritability, base.pop = NULL,
               num.QTL=1000, QTL.effects = c("normal", "jannink"),
-              F1.size=200, add.TP=0, num.select=20, num.seasons=30,
+              F1.size=200, add.TP=0, num.select=60, num.seasons=30,
               selection.criterion = select.highest.score,
               gp.method = c("BRR", "RR"), extract.metadata = TRUE,
               store.all.pops = FALSE, weights = weights.none,

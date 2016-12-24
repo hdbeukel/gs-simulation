@@ -130,6 +130,9 @@ if(!is.na(custom.seed)){
 if(!is.na(fixed.bp)){
   file.name <- sprintf("bp-%d-%s", fixed.bp, file.name)
 }
+### TEMP{
+out.dir <- paste(out.dir, "sel-60", sep = "-")
+### TEMP}
 dir.create(out.dir, showWarning = FALSE, recursive = TRUE)
 full.path <- paste(out.dir, file.name, sep="/")
 saveRDS(seasons, file = full.path)
