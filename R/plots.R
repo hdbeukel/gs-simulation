@@ -1938,6 +1938,7 @@ plot.OC.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
 # within a subfolder according to the heritability and TP size
 plot.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
                      file.pattern = "bp-*.RDS", xlim = c(0,30), ci = NA,
+                     target.dF = 0.05,
                      scenarios = list(
                        high.short.term.gain = list(RA.alpha = 0.35, HE.alpha = 0.35, OC.alpha = 0.35),
                        #max.long.term.gain = list(RA.alpha = 0.45, HE.alpha = 0.45, OC.alpha = 0.60),
@@ -2008,7 +2009,7 @@ plot.IND <- function(heritability = c(0.2, 0.5), add.TP = c(0, 800),
           if(grepl("^inbreeding-rate", plot.fun$name)){
             f <- plot.fun$f
             g <- function(...){
-              f(..., deltaF.line = dF)
+              f(..., deltaF.line = target.dF)
             }
             plot.fun$f <- g
           }
