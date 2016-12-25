@@ -176,7 +176,7 @@ create.pdf <- function(file, plot.fun, width = 14, height = 10.5){
 get.plot.functions <- function(){
   plot.functions <- list(
     list(f = plot.genetic.gain, name = "gain", title = "Genetic gain",
-         legend = "bottomright", ylim =  c(0, 0.35)),
+         legend = "bottomright", ylim =  c(0, 0.30)),
     # list(f = plot.proportion.fixed.QTL, name = "QTL-fixed", title = "Proportion of fixed QTL",
     #      legend = "bottomright", ylim = c(0, 1.0)),
     list(f = plot.mean.QTL.fav.allele.freq, name = "QTL-fav-allele-freq",
