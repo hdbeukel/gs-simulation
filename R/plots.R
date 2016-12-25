@@ -205,7 +205,7 @@ get.plot.functions <- function(){
     list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favorable QTL alleles lost",
         legend = "bottomright", ylim = c(0, 500)),
     list(f = plot.num.SNP.alleles.lost, name = "SNP-alleles-lost", title = "Number of SNP alleles lost",
-         legend = "bottomright", ylim = c(0, 1000))
+         legend = "bottomright", ylim = c(0, 1031))
     # list(f = plot.effect.estimation.accuracy, name = "eff-acc", title = "Effect estimation accuracy",
     #      legend = "bottomright", ylim = c(0.1, 0.45)),
     # list(
