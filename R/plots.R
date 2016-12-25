@@ -192,11 +192,11 @@ get.plot.functions <- function(){
     #       legend = "bottomleft", ylim = c(0.3, 0.9)),
     list(f = function(...){
       plot.inbreeding.rate(..., type = "IBS")
-    }, name = "inbreeding-rate-IBS", title = "Inbreeding rate (IBS)",
+    }, name = "inbreeding-rate-IBS", title = bquote("Inbreeding rate"~paste(Delta, F[IBS])),
     legend = "topleft", ylim = c(-0.05, 0.4)),
     list(f = function(...){
       plot.inbreeding.rate(..., type = "IBD")
-    }, name = "inbreeding-rate-IBD", title = "Inbreeding rate (IBD)",
+    }, name = "inbreeding-rate-IBD", title = bquote("Inbreeding rate"~paste(Delta, F[IBD])),
     legend = "topleft", ylim = c(-0.05, 0.4)),
     # list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
     #      legend = "topright", ylim = c(0, 0.035)),
