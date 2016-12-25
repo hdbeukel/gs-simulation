@@ -898,7 +898,7 @@ plot.OC.RS <- function(heritability = c(0.2, 0.5), target.dF = 0.05, file.patter
   )
   dirs.high.h2 <- c(
     sort(Sys.glob(sprintf("out/OC2a/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR/dF-%.5f", high.h, target.dF))),
-    sort(Sys.glob(sprintf("out/GS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h)))
+    sort(Sys.glob(sprintf("out/RS/30-seasons/h2-%.1f/addTP-*/normal-effects/BRR", high.h)))
   )
   data.low.h2 <- lapply(dirs.low.h2, load.simulation.results, file.pattern)
   data.high.h2 <- lapply(dirs.high.h2, load.simulation.results, file.pattern)
