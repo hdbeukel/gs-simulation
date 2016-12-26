@@ -1059,10 +1059,10 @@ plot.OC.sel.size <- function(heritability = c(0.2, 0.5), target.dF = 0.05, sel.s
   )
   # set curve names
   names <- c(
-    bquote(GOCS ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
-    bquote(GOCS ~ .bquote(sel.size) ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
-    bquote(GOCS ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
-    bquote(GOCS ~ .bquote(sel.size) ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ C[t+1] == .(target.dF)))))
+    bquote(GOCS[20] ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
+    bquote(GOCS[.(sel.size)] ~ (h^2 == .(bquote(paste(.(low.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
+    bquote(GOCS[20] ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ C[t+1] == .(target.dF))))),
+    bquote(GOCS[.(sel.size)] ~ (h^2 == .(bquote(paste(.(high.h), ", ", sep = "") ~ C[t+1] == .(target.dF)))))
   )
   names <- sapply(names, as.expression)
   
