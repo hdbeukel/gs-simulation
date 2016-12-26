@@ -201,7 +201,7 @@ get.plot.functions <- function(){
     # list(f = plot.genetic.standard.deviation, name = "genetic-sd", title = "Genetic standard deviation",
     #      legend = "topright", ylim = c(0, 0.035)),
     list(f = plot.total.QTL.effect.lost, name = "QTL-effect-lost", title = "Total QTL effect lost",
-        legend = "bottomright", ylim = c(0, 250)),
+        legend = "bottomright", ylim = c(0, 260)),
     list(f = plot.num.fav.QTL.lost, name = "fav-QTL-lost", title = "Number of favorable QTL alleles lost",
         legend = "bottomright", ylim = c(0, 500)),
     list(f = plot.num.SNP.alleles.lost, name = "SNP-alleles-lost", title = "Number of SNP alleles lost",
