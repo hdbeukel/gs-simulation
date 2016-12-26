@@ -73,8 +73,7 @@ table.genetic.gain <- function(heritability = 0.2, add.TP = 800, file.pattern = 
     
     # set column names (generations) and row names (methods)
     colnames(gains) <- generations
-    # rownames(gains) <- c("GS", "WGS", "GOCS", "IND-OC", "IND-RA", "IND-HE")
-    rownames(gains) <- c("GS", "WGS", "GOCS", "IND-OC", "IND-RA") # IND-HE results not yet available
+    rownames(gains) <- c("GS", "WGS", "GOCS", "IND-OC", "IND-RA", "IND-HE")
     
     return(gains)
     
