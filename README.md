@@ -1,8 +1,8 @@
-Genomic selection simulation
-----------------------------
+Long-term genomic selection strategies
+--------------------------------------
 
 Simulation code and data for:
 
-"Protecting Against Loss of Rare Alleles Increases Long-term Gain of Genomic Selection."
+"Moving Beyond Managing Realized Genomic Relationship in Long-term Genomic Selection."
 
 Submitted to [Genetics](http://www.genetics.org).
